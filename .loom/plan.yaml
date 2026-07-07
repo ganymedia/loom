@@ -70,6 +70,14 @@ phases:
             title: Wire TUI startup smoke path to backend router and file tools
             status: done
             token_estimate: medium
+          - id: phase-1-developer-one-turn
+            title: Implement one-turn Developer agent prompt path against resolved backend
+            status: done
+            token_estimate: medium
+          - id: phase-1-tui-interactive-loop
+            title: Implement interactive TUI loop and agent tool-call execution
+            status: pending
+            token_estimate: large
   - id: phase-2-core-features
     title: Phase 2 — core features
     status: pending

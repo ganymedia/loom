@@ -5,8 +5,8 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 ## Current phase
 
 - Phase: Phase 1 — foundation
-- Current task: TUI integration smoke path.
-- Next unbuilt item: real Developer agent turn loop against the resolved backend.
+- Current task: minimal Developer agent one-turn prompt path.
+- Next unbuilt item: interactive TUI loop and agent tool-call execution.
 
 ## GitHub synchronization policy
 

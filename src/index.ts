@@ -5,15 +5,21 @@ import { Command } from "commander";
 
 const program = new Command();
 
+function optionValue(
+  args: string[],
+  names: readonly string[],
+): string | undefined {
+  const index = args.findIndex((arg) => names.includes(arg));
+  return index >= 0 ? args[index + 1] : undefined;
+}
+
 program
   .name("loom")
   .description("AI workflow pipeline manager and intelligent terminal agent")
   .version("0.1.0")
   .option("-p, --profile <name>", "override the active config profile")
-  .option(
-    "--backend <key>",
-    "override the default backend for this invocation",
-  );
+  .option("--backend <key>", "override the default backend for this invocation")
+  .option("--prompt <text>", "run one Developer-agent prompt and exit");
 
 async function main(): Promise<void> {
   program.exitOverride();
@@ -23,15 +29,9 @@ async function main(): Promise<void> {
   });
 
   const args = process.argv.slice(2);
-  const globalOptions = program.parseOptions(args).unknown;
-  const profileIndex = globalOptions.findIndex(
-    (arg) => arg === "--profile" || arg === "-p",
-  );
-  const profileOverride =
-    profileIndex >= 0 ? globalOptions[profileIndex + 1] : undefined;
-  const backendIndex = globalOptions.findIndex((arg) => arg === "--backend");
-  const backendOverride =
-    backendIndex >= 0 ? globalOptions[backendIndex + 1] : undefined;
+  const profileOverride = optionValue(args, ["--profile", "-p"]);
+  const backendOverride = optionValue(args, ["--backend"]);
+  const initialPrompt = optionValue(args, ["--prompt"]);
 
   const config = await loadConfig(
     profileOverride === undefined ? {} : { profileOverride },
@@ -44,10 +44,10 @@ async function main(): Promise<void> {
 
   if (!hasSubcommand && !args.includes("--help") && !args.includes("-h")) {
     const { startSession } = await import("@loom/tui/session");
-    await startSession(
-      config,
-      backendOverride === undefined ? {} : { backendOverride },
-    );
+    await startSession(config, {
+      ...(backendOverride === undefined ? {} : { backendOverride }),
+      ...(initialPrompt === undefined ? {} : { initialPrompt }),
+    });
     return;
   }
 

@@ -1,3 +1,4 @@
+import { DeveloperAgent } from "@loom/agents/developer";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
@@ -7,6 +8,7 @@ import { fileWriterTool } from "@loom/tools/file-writer";
 export interface StartSessionOptions {
   backendOverride?: string;
   fetchImpl?: FetchLike;
+  initialPrompt?: string;
   projectRoot?: string;
   smokeFilePath?: string;
   writeOutput?: (message: string) => void;
@@ -93,5 +95,29 @@ export async function startSession(
   writeOutput(`File read: ${smoke.fileReadOk ? "ok" : "failed"}\n`);
   if (smoke.fileError !== undefined) {
     writeOutput(`File error: ${smoke.fileError}\n`);
+  }
+
+  if (options.initialPrompt !== undefined && options.initialPrompt.length > 0) {
+    try {
+      const agent = new DeveloperAgent({
+        config,
+        ...(options.backendOverride === undefined
+          ? {}
+          : { backendOverride: options.backendOverride }),
+        ...(options.fetchImpl === undefined
+          ? {}
+          : { fetchImpl: options.fetchImpl }),
+      });
+      const turn = await agent.runTurn(options.initialPrompt, {
+        sessionId: crypto.randomUUID(),
+        projectRoot: options.projectRoot ?? process.cwd(),
+        conversationHistory: [],
+      });
+      writeOutput(`Developer: ${turn.content}\n`);
+    } catch (error) {
+      writeOutput(
+        `Developer agent error: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
+    }
   }
 }

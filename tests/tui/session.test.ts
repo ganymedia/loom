@@ -102,4 +102,28 @@ describe("startSession", () => {
     expect(output).toContain("File write: ok");
     expect(output).toContain("File read: ok");
   });
+
+  test("runs one Developer-agent prompt when initialPrompt is provided", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      initialPrompt: "Say hello",
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+        return jsonResponse({
+          choices: [{ message: { content: "Hello from Developer" } }],
+          usage: { prompt_tokens: 5, completion_tokens: 3 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).toContain("Developer: Hello from Developer");
+  });
 });
