@@ -1,0 +1,18 @@
+# Dependency and build outputs
+node_modules/
+dist/
+coverage/
+
+# Local environment/configuration
+.env
+.env.*
+!.env.example
+
+# Session continuity handoff is local working state, not source history
+.loom/handoff.md
+
+# Flattened starter references kept locally during bootstrap
+src_agents_base.ts
+src_index.ts
+src_pipeline_types.ts
+src_tools_base.ts

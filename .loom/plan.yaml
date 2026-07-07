@@ -1,0 +1,64 @@
+version: 1
+project: LOOM
+current_phase: phase-1-foundation
+phases:
+  - id: phase-1-foundation
+    title: Phase 1 — foundation
+    status: active
+    milestones:
+      - id: phase-1-layout
+        title: Canonical project layout
+        status: active
+        tasks:
+          - id: phase-1-layout-canonical-files
+            title: Create canonical source tree while retaining flattened reference files
+            status: done
+            token_estimate: medium
+          - id: phase-1-layout-build-config
+            title: Add package, TypeScript, and Biome configuration
+            status: done
+            token_estimate: small
+      - id: phase-1-config
+        title: Config schema and layered loader
+        status: pending
+        tasks:
+          - id: phase-1-config-schema
+            title: Implement Zod config schema
+            status: done
+            token_estimate: medium
+          - id: phase-1-config-loader
+            title: Implement global/project/env config loader
+            status: done
+            token_estimate: medium
+      - id: phase-1-backends
+        title: Backend discovery and router
+        status: pending
+        tasks:
+          - id: phase-1-backends-discovery
+            title: Implement OpenAI-compatible model discovery and model resolution
+            status: done
+            token_estimate: medium
+      - id: phase-1-cli-tui
+        title: CLI skeleton and basic TUI
+        status: pending
+        tasks:
+          - id: phase-1-cli-skeleton
+            title: Implement thin Commander entry point and config subcommand
+            status: done
+            token_estimate: small
+          - id: phase-1-tui-developer
+            title: Implement basic Developer-agent TUI placeholder
+            status: done
+            token_estimate: medium
+  - id: phase-2-core-features
+    title: Phase 2 — core features
+    status: pending
+    milestones: []
+  - id: phase-3-intelligence
+    title: Phase 3 — intelligence
+    status: pending
+    milestones: []
+  - id: phase-4-platform
+    title: Phase 4 — platform
+    status: pending
+    milestones: []
