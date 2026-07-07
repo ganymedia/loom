@@ -8,7 +8,7 @@ phases:
     milestones:
       - id: phase-1-layout
         title: Canonical project layout
-        status: active
+        status: done
         tasks:
           - id: phase-1-layout-canonical-files
             title: Create canonical source tree while retaining flattened reference files
@@ -20,7 +20,7 @@ phases:
             token_estimate: small
       - id: phase-1-config
         title: Config schema and layered loader
-        status: pending
+        status: done
         tasks:
           - id: phase-1-config-schema
             title: Implement Zod config schema
@@ -32,15 +32,31 @@ phases:
             token_estimate: medium
       - id: phase-1-backends
         title: Backend discovery and router
-        status: pending
+        status: done
         tasks:
           - id: phase-1-backends-discovery
             title: Implement OpenAI-compatible model discovery and model resolution
             status: done
             token_estimate: medium
+          - id: phase-1-backends-router
+            title: Implement backend router for active profile and backend overrides
+            status: done
+            token_estimate: medium
+      - id: phase-1-tools
+        title: File read/write tools
+        status: done
+        tasks:
+          - id: phase-1-tools-file-reader
+            title: Implement project-root-safe file reader tool
+            status: done
+            token_estimate: small
+          - id: phase-1-tools-file-writer
+            title: Implement project-root-safe file writer tool
+            status: done
+            token_estimate: small
       - id: phase-1-cli-tui
         title: CLI skeleton and basic TUI
-        status: pending
+        status: active
         tasks:
           - id: phase-1-cli-skeleton
             title: Implement thin Commander entry point and config subcommand
@@ -48,6 +64,10 @@ phases:
             token_estimate: small
           - id: phase-1-tui-developer
             title: Implement basic Developer-agent TUI placeholder
+            status: done
+            token_estimate: medium
+          - id: phase-1-tui-smoke
+            title: Wire TUI startup smoke path to backend router and file tools
             status: done
             token_estimate: medium
   - id: phase-2-core-features

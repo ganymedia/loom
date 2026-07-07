@@ -10,6 +10,7 @@ coverage/
 
 # Session continuity handoff is local working state, not source history
 .loom/handoff.md
+.loom/session-smoke.txt
 
 # Flattened starter references kept locally during bootstrap
 src_agents_base.ts

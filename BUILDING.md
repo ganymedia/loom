@@ -5,8 +5,8 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 ## Current phase
 
 - Phase: Phase 1 — foundation
-- Current task: establish canonical TypeScript/Bun project layout and fixed interface files.
-- Next unbuilt item: config loader.
+- Current task: TUI integration smoke path.
+- Next unbuilt item: real Developer agent turn loop against the resolved backend.
 
 ## GitHub synchronization policy
 

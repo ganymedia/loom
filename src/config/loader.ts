@@ -41,33 +41,36 @@ function mergeConfig(globalConfig: unknown, projectConfig: unknown): unknown {
       ? projectConfig
       : {};
 
+  const profiles = {
+    ...("profiles" in globalRecord &&
+    typeof globalRecord.profiles === "object" &&
+    globalRecord.profiles !== null
+      ? globalRecord.profiles
+      : {}),
+    ...("profiles" in projectRecord &&
+    typeof projectRecord.profiles === "object" &&
+    projectRecord.profiles !== null
+      ? projectRecord.profiles
+      : {}),
+  };
+  const backends = {
+    ...("backends" in globalRecord &&
+    typeof globalRecord.backends === "object" &&
+    globalRecord.backends !== null
+      ? globalRecord.backends
+      : {}),
+    ...("backends" in projectRecord &&
+    typeof projectRecord.backends === "object" &&
+    projectRecord.backends !== null
+      ? projectRecord.backends
+      : {}),
+  };
+
   return {
     ...globalRecord,
     ...projectRecord,
-    profiles: {
-      ...("profiles" in globalRecord &&
-      typeof globalRecord.profiles === "object" &&
-      globalRecord.profiles !== null
-        ? globalRecord.profiles
-        : {}),
-      ...("profiles" in projectRecord &&
-      typeof projectRecord.profiles === "object" &&
-      projectRecord.profiles !== null
-        ? projectRecord.profiles
-        : {}),
-    },
-    backends: {
-      ...("backends" in globalRecord &&
-      typeof globalRecord.backends === "object" &&
-      globalRecord.backends !== null
-        ? globalRecord.backends
-        : {}),
-      ...("backends" in projectRecord &&
-      typeof projectRecord.backends === "object" &&
-      projectRecord.backends !== null
-        ? projectRecord.backends
-        : {}),
-    },
+    profiles: Object.keys(profiles).length === 0 ? { default: {} } : profiles,
+    backends,
   };
 }
 
@@ -89,5 +92,9 @@ export async function loadConfig(
   return {
     ...parsed,
     activeProfile,
+    profiles: {
+      ...parsed.profiles,
+      [activeProfile]: parsed.profiles[activeProfile] ?? {},
+    },
   };
 }
