@@ -60,7 +60,23 @@ bun src/index.ts --prompt "Summarize this project"
 
 This path resolves the active backend, discovers the current model through `/v1/models`, and sends one OpenAI-compatible `/v1/chat/completions` request. The prompt gateway currently supports `openai-compatible` backends only; unsupported backend types fail with a clear message instead of falling back silently.
 
-The one-turn Developer agent is stateless across process runs. It does not yet provide follow-up turns, streaming output, or automatic tool calls. It proves the Phase 1 backend request path without hardcoding model names.
+The one-turn Developer agent is stateless across process runs. It does not yet provide follow-up turns or streaming output. It proves the Phase 1 backend request path without hardcoding model names.
+
+### Developer tool-call envelope
+
+For Phase 1, the Developer agent can execute a constrained JSON response envelope from the model:
+
+```json
+{
+  "content": "Short human-readable response",
+  "toolCalls": [
+    { "tool": "file-reader", "args": { "path": "README.md" } },
+    { "tool": "file-writer", "args": { "path": "notes.txt", "content": "hello" } }
+  ]
+}
+```
+
+Only `file-reader` and `file-writer` are registered. LOOM injects the current `projectRoot`; model-provided `projectRoot` values are ignored. Unknown or denied tools are returned as failed tool results and are not executed.
 
 Verification against a configured local vLLM endpoint:
 

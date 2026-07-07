@@ -75,9 +75,13 @@ phases:
             status: done
             token_estimate: medium
           - id: phase-1-tui-interactive-loop
-            title: Implement interactive TUI loop and agent tool-call execution
+            title: Implement interactive TUI loop and visible tool-call results
             status: pending
             token_estimate: large
+          - id: phase-1-developer-file-tools
+            title: Execute constrained Developer file tool calls from model response envelope
+            status: done
+            token_estimate: medium
   - id: phase-2-core-features
     title: Phase 2 — core features
     status: pending

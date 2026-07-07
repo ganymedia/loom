@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { AgentContext } from "@loom/agents/base";
 import { DeveloperAgent } from "@loom/agents/developer";
 import type { LoomConfig } from "@loom/config/schema";
@@ -25,6 +28,10 @@ function jsonResponse(body: unknown): Response {
     status: 200,
     headers: { "content-type": "application/json" },
   });
+}
+
+async function tempProject(): Promise<string> {
+  return mkdtemp(join(tmpdir(), "loom-developer-agent-"));
 }
 
 describe("DeveloperAgent", () => {
@@ -62,6 +69,94 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls).toEqual([]);
     expect(result.promptTokens).toBe(7);
     expect(result.completionTokens).toBe(4);
+  });
+
+  test("executes permitted file-reader tool calls from a response envelope", async () => {
+    const projectRoot = await tempProject();
+    await writeFile(join(projectRoot, "note.txt"), "hello loom", "utf8");
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  content: "Read requested file",
+                  toolCalls: [
+                    { tool: "file-reader", args: { path: "note.txt" } },
+                  ],
+                }),
+              },
+            },
+          ],
+        });
+      },
+    });
+
+    const result = await agent.runTurn("Read note.txt", {
+      ...context,
+      projectRoot,
+    });
+
+    expect(result.content).toBe("Read requested file");
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0]?.tool).toBe("file-reader");
+    expect(result.toolCalls[0]?.args.projectRoot).toBe(projectRoot);
+    expect(result.toolCalls[0]?.result.success).toBe(true);
+    expect(result.toolCalls[0]?.result.output).toBe("hello loom");
+  });
+
+  test("rejects unknown tool calls without executing them", async () => {
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  content: "Trying shell",
+                  toolCalls: [{ tool: "shell", args: { command: "whoami" } }],
+                }),
+              },
+            },
+          ],
+        });
+      },
+    });
+
+    const result = await agent.runTurn("Run shell", context);
+
+    expect(result.content).toBe("Trying shell");
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0]?.result.success).toBe(false);
+    expect(result.toolCalls[0]?.result.error).toContain("not permitted");
+  });
+
+  test("treats plain text responses as content without tool calls", async () => {
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        return jsonResponse({
+          choices: [{ message: { content: "Plain answer" } }],
+        });
+      },
+    });
+
+    const result = await agent.runTurn("Answer plainly", context);
+
+    expect(result.content).toBe("Plain answer");
+    expect(result.toolCalls).toEqual([]);
   });
 
   test("generates a minimal handoff summary", async () => {

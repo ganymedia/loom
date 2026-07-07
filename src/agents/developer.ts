@@ -8,9 +8,56 @@ import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
 import { type PromptMessage, runPrompt } from "@loom/prompt/run-prompt";
-import type { ToolDefinition } from "@loom/tools/base";
+import type {
+  ToolAccessPolicy,
+  ToolDefinition,
+  ToolResult,
+} from "@loom/tools/base";
+import { isToolPermitted } from "@loom/tools/base";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
+
+interface DeveloperToolCallRequest {
+  tool: string;
+  args: Record<string, unknown>;
+}
+
+interface DeveloperResponseEnvelope {
+  content: string;
+  toolCalls: DeveloperToolCallRequest[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseDeveloperResponse(content: string): DeveloperResponseEnvelope {
+  try {
+    const parsed = JSON.parse(content) as unknown;
+    if (!isRecord(parsed)) {
+      return { content, toolCalls: [] };
+    }
+
+    const parsedContent = parsed.content;
+    const parsedToolCalls = parsed.toolCalls;
+    if (typeof parsedContent !== "string" || !Array.isArray(parsedToolCalls)) {
+      return { content, toolCalls: [] };
+    }
+
+    const toolCalls = parsedToolCalls.flatMap(
+      (toolCall): DeveloperToolCallRequest[] => {
+        if (!isRecord(toolCall)) return [];
+        if (typeof toolCall.tool !== "string" || !isRecord(toolCall.args))
+          return [];
+        return [{ tool: toolCall.tool, args: toolCall.args }];
+      },
+    );
+
+    return { content: parsedContent, toolCalls };
+  } catch {
+    return { content, toolCalls: [] };
+  }
+}
 
 export interface DeveloperAgentOptions {
   config: LoomConfig;
@@ -34,6 +81,61 @@ export class DeveloperAgent extends BaseAgent {
 
   constructor(private readonly options: DeveloperAgentOptions) {
     super();
+  }
+
+  private toolByName(toolName: string): ToolDefinition | undefined {
+    return this.tools.find((tool) => tool.name === toolName);
+  }
+
+  private async executeToolCall(
+    toolCall: DeveloperToolCallRequest,
+    context: AgentContext,
+  ): Promise<{
+    tool: string;
+    args: Record<string, unknown>;
+    result: ToolResult;
+  }> {
+    const policy: ToolAccessPolicy = {
+      capabilities: ["file-read", "file-write"],
+      allowed: this.tools.map((tool) => tool.name),
+      denied: [],
+    };
+
+    if (!isToolPermitted(toolCall.tool, policy)) {
+      return {
+        tool: toolCall.tool,
+        args: toolCall.args,
+        result: {
+          success: false,
+          output: "",
+          error: `Tool "${toolCall.tool}" is not permitted for Developer agent`,
+        },
+      };
+    }
+
+    const tool = this.toolByName(toolCall.tool);
+    if (tool === undefined) {
+      return {
+        tool: toolCall.tool,
+        args: toolCall.args,
+        result: {
+          success: false,
+          output: "",
+          error: `Tool "${toolCall.tool}" is not registered`,
+        },
+      };
+    }
+
+    const args = {
+      ...toolCall.args,
+      projectRoot: context.projectRoot,
+    };
+
+    return {
+      tool: toolCall.tool,
+      args,
+      result: await tool.execute(args),
+    };
   }
 
   override async runTurn(
@@ -66,9 +168,16 @@ export class DeveloperAgent extends BaseAgent {
       ...(this.options.env === undefined ? {} : { env: this.options.env }),
     });
 
+    const parsedResponse = parseDeveloperResponse(response.content);
+    const toolCalls = await Promise.all(
+      parsedResponse.toolCalls.map((toolCall) =>
+        this.executeToolCall(toolCall, context),
+      ),
+    );
+
     return {
-      content: response.content,
-      toolCalls: [],
+      content: parsedResponse.content,
+      toolCalls,
       subAgentsSpawned: [],
       promptTokens: response.usage.promptTokens,
       completionTokens: response.usage.completionTokens,
