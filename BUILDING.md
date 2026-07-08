@@ -5,8 +5,8 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 ## Current phase
 
 - Phase: Phase 3 — intelligence
-- Current task: Prompt assembly.
-- Next unbuilt item: Prompt assembly.
+- Current task: Retry loop.
+- Next unbuilt item: Retry loop.
 
 ## GitHub synchronization policy
 

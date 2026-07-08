@@ -18,3 +18,6 @@ src_agents_base.ts
 src_index.ts
 src_pipeline_types.ts
 src_tools_base.ts
+
+# Generated reference outputs; canonical spec remains SPEC.md
+SPEC-with-manifests.md
