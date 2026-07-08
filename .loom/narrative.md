@@ -75,3 +75,7 @@ Decision: implement `ArchitectAgent` as a concrete `BaseAgent` following the exi
 ## 2026-07-08 — Tester agent
 
 Decision: implement `TesterAgent` as a concrete `BaseAgent` following the Developer/Architect seam while preserving the Tester YAML scope. The agent performs fresh backend/model discovery per turn, preserves conversation history, parses the same strict JSON tool-call envelope, permits file read/write, read-only shell inspection, and read-only git operations, and denies web/network-write calls per `agents/tester.yaml`. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (78 passing tests). Next work is the Security agent.
+
+## 2026-07-08 — Security agent
+
+Decision: implement `SecurityAgent` as a concrete `BaseAgent` following the existing built-in agent seam while preserving the Security YAML's read-only scope. The agent performs fresh backend/model discovery per turn, preserves conversation history, parses the same strict JSON tool-call envelope, permits only file reading and read-only git operations, and denies file writing, shell, web, and network-write calls per `agents/security.yaml`. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (84 passing tests). Next work is Agent tab switching.

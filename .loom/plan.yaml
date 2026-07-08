@@ -9,8 +9,8 @@ updated: "2026-07-08"
 
 # Current state
 current_phase: phase-2
-current_milestone: milestone-2-3
-current_task: task-2-3-3
+current_milestone: milestone-2-4
+current_task: task-2-4-1
 
 # Token estimate labels: small, medium, large, xlarge
 # small: < 1000 tokens, medium: 1000-5000 tokens, large: 5000-20000 tokens, xlarge: > 20000 tokens
@@ -235,7 +235,7 @@ phases:
       - id: milestone-2-3
         name: "Additional Built-in Agents"
         description: "Architect, Tester, and Security agents"
-        status: in_progress
+        status: completed
         token_estimate: xlarge
 
         tasks:
@@ -260,7 +260,7 @@ phases:
           - id: task-2-3-3
             name: "Security agent"
             description: "Security agent for code review and vulnerability detection"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/agents/security.ts

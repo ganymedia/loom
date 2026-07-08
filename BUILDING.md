@@ -5,8 +5,8 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 ## Current phase
 
 - Phase: Phase 2 — core features
-- Current task: Security agent.
-- Next unbuilt item: Security agent.
+- Current task: Agent tab switching.
+- Next unbuilt item: Agent tab switching.
 
 ## GitHub synchronization policy
 
