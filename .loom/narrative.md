@@ -43,3 +43,31 @@ Phase 1 foundation is synced to GitHub through `bab26e6`. Completed this session
 ## 2026-07-08 — Shell and git tool boundaries
 
 Decision: replace the draft shell/git tools' string-shell execution and broad command allowlists with argv-based `spawn` execution and least-privilege read-only allowlists. The Developer agent can now call `shell` and `git-ops`, but shell is limited to read-only inspection commands and git is limited to read-only repository inspection. Absolute-path and parent-directory arguments are rejected before execution. Verification is green with `bun run typecheck`, `bun run lint`, and `bun test` (48 passing tests). Next work remains the interactive TUI loop with follow-up turns and visible tool-call results.
+
+## 2026-07-08 — Interactive session loop
+
+Decision: implement follow-up turns inside `src/tui/session.ts` rather than adding logic to `index.ts`, preserving the thin CLI boundary from `SPEC.md`. The session now keeps Developer conversation history across prompts, can read deterministic injected input for tests, auto-enters stdin mode only in an interactive TTY, and prints each tool-call result after the assistant response. Static verification passed with repo-local `tsc --noEmit` and `biome check`; `bun run typecheck`, `bun run lint`, and `bun test` were blocked because `bun` is not installed on PATH in this shell. Phase 1 remains active pending exit verification with Bun and a real configured vLLM endpoint.
+
+## 2026-07-08 — Phase 1 exit verification
+
+Phase 1 exit verification passed after sourcing the updated Bash environment for Bun. `bun run typecheck`, `bun run lint`, and `bun test` all passed, with 49 tests green. The live CLI smoke used the project-local OpenAI-compatible backend at the operator-provided endpoint, discovered model `gemma4` via `/v1/models`, wrote and read `.loom/session-smoke.txt`, and completed `bun src/index.ts --prompt "Say hello in one short sentence."` with a Developer response. Decision: advance LOOM to Phase 2, starting with the Prompt Store schema, because the Phase 1 SPEC gate is now satisfied.
+
+## 2026-07-08 — Prompt Store schema
+
+Decision: define the Prompt Store schema as Bun SQLite tables for sessions, prompt events, embeddings, and schema metadata. Embedding vectors are stored as `BLOB` values with a checked dimension count so the later cosine-recall implementation can choose a compact numeric encoding without changing table shape. The schema enforces role, token-count, embedding-dimension, and session-time constraints and cascades prompt events/embeddings when a session is deleted. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (52 passing tests). Next work is `task-2-1-2`, the Prompt Store implementation over this schema.
+
+## 2026-07-08 — Prompt Store implementation
+
+Decision: implement Prompt Store operations as a synchronous Bun SQLite wrapper because `bun:sqlite` is local and synchronous; async wrappers would hide immediate database failures without adding useful concurrency. The store can create/end sessions, record ordered prompt events, store caller-provided embeddings, list session events, and perform local cosine recall over stored vectors. It does not call embedding models or hardcode model names; embedding generation remains a caller/backend concern. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (56 passing tests). Next work is `task-2-2-1`, the Session Manager.
+
+## 2026-07-08 — Session Manager
+
+Decision: implement Session Manager as pure token accounting and handoff-decision logic, leaving handoff/narrative file I/O for `task-2-2-2`. The manager tracks prompt and completion tokens across turns, marks handoff required at the default 80% context threshold, keeps that requirement sticky once crossed, supports custom thresholds for tests/future configuration, and fails loudly on invalid internal accounting values. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (61 passing tests). Next work is handoff document management.
+
+## 2026-07-08 — Handoff document management
+
+Decision: implement handoff/narrative file management as strict Markdown serialization and parsing helpers in `src/session/handoff.ts`. Missing `.loom/handoff.md` returns `undefined` because it is the normal first-session state; malformed handoff content throws because kickoff treats that file as ground truth and resuming from corrupted state is unsafe. The module writes the exact five-field handoff format from `KICKOFF.md` and appends narrative entries without replacing history. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (67 passing tests). Next work is the Architect agent.
+
+## 2026-07-08 — Architect agent
+
+Decision: implement `ArchitectAgent` as a concrete `BaseAgent` following the existing Developer-agent seam instead of introducing YAML manifest loading ahead of the planned agent loader work. The agent performs fresh backend/model discovery per turn, preserves conversation history, parses the same strict JSON tool-call envelope, permits only file read/write and read-only git operations, and explicitly denies shell/web/network-write calls per `agents/architect.yaml`. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (72 passing tests). Next work is the Tester agent.

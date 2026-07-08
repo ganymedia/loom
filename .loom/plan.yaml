@@ -5,12 +5,12 @@
 name: LOOM
 version: "0.1.0"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-08"
 
 # Current state
-current_phase: phase-1
-current_milestone: milestone-1-5
-current_task: task-1-5-3
+current_phase: phase-2
+current_milestone: milestone-2-3
+current_task: task-2-3-2
 
 # Token estimate labels: small, medium, large, xlarge
 # small: < 1000 tokens, medium: 1000-5000 tokens, large: 5000-20000 tokens, xlarge: > 20000 tokens
@@ -20,7 +20,7 @@ phases:
     name: "Foundation"
     description: "Core infrastructure: config, backends, CLI, basic TUI, and file tools"
     exit_criterion: "loom opens, talks to a real vLLM endpoint, and reads/writes real files"
-    status: in_progress
+    status: completed
     token_estimate: large
 
     milestones:
@@ -100,7 +100,7 @@ phases:
       - id: milestone-1-4
         name: "Developer Agent and File Tools"
         description: "Developer agent with file read/write tools and path safety"
-        status: in_progress
+        status: completed
         token_estimate: large
 
         tasks:
@@ -145,7 +145,7 @@ phases:
 
       - id: milestone-1-5
         name: "Basic TUI"
-        description: "TUI placeholder with smoke test and single-turn execution"
+        description: "TUI smoke test, single-turn execution, and follow-up loop"
         status: completed
         token_estimate: medium
 
@@ -170,7 +170,7 @@ phases:
           - id: task-1-5-3
             name: "Interactive TUI loop"
             description: "Follow-up turns and visible tool-call results in the TUI/session path"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/tui/session.ts
@@ -179,21 +179,21 @@ phases:
   - id: phase-2
     name: "Core Features"
     description: "Prompt Store, Session Continuity, and remaining built-in agents"
-    status: pending
+    status: in_progress
     token_estimate: xlarge
 
     milestones:
       - id: milestone-2-1
         name: "Prompt Store"
         description: "SQLite-backed prompt history and recall"
-        status: pending
+        status: completed
         token_estimate: large
 
         tasks:
           - id: task-2-1-1
             name: "Prompt Store schema"
             description: "SQLite schema for prompt history and embeddings"
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/store/schema.ts
@@ -201,7 +201,7 @@ phases:
           - id: task-2-1-2
             name: "Prompt Store implementation"
             description: "SQLite operations for storing and retrieving prompts"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/store/prompt-store.ts
@@ -210,14 +210,14 @@ phases:
       - id: milestone-2-2
         name: "Session Continuity"
         description: "Token tracking and automatic handoff generation"
-        status: pending
+        status: completed
         token_estimate: large
 
         tasks:
           - id: task-2-2-1
             name: "Session Manager"
             description: "Token tracking and handoff trigger at 80% threshold"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/session/manager.ts
@@ -226,7 +226,7 @@ phases:
           - id: task-2-2-2
             name: "Handoff document management"
             description: "Read/write handoff.md and narrative.md"
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/session/handoff.ts
@@ -235,14 +235,14 @@ phases:
       - id: milestone-2-3
         name: "Additional Built-in Agents"
         description: "Architect, Tester, and Security agents"
-        status: pending
+        status: in_progress
         token_estimate: xlarge
 
         tasks:
           - id: task-2-3-1
             name: "Architect agent"
             description: "Architect agent for high-level design and planning"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/agents/architect.ts
