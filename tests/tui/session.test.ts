@@ -124,6 +124,9 @@ describe("startSession", () => {
       },
     });
 
+    expect(output).toContain(
+      "Agents: [Developer] | Architect | Tester | Security",
+    );
     expect(output).toContain("Developer: Hello from Developer");
   });
 
@@ -187,10 +190,91 @@ describe("startSession", () => {
 
     expect(chatRequestCount).toBe(2);
     expect(output).toContain(
-      "Enter follow-up prompts. Type /exit or /quit to stop.",
+      "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.",
     );
     expect(output).toContain("Developer: First answer");
     expect(output).toContain("Developer: Read the note");
     expect(output).toContain("Tool 1 (file-reader): ok — tool output");
+  });
+
+  test("switches active agents with tab commands", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+    let chatRequestCount = 0;
+
+    await startSession(config, {
+      projectRoot,
+      input: [
+        "/tab",
+        "Plan architecture",
+        "/agent security",
+        "Review risk",
+        "/exit",
+      ],
+      fetchImpl: async (input, init) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+
+        chatRequestCount += 1;
+        const requestBody = JSON.parse(String(init?.body)) as {
+          messages: Array<{ role: string; content: string }>;
+        };
+
+        if (chatRequestCount === 1) {
+          expect(requestBody.messages[0]?.content).toContain("Architect agent");
+          return jsonResponse({
+            choices: [{ message: { content: "Architecture answer" } }],
+            usage: { prompt_tokens: 5, completion_tokens: 3 },
+          });
+        }
+
+        expect(requestBody.messages[0]?.content).toContain("Security agent");
+        return jsonResponse({
+          choices: [{ message: { content: "Security answer" } }],
+          usage: { prompt_tokens: 5, completion_tokens: 3 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(chatRequestCount).toBe(2);
+    expect(output).toContain(
+      "Agents: [Developer] | Architect | Tester | Security",
+    );
+    expect(output).toContain(
+      "Agents: Developer | [Architect] | Tester | Security",
+    );
+    expect(output).toContain("Architect: Architecture answer");
+    expect(output).toContain(
+      "Agents: Developer | Architect | Tester | [Security]",
+    );
+    expect(output).toContain("Security: Security answer");
+  });
+
+  test("reports unknown agent names without running a prompt", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+    let chatRequestCount = 0;
+
+    await startSession(config, {
+      projectRoot,
+      input: ["/agent unknown", "/exit"],
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+        chatRequestCount += 1;
+        return jsonResponse({ choices: [{ message: { content: "unused" } }] });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(chatRequestCount).toBe(0);
+    expect(output).toContain("Unknown agent: unknown");
   });
 });

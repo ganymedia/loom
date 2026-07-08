@@ -4,9 +4,9 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 
 ## Current phase
 
-- Phase: Phase 2 — core features
-- Current task: Agent tab switching.
-- Next unbuilt item: Agent tab switching.
+- Phase: Phase 3 — intelligence
+- Current task: Prompt assembly.
+- Next unbuilt item: Prompt assembly.
 
 ## GitHub synchronization policy
 

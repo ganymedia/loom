@@ -79,3 +79,7 @@ Decision: implement `TesterAgent` as a concrete `BaseAgent` following the Develo
 ## 2026-07-08 — Security agent
 
 Decision: implement `SecurityAgent` as a concrete `BaseAgent` following the existing built-in agent seam while preserving the Security YAML's read-only scope. The agent performs fresh backend/model discovery per turn, preserves conversation history, parses the same strict JSON tool-call envelope, permits only file reading and read-only git operations, and denies file writing, shell, web, and network-write calls per `agents/security.yaml`. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (84 passing tests). Next work is Agent tab switching.
+
+## 2026-07-08 — Agent tab switching
+
+Decision: implement Phase 2 agent switching as a session-level text tab strip and slash commands instead of an Ink `.tsx` component because the repo does not yet include Ink/React dependencies or TSX typecheck coverage. The session now starts with a visible built-in agent strip, supports `/tab`, `/agent <name>`, and `/agents`, and can switch turns across Developer, Architect, Tester, and Security while preserving the single session conversation history defined by `AgentContext`. The root-level theme/UI reference files were added to the plan for the later UI formatting/theme slice, and Biome now ignores flattened TSX references consistently with existing flattened TS references. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (89 passing tests). Phase 2 is complete; next work is Prompt assembly in Phase 3.

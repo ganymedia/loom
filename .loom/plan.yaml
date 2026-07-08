@@ -8,9 +8,9 @@ created: "2026-07-07"
 updated: "2026-07-08"
 
 # Current state
-current_phase: phase-2
-current_milestone: milestone-2-4
-current_task: task-2-4-1
+current_phase: phase-3
+current_milestone: milestone-3-1
+current_task: task-3-1-1
 
 # Token estimate labels: small, medium, large, xlarge
 # small: < 1000 tokens, medium: 1000-5000 tokens, large: 5000-20000 tokens, xlarge: > 20000 tokens
@@ -179,7 +179,7 @@ phases:
   - id: phase-2
     name: "Core Features"
     description: "Prompt Store, Session Continuity, and remaining built-in agents"
-    status: in_progress
+    status: completed
     token_estimate: xlarge
 
     milestones:
@@ -269,30 +269,33 @@ phases:
       - id: milestone-2-4
         name: "Agent Tab Switching"
         description: "TUI tab strip for switching between agents"
-        status: pending
+        status: completed
         token_estimate: medium
 
         tasks:
           - id: task-2-4-1
-            name: "Tab strip component"
-            description: "Ink component for agent tab navigation"
-            status: pending
+            name: "Agent tab switching"
+            description: "Session agent switching and tab strip formatting"
+            status: completed
             token_estimate: medium
             files:
-              - src/tui/tab-strip.tsx
-              - tests/tui/tab-strip.test.tsx
+              - src/tui/tab-strip.ts
+              - tests/tui/tab-strip.test.ts
+              - src_cli_commands_theme.ts
+              - src_tui_components.tsx
+              - src_tui_theme.ts
 
   - id: phase-3
     name: "Intelligence"
     description: "Prompt Intelligence pipeline and Project Planner"
-    status: pending
+    status: in_progress
     token_estimate: xlarge
 
     milestones:
       - id: milestone-3-1
         name: "Prompt Intelligence Pipeline"
         description: "Assembly → budget → optimization → backend request → validation → retry"
-        status: pending
+        status: in_progress
         token_estimate: xlarge
 
         tasks:

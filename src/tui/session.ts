@@ -1,13 +1,27 @@
 import { createInterface } from "node:readline/promises";
-import type { AgentMessage, AgentTurnResult } from "@loom/agents/base";
+import { ArchitectAgent } from "@loom/agents/architect";
+import type {
+  AgentMessage,
+  AgentTurnResult,
+  BaseAgent,
+} from "@loom/agents/base";
 import { DeveloperAgent } from "@loom/agents/developer";
+import { SecurityAgent } from "@loom/agents/security";
+import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
+import {
+  type BuiltInAgentName,
+  formatAgentTabStrip,
+  isBuiltInAgentName,
+  nextAgentName,
+} from "@loom/tui/tab-strip";
 
 export interface StartSessionOptions {
+  initialAgent?: BuiltInAgentName;
   backendOverride?: string;
   fetchImpl?: FetchLike;
   initialPrompt?: string;
@@ -103,8 +117,35 @@ function formatToolCallResults(turn: AgentTurnResult): string[] {
   });
 }
 
-async function runDeveloperPrompt(
-  agent: DeveloperAgent,
+function createBuiltInAgent(
+  agentName: BuiltInAgentName,
+  config: LoomConfig,
+  options: Pick<StartSessionOptions, "backendOverride" | "fetchImpl">,
+): BaseAgent {
+  const agentOptions = {
+    config,
+    ...(options.backendOverride === undefined
+      ? {}
+      : { backendOverride: options.backendOverride }),
+    ...(options.fetchImpl === undefined
+      ? {}
+      : { fetchImpl: options.fetchImpl }),
+  };
+
+  switch (agentName) {
+    case "developer":
+      return new DeveloperAgent(agentOptions);
+    case "architect":
+      return new ArchitectAgent(agentOptions);
+    case "tester":
+      return new TesterAgent(agentOptions);
+    case "security":
+      return new SecurityAgent(agentOptions);
+  }
+}
+
+async function runAgentPrompt(
+  agent: BaseAgent,
   prompt: string,
   context: {
     sessionId: string;
@@ -114,7 +155,7 @@ async function runDeveloperPrompt(
   writeOutput: (message: string) => void,
 ): Promise<void> {
   const turn = await agent.runTurn(prompt, context);
-  writeOutput(`Developer: ${turn.content}\n`);
+  writeOutput(`${agent.displayName}: ${turn.content}\n`);
   for (const toolResultLine of formatToolCallResults(turn)) {
     writeOutput(`${toolResultLine}\n`);
   }
@@ -157,15 +198,8 @@ export async function startSession(
       (options.initialPrompt === undefined && process.stdin.isTTY === true));
 
   if (shouldRunAgent) {
-    const agent = new DeveloperAgent({
-      config,
-      ...(options.backendOverride === undefined
-        ? {}
-        : { backendOverride: options.backendOverride }),
-      ...(options.fetchImpl === undefined
-        ? {}
-        : { fetchImpl: options.fetchImpl }),
-    });
+    let activeAgentName = options.initialAgent ?? "developer";
+    let agent = createBuiltInAgent(activeAgentName, config, options);
     const context = {
       sessionId: crypto.randomUUID(),
       projectRoot: options.projectRoot ?? process.cwd(),
@@ -173,11 +207,12 @@ export async function startSession(
     };
 
     try {
+      writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
       if (
         options.initialPrompt !== undefined &&
         options.initialPrompt.length > 0
       ) {
-        await runDeveloperPrompt(
+        await runAgentPrompt(
           agent,
           options.initialPrompt,
           context,
@@ -191,17 +226,40 @@ export async function startSession(
       const input =
         options.input ?? (interactive ? readStdinLines() : undefined);
       if (input !== undefined) {
-        writeOutput("Enter follow-up prompts. Type /exit or /quit to stop.\n");
+        writeOutput(
+          "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.\n",
+        );
         for await (const line of input) {
           const prompt = line.trim();
           if (prompt.length === 0) continue;
           if (prompt === "/exit" || prompt === "/quit") break;
-          await runDeveloperPrompt(agent, prompt, context, writeOutput);
+          if (prompt === "/agents") {
+            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            continue;
+          }
+          if (prompt === "/tab") {
+            activeAgentName = nextAgentName(activeAgentName);
+            agent = createBuiltInAgent(activeAgentName, config, options);
+            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            continue;
+          }
+          if (prompt.startsWith("/agent ")) {
+            const requestedAgent = prompt.slice("/agent ".length).trim();
+            if (!isBuiltInAgentName(requestedAgent)) {
+              writeOutput(`Unknown agent: ${requestedAgent}\n`);
+              continue;
+            }
+            activeAgentName = requestedAgent;
+            agent = createBuiltInAgent(activeAgentName, config, options);
+            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            continue;
+          }
+          await runAgentPrompt(agent, prompt, context, writeOutput);
         }
       }
     } catch (error) {
       writeOutput(
-        `Developer agent error: ${error instanceof Error ? error.message : String(error)}\n`,
+        `${agent.displayName} agent error: ${error instanceof Error ? error.message : String(error)}\n`,
       );
     }
   }
