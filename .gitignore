@@ -9,6 +9,7 @@ coverage/
 !.env.example
 
 # Session continuity handoff is local working state, not source history
+.loom/config.yaml
 .loom/handoff.md
 .loom/session-smoke.txt
 

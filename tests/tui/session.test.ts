@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LoomConfig } from "@loom/config/schema";
@@ -125,5 +125,72 @@ describe("startSession", () => {
     });
 
     expect(output).toContain("Developer: Hello from Developer");
+  });
+
+  test("runs follow-up turns with history and visible tool-call results", async () => {
+    const projectRoot = await tempProject();
+    await writeFile(join(projectRoot, "note.txt"), "tool output", "utf8");
+    let output = "";
+    let chatRequestCount = 0;
+
+    await startSession(config, {
+      projectRoot,
+      initialPrompt: "First turn",
+      input: ["Read note.txt", "/exit"],
+      fetchImpl: async (input, init) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+
+        chatRequestCount += 1;
+        const requestBody = JSON.parse(String(init?.body)) as {
+          messages: Array<{ role: string; content: string }>;
+        };
+
+        if (chatRequestCount === 1) {
+          expect(requestBody.messages).toEqual([
+            expect.objectContaining({ role: "system" }),
+            { role: "user", content: "First turn" },
+          ]);
+          return jsonResponse({
+            choices: [{ message: { content: "First answer" } }],
+            usage: { prompt_tokens: 5, completion_tokens: 3 },
+          });
+        }
+
+        expect(requestBody.messages).toEqual([
+          expect.objectContaining({ role: "system" }),
+          { role: "user", content: "First turn" },
+          { role: "assistant", content: "First answer" },
+          { role: "user", content: "Read note.txt" },
+        ]);
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  content: "Read the note",
+                  toolCalls: [
+                    { tool: "file-reader", args: { path: "note.txt" } },
+                  ],
+                }),
+              },
+            },
+          ],
+          usage: { prompt_tokens: 8, completion_tokens: 4 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(chatRequestCount).toBe(2);
+    expect(output).toContain(
+      "Enter follow-up prompts. Type /exit or /quit to stop.",
+    );
+    expect(output).toContain("Developer: First answer");
+    expect(output).toContain("Developer: Read the note");
+    expect(output).toContain("Tool 1 (file-reader): ok — tool output");
   });
 });
