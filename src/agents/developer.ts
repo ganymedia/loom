@@ -16,6 +16,8 @@ import type {
 import { isToolPermitted } from "@loom/tools/base";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
+import { gitOpsTool } from "@loom/tools/git-ops";
+import { shellTool } from "@loom/tools/shell";
 
 interface DeveloperToolCallRequest {
   tool: string;
@@ -71,7 +73,12 @@ export class DeveloperAgent extends BaseAgent {
   readonly displayName = "Developer";
   readonly systemPrompt =
     "You are LOOM's Developer agent. Help implement scoped code changes, prefer clear failures over silent behavior, and never expose secrets.";
-  readonly tools: ToolDefinition[] = [fileReaderTool, fileWriterTool];
+  readonly tools: ToolDefinition[] = [
+    fileReaderTool,
+    fileWriterTool,
+    shellTool,
+    gitOpsTool,
+  ];
   readonly subAgentRules = [];
   readonly modelPreferences: Array<{
     backend: string;
@@ -96,7 +103,7 @@ export class DeveloperAgent extends BaseAgent {
     result: ToolResult;
   }> {
     const policy: ToolAccessPolicy = {
-      capabilities: ["file-read", "file-write"],
+      capabilities: ["file-read", "file-write", "shell-exec", "git-ops"],
       allowed: this.tools.map((tool) => tool.name),
       denied: [],
     };

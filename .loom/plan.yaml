@@ -1,96 +1,459 @@
-version: 1
-project: LOOM
-current_phase: phase-1-foundation
+# LOOM Build Plan
+# This file tracks LOOM's own build progress using the plan.yaml schema
+# that will be used for all projects managed by LOOM.
+
+name: LOOM
+version: "0.1.0"
+created: "2026-07-07"
+updated: "2026-07-07"
+
+# Current state
+current_phase: phase-1
+current_milestone: milestone-1-5
+current_task: task-1-5-3
+
+# Token estimate labels: small, medium, large, xlarge
+# small: < 1000 tokens, medium: 1000-5000 tokens, large: 5000-20000 tokens, xlarge: > 20000 tokens
+
 phases:
-  - id: phase-1-foundation
-    title: Phase 1 — foundation
-    status: active
+  - id: phase-1
+    name: "Foundation"
+    description: "Core infrastructure: config, backends, CLI, basic TUI, and file tools"
+    exit_criterion: "loom opens, talks to a real vLLM endpoint, and reads/writes real files"
+    status: in_progress
+    token_estimate: large
+
     milestones:
-      - id: phase-1-layout
-        title: Canonical project layout
-        status: done
+      - id: milestone-1-1
+        name: "Config System"
+        description: "Zod schema and layered config loader (global → project → env)"
+        status: completed
+        token_estimate: medium
+
         tasks:
-          - id: phase-1-layout-canonical-files
-            title: Create canonical source tree while retaining flattened reference files
-            status: done
-            token_estimate: medium
-          - id: phase-1-layout-build-config
-            title: Add package, TypeScript, and Biome configuration
-            status: done
+          - id: task-1-1-1
+            name: "Config schema"
+            description: "Zod schemas for backend, profile, and full LOOM config"
+            status: completed
             token_estimate: small
-      - id: phase-1-config
-        title: Config schema and layered loader
-        status: done
+            files:
+              - src/config/schema.ts
+              - tests/config/schema.test.ts
+
+          - id: task-1-1-2
+            name: "Config loader"
+            description: "Layered config loader with global, project, and env overrides"
+            status: completed
+            token_estimate: medium
+            files:
+              - src/config/loader.ts
+              - tests/config/loader.test.ts
+
+      - id: milestone-1-2
+        name: "Backend Discovery"
+        description: "Model discovery and backend routing"
+        status: completed
+        token_estimate: medium
+
         tasks:
-          - id: phase-1-config-schema
-            title: Implement Zod config schema
-            status: done
+          - id: task-1-2-1
+            name: "Model discovery"
+            description: "GET /v1/models endpoint discovery with error handling"
+            status: completed
             token_estimate: medium
-          - id: phase-1-config-loader
-            title: Implement global/project/env config loader
-            status: done
-            token_estimate: medium
-      - id: phase-1-backends
-        title: Backend discovery and router
-        status: done
-        tasks:
-          - id: phase-1-backends-discovery
-            title: Implement OpenAI-compatible model discovery and model resolution
-            status: done
-            token_estimate: medium
-          - id: phase-1-backends-router
-            title: Implement backend router for active profile and backend overrides
-            status: done
-            token_estimate: medium
-      - id: phase-1-tools
-        title: File read/write tools
-        status: done
-        tasks:
-          - id: phase-1-tools-file-reader
-            title: Implement project-root-safe file reader tool
-            status: done
+            files:
+              - src/backends/discovery.ts
+              - tests/backends/discovery.test.ts
+
+          - id: task-1-2-2
+            name: "Backend router"
+            description: "Backend key resolution and model selection"
+            status: completed
             token_estimate: small
-          - id: phase-1-tools-file-writer
-            title: Implement project-root-safe file writer tool
-            status: done
-            token_estimate: small
-      - id: phase-1-cli-tui
-        title: CLI skeleton and basic TUI
-        status: active
+            files:
+              - src/backends/router.ts
+              - tests/backends/router.test.ts
+
+      - id: milestone-1-3
+        name: "CLI Skeleton"
+        description: "Commander.js setup with subcommand registration"
+        status: completed
+        token_estimate: medium
+
         tasks:
-          - id: phase-1-cli-skeleton
-            title: Implement thin Commander entry point and config subcommand
-            status: done
+          - id: task-1-3-1
+            name: "CLI entry point"
+            description: "Thin index.ts with config loading and subcommand registration"
+            status: completed
             token_estimate: small
-          - id: phase-1-tui-developer
-            title: Implement basic Developer-agent TUI placeholder
-            status: done
+            files:
+              - src/index.ts
+
+          - id: task-1-3-2
+            name: "Config subcommand"
+            description: "loom config command for inspecting configuration"
+            status: completed
+            token_estimate: small
+            files:
+              - src/cli/commands/config.ts
+
+      - id: milestone-1-4
+        name: "Developer Agent and File Tools"
+        description: "Developer agent with file read/write tools and path safety"
+        status: in_progress
+        token_estimate: large
+
+        tasks:
+          - id: task-1-4-1
+            name: "File read/write tools"
+            description: "File reader and writer tools with path safety boundaries"
+            status: completed
             token_estimate: medium
-          - id: phase-1-tui-smoke
-            title: Wire TUI startup smoke path to backend router and file tools
-            status: done
+            files:
+              - src/tools/file-reader.ts
+              - src/tools/file-writer.ts
+              - src/tools/path-safety.ts
+              - tests/tools/file-reader.test.ts
+              - tests/tools/file-writer.test.ts
+
+          - id: task-1-4-2
+            name: "Developer agent"
+            description: "Developer agent with tool call parsing and execution"
+            status: completed
+            token_estimate: large
+            files:
+              - src/agents/developer.ts
+              - tests/agents/developer.test.ts
+
+          - id: task-1-4-3
+            name: "Shell tool"
+            description: "Shell execution tool with path safety and command restrictions"
+            status: completed
             token_estimate: medium
-          - id: phase-1-developer-one-turn
-            title: Implement one-turn Developer agent prompt path against resolved backend
-            status: done
+            files:
+              - src/tools/shell.ts
+              - tests/tools/shell.test.ts
+
+          - id: task-1-4-4
+            name: "Git operations tool"
+            description: "Git operations tool with path safety and command restrictions"
+            status: completed
             token_estimate: medium
-          - id: phase-1-tui-interactive-loop
-            title: Implement interactive TUI loop and visible tool-call results
+            files:
+              - src/tools/git-ops.ts
+              - tests/tools/git-ops.test.ts
+
+      - id: milestone-1-5
+        name: "Basic TUI"
+        description: "TUI placeholder with smoke test and single-turn execution"
+        status: completed
+        token_estimate: medium
+
+        tasks:
+          - id: task-1-5-1
+            name: "TUI smoke test"
+            description: "Session smoke test for backend and file operations"
+            status: completed
+            token_estimate: medium
+            files:
+              - src/tui/session.ts
+              - tests/tui/session.test.ts
+
+          - id: task-1-5-2
+            name: "Single-turn prompt execution"
+            description: "--prompt flag for single Developer agent turn"
+            status: completed
+            token_estimate: small
+            files:
+              - src/tui/session.ts
+
+          - id: task-1-5-3
+            name: "Interactive TUI loop"
+            description: "Follow-up turns and visible tool-call results in the TUI/session path"
             status: pending
             token_estimate: large
-          - id: phase-1-developer-file-tools
-            title: Execute constrained Developer file tool calls from model response envelope
-            status: done
+            files:
+              - src/tui/session.ts
+              - tests/tui/session.test.ts
+
+  - id: phase-2
+    name: "Core Features"
+    description: "Prompt Store, Session Continuity, and remaining built-in agents"
+    status: pending
+    token_estimate: xlarge
+
+    milestones:
+      - id: milestone-2-1
+        name: "Prompt Store"
+        description: "SQLite-backed prompt history and recall"
+        status: pending
+        token_estimate: large
+
+        tasks:
+          - id: task-2-1-1
+            name: "Prompt Store schema"
+            description: "SQLite schema for prompt history and embeddings"
+            status: pending
             token_estimate: medium
-  - id: phase-2-core-features
-    title: Phase 2 — core features
+            files:
+              - src/store/schema.ts
+
+          - id: task-2-1-2
+            name: "Prompt Store implementation"
+            description: "SQLite operations for storing and retrieving prompts"
+            status: pending
+            token_estimate: large
+            files:
+              - src/store/prompt-store.ts
+              - tests/store/prompt-store.test.ts
+
+      - id: milestone-2-2
+        name: "Session Continuity"
+        description: "Token tracking and automatic handoff generation"
+        status: pending
+        token_estimate: large
+
+        tasks:
+          - id: task-2-2-1
+            name: "Session Manager"
+            description: "Token tracking and handoff trigger at 80% threshold"
+            status: pending
+            token_estimate: large
+            files:
+              - src/session/manager.ts
+              - tests/session/manager.test.ts
+
+          - id: task-2-2-2
+            name: "Handoff document management"
+            description: "Read/write handoff.md and narrative.md"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/session/handoff.ts
+              - tests/session/handoff.test.ts
+
+      - id: milestone-2-3
+        name: "Additional Built-in Agents"
+        description: "Architect, Tester, and Security agents"
+        status: pending
+        token_estimate: xlarge
+
+        tasks:
+          - id: task-2-3-1
+            name: "Architect agent"
+            description: "Architect agent for high-level design and planning"
+            status: pending
+            token_estimate: large
+            files:
+              - src/agents/architect.ts
+              - tests/agents/architect.test.ts
+
+          - id: task-2-3-2
+            name: "Tester agent"
+            description: "Tester agent for test generation and execution"
+            status: pending
+            token_estimate: large
+            files:
+              - src/agents/tester.ts
+              - tests/agents/tester.test.ts
+
+          - id: task-2-3-3
+            name: "Security agent"
+            description: "Security agent for code review and vulnerability detection"
+            status: pending
+            token_estimate: large
+            files:
+              - src/agents/security.ts
+              - tests/agents/security.test.ts
+
+      - id: milestone-2-4
+        name: "Agent Tab Switching"
+        description: "TUI tab strip for switching between agents"
+        status: pending
+        token_estimate: medium
+
+        tasks:
+          - id: task-2-4-1
+            name: "Tab strip component"
+            description: "Ink component for agent tab navigation"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/tui/tab-strip.tsx
+              - tests/tui/tab-strip.test.tsx
+
+  - id: phase-3
+    name: "Intelligence"
+    description: "Prompt Intelligence pipeline and Project Planner"
     status: pending
-    milestones: []
-  - id: phase-3-intelligence
-    title: Phase 3 — intelligence
+    token_estimate: xlarge
+
+    milestones:
+      - id: milestone-3-1
+        name: "Prompt Intelligence Pipeline"
+        description: "Assembly → budget → optimization → backend request → validation → retry"
+        status: pending
+        token_estimate: xlarge
+
+        tasks:
+          - id: task-3-1-1
+            name: "Prompt assembly"
+            description: "Context assembly and token budget management"
+            status: pending
+            token_estimate: large
+            files:
+              - src/prompt/assembly.ts
+              - tests/prompt/assembly.test.ts
+
+          - id: task-3-1-2
+            name: "Prompt optimization"
+            description: "Context compression and prompt optimization"
+            status: pending
+            token_estimate: large
+            files:
+              - src/prompt/optimization.ts
+              - tests/prompt/optimization.test.ts
+
+          - id: task-3-1-3
+            name: "Retry loop"
+            description: "Structured retry with exponential backoff"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/prompt/retry.ts
+              - tests/prompt/retry.test.ts
+
+      - id: milestone-3-2
+        name: "Project Planner"
+        description: "plan.yaml schema and loom plan * commands"
+        status: pending
+        token_estimate: large
+
+        tasks:
+          - id: task-3-2-1
+            name: "Plan.yaml schema"
+            description: "Zod schema for plan.yaml structure"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/planner/schema.ts
+
+          - id: task-3-2-2
+            name: "Plan parser"
+            description: "Plan.yaml parsing and validation"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/planner/parser.ts
+              - tests/planner/parser.test.ts
+
+          - id: task-3-2-3
+            name: "Plan commands"
+            description: "loom plan * subcommands (decompose, status, etc.)"
+            status: pending
+            token_estimate: large
+            files:
+              - src/cli/commands/plan.ts
+              - tests/cli/commands/plan.test.ts
+
+  - id: phase-4
+    name: "Platform"
+    description: "Pipeline engine, sub-agent runtime, Foundry client, and recall/log commands"
     status: pending
-    milestones: []
-  - id: phase-4-platform
-    title: Phase 4 — platform
-    status: pending
-    milestones: []
+    token_estimate: xlarge
+
+    milestones:
+      - id: milestone-4-1
+        name: "Pipeline Engine"
+        description: ".loom YAML parser and stage executors"
+        status: pending
+        token_estimate: xlarge
+
+        tasks:
+          - id: task-4-1-1
+            name: "Pipeline parser"
+            description: ".loom YAML parsing and validation"
+            status: pending
+            token_estimate: large
+            files:
+              - src/pipeline/parser.ts
+              - tests/pipeline/parser.test.ts
+
+          - id: task-4-1-2
+            name: "Stage executors"
+            description: "Five stage executors (prompt, transform, branch, parallel, inject)"
+            status: pending
+            token_estimate: xlarge
+            files:
+              - src/pipeline/executors/prompt.ts
+              - src/pipeline/executors/transform.ts
+              - src/pipeline/executors/branch.ts
+              - src/pipeline/executors/parallel.ts
+              - src/pipeline/executors/inject.ts
+              - tests/pipeline/executors/*.test.ts
+
+          - id: task-4-1-3
+            name: "DAG walker"
+            description: "Pipeline execution with dependency resolution"
+            status: pending
+            token_estimate: large
+            files:
+              - src/pipeline/dag-walker.ts
+              - tests/pipeline/dag-walker.test.ts
+
+      - id: milestone-4-2
+        name: "Sub-agent Runtime"
+        description: "Sub-agent spawning and lifecycle management"
+        status: pending
+        token_estimate: large
+
+        tasks:
+          - id: task-4-2-1
+            name: "Sub-agent runner"
+            description: "Sub-agent spawning and context passing"
+            status: pending
+            token_estimate: large
+            files:
+              - src/agents/sub-agent-runner.ts
+              - tests/agents/sub-agent-runner.test.ts
+
+      - id: milestone-4-3
+        name: "Foundry Client"
+        description: "Foundry HTTP client for publish/install/search"
+        status: pending
+        token_estimate: large
+
+        tasks:
+          - id: task-4-3-1
+            name: "Foundry HTTP client"
+            description: "HTTP client for Foundry package registry"
+            status: pending
+            token_estimate: large
+            files:
+              - src/foundry/client.ts
+              - tests/foundry/client.test.ts
+
+      - id: milestone-4-4
+        name: "Recall and Log Commands"
+        description: "Prompt history recall and logging commands"
+        status: pending
+        token_estimate: medium
+
+        tasks:
+          - id: task-4-4-1
+            name: "Recall command"
+            description: "Cosine-similarity recall from Prompt Store"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/cli/commands/recall.ts
+              - tests/cli/commands/recall.test.ts
+
+          - id: task-4-4-2
+            name: "Log command"
+            description: "Prompt history logging and retrieval"
+            status: pending
+            token_estimate: medium
+            files:
+              - src/cli/commands/log.ts
+              - tests/cli/commands/log.test.ts

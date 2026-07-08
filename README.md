@@ -71,12 +71,14 @@ For Phase 1, the Developer agent can execute a constrained JSON response envelop
   "content": "Short human-readable response",
   "toolCalls": [
     { "tool": "file-reader", "args": { "path": "README.md" } },
-    { "tool": "file-writer", "args": { "path": "notes.txt", "content": "hello" } }
+    { "tool": "file-writer", "args": { "path": "notes.txt", "content": "hello" } },
+    { "tool": "shell", "args": { "command": "ls", "args": ["src"] } },
+    { "tool": "git-ops", "args": { "command": "status", "args": ["--short"] } }
   ]
 }
 ```
 
-Only `file-reader` and `file-writer` are registered. LOOM injects the current `projectRoot`; model-provided `projectRoot` values are ignored. Unknown or denied tools are returned as failed tool results and are not executed.
+The Developer agent currently registers `file-reader`, `file-writer`, `shell`, and `git-ops`. LOOM injects the current `projectRoot`; model-provided `projectRoot` values are ignored. Unknown or denied tools are returned as failed tool results and are not executed.
 
 Verification against a configured local vLLM endpoint:
 
@@ -87,14 +89,17 @@ bun test
 bun src/index.ts --prompt "Say hello"
 ```
 
-## File tool constraints
+## Tool constraints
 
-The Phase 1 file tools are intentionally narrow:
+The Phase 1 tools are intentionally narrow:
 
 - `file-reader` reads UTF-8 files inside the resolved project root.
 - `file-writer` writes UTF-8 files inside the resolved project root.
 - Both tools reject path traversal outside the project root.
 - `file-writer` requires the target parent directory to already exist; it does not create directory trees implicitly.
+- `shell` executes argv-based read-only inspection commands only: `pwd`, `ls`, `cat`, `grep`, `find`, and `wc`.
+- `git-ops` executes argv-based read-only Git commands only: `status`, `diff`, `log`, `show`, `branch`, `rev-parse`, and `ls-files`.
+- `shell` and `git-ops` reject absolute-path arguments, parent-directory traversal, NUL bytes, excessive output, and timeouts.
 - Runtime smoke state is written to `.loom/session-smoke.txt`, which is ignored by Git.
 
-These constraints are deliberate least-privilege behavior. Add an explicit directory-creation tool and policy before allowing agents to create directories.
+These constraints are deliberate least-privilege behavior. Add an explicit tool and policy before allowing agents to create directories, mutate Git state, run network commands, or execute arbitrary shell commands.

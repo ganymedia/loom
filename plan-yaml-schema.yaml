@@ -1,0 +1,158 @@
+# Plan.yaml Schema
+# Schema for LOOM project planning documents
+#
+# This schema defines the structure for plan.yaml files used by LOOM's Project Planner.
+# Plan files track project progress through phases, milestones, and tasks.
+
+plan_yaml:
+  type: object
+  description: "Root plan.yaml structure"
+  required:
+    - name
+    - version
+    - phases
+  properties:
+    name:
+      type: string
+      description: "Project name"
+    version:
+      type: string
+      description: "Plan version"
+    created:
+      type: string
+      description: "Creation date in ISO format"
+      format: date
+    updated:
+      type: string
+      description: "Last update date in ISO format"
+      format: date
+    current_phase:
+      type: string
+      description: "ID of the current phase"
+    current_milestone:
+      type: string
+      description: "ID of the current milestone"
+    current_task:
+      type: string
+      description: "ID of the current task"
+    phases:
+      type: array
+      description: "List of project phases"
+      items:
+        type: object
+        required:
+          - id
+          - name
+          - description
+          - exit_criterion
+          - milestones
+        properties:
+          id:
+            type: string
+            description: "Unique phase identifier"
+          name:
+            type: string
+            description: "Phase name"
+          description:
+            type: string
+            description: "Phase description"
+          exit_criterion:
+            type: string
+            description: "Criteria for completing this phase"
+          status:
+            type: string
+            enum:
+              - pending
+              - in_progress
+              - completed
+              - blocked
+            default: pending
+          token_estimate:
+            type: string
+            enum:
+              - small
+              - medium
+              - large
+              - xlarge
+            description: "Estimated token budget for this phase"
+          milestones:
+            type: array
+            description: "List of milestones in this phase"
+            items:
+              type: object
+              required:
+                - id
+                - name
+                - description
+                - tasks
+              properties:
+                id:
+                  type: string
+                  description: "Unique milestone identifier"
+                name:
+                  type: string
+                  description: "Milestone name"
+                description:
+                  type: string
+                  description: "Milestone description"
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - in_progress
+                    - completed
+                    - blocked
+                  default: pending
+                token_estimate:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                    - xlarge
+                  description: "Estimated token budget for this milestone"
+                tasks:
+                  type: array
+                  description: "List of tasks in this milestone"
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - name
+                      - description
+                    properties:
+                      id:
+                        type: string
+                        description: "Unique task identifier"
+                      name:
+                        type: string
+                        description: "Task name"
+                      description:
+                        type: string
+                        description: "Task description"
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - in_progress
+                          - completed
+                          - blocked
+                        default: pending
+                      token_estimate:
+                        type: string
+                        enum:
+                          - small
+                          - medium
+                          - large
+                          - xlarge
+                        description: "Estimated token budget for this task"
+                      files:
+                        type: array
+                        description: "Files affected by this task"
+                        items:
+                          type: string
+                      dependencies:
+                        type: array
+                        description: "Task dependencies"
+                        items:
+                          type: string

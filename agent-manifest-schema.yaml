@@ -1,0 +1,261 @@
+# Agent Package Manifest Schema
+# Two-schema YAML format for LOOM agent packages
+#
+# This schema defines the structure for agent package manifests used by LOOM.
+# There are two types of manifests:
+# 1. Primary agent manifest (for standalone agents)
+# 2. Sub-agent manifest (for agents spawned by other agents)
+
+# Primary Agent Manifest Schema
+# ===============================
+# Used for: Agent packages installed from Foundry or built-in agents
+# Location: agent package root as `agent.yaml`
+
+primary_agent_manifest:
+  type: object
+  required:
+    - package
+    - agent
+    - model
+    - tools
+  properties:
+    package:
+      type: object
+      description: "Package metadata for distribution"
+      required:
+        - name
+        - version
+        - description
+      properties:
+        name:
+          type: string
+          description: "Unique package identifier"
+          pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+        version:
+          type: string
+          description: "Semantic version"
+          pattern: "^\\d+\\.\\d+\\.\\d+$"
+        description:
+          type: string
+          description: "Short description of the agent"
+        author:
+          type: string
+          description: "Package author"
+        license:
+          type: string
+          description: "Package license"
+        repository:
+          type: string
+          description: "Source repository URL"
+
+    agent:
+      type: object
+      description: "Agent configuration"
+      required:
+        - name
+        - display_name
+        - system_prompt
+      properties:
+        name:
+          type: string
+          description: "Internal agent identifier"
+        display_name:
+          type: string
+          description: "Human-readable name for display"
+        system_prompt:
+          type: string
+          description: "System prompt for the agent"
+        description:
+          type: string
+          description: "Agent capabilities and limitations"
+        version:
+          type: string
+          description: "Agent-specific version"
+
+    model:
+      type: object
+      description: "Model preferences and requirements"
+      required:
+        - preferred
+      properties:
+        preferred:
+          type: array
+          description: "Preferred models in order of preference"
+          items:
+            type: string
+        required_capabilities:
+          type: array
+          description: "Required model capabilities"
+          items:
+            type: string
+        min_context_window:
+          type: integer
+          description: "Minimum context window size in tokens"
+
+    tools:
+      type: object
+      description: "Tool access policy"
+      required:
+        - allowed
+        - denied
+      properties:
+        allowed:
+          type: array
+          description: "Tools this agent can use"
+          items:
+            type: string
+        denied:
+          type: array
+          description: "Tools this agent cannot use"
+          items:
+            type: string
+        capabilities:
+          type: array
+          description: "Required capabilities"
+          items:
+            type: string
+            enum:
+              - file-read
+              - file-write
+              - file-delete
+              - shell-exec
+              - web-search
+              - git-ops
+              - network-read
+              - network-write
+              - process-spawn
+              - env-read
+
+    sub_agents:
+      type: array
+      description: "Sub-agent spawn rules"
+      items:
+        type: object
+        required:
+          - ref
+          - trigger
+          - pass_context
+        properties:
+          ref:
+            type: string
+            description: "Reference to sub-agent package"
+          trigger:
+            type: object
+            description: "Trigger conditions for spawning"
+            required:
+              - type
+            properties:
+              type:
+                type: string
+                enum:
+                  - session-start
+                  - file-write
+                  - milestone
+              file_match:
+                type: string
+                description: "File pattern to match"
+              condition:
+                type: string
+                description: "Additional condition"
+          pass_context:
+            type: array
+            description: "Context keys to pass to sub-agent"
+            items:
+              type: string
+
+    handoff:
+      type: object
+      description: "Handoff configuration"
+      properties:
+        auto_generate:
+          type: boolean
+          description: "Whether to auto-generate handoff summaries"
+          default: true
+        include_conversation:
+          type: boolean
+          description: "Whether to include conversation history"
+          default: false
+        max_history_length:
+          type: integer
+          description: "Maximum conversation history to include"
+          default: 10
+
+# Sub-agent Manifest Schema
+# =========================
+# Used for: Agents spawned by other agents
+# Location: sub-agent package root as `sub-agent.yaml`
+
+sub_agent_manifest:
+  type: object
+  description: "Manifest for sub-agents"
+  required:
+    - package
+    - agent
+    - model
+    - tools
+  properties:
+    package:
+      type: object
+      description: "Package metadata"
+      required:
+        - name
+        - version
+        - description
+      properties:
+        name:
+          type: string
+          description: "Unique package identifier"
+        version:
+          type: string
+          description: "Semantic version"
+        description:
+          type: string
+          description: "Short description"
+
+    agent:
+      type: object
+      description: "Agent configuration"
+      required:
+        - name
+        - display_name
+        - system_prompt
+      properties:
+        name:
+          type: string
+          description: "Internal agent identifier"
+        display_name:
+          type: string
+          description: "Human-readable name"
+        system_prompt:
+          type: string
+          description: "System prompt"
+
+    model:
+      type: object
+      description: "Model preferences"
+      required:
+        - preferred
+      properties:
+        preferred:
+          type: array
+          description: "Preferred models"
+          items:
+            type: string
+
+    tools:
+      type: object
+      description: "Tool access policy"
+      required:
+        - allowed
+        - denied
+      properties:
+        allowed:
+          type: array
+          description: "Allowed tools"
+          items:
+            type: string
+        denied:
+          type: array
+          description: "Denied tools"
+          items:
+            type: string

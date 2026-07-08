@@ -5,7 +5,7 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 ## Current phase
 
 - Phase: Phase 1 — foundation
-- Current task: constrained Developer agent file tool-call execution.
+- Current task: interactive TUI loop with follow-up turns and visible tool-call results.
 - Next unbuilt item: interactive TUI loop with follow-up turns and visible tool-call results.
 
 ## GitHub synchronization policy

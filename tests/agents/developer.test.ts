@@ -122,8 +122,8 @@ describe("DeveloperAgent", () => {
             {
               message: {
                 content: JSON.stringify({
-                  content: "Trying shell",
-                  toolCalls: [{ tool: "shell", args: { command: "whoami" } }],
+                  content: "Trying unknown tool",
+                  toolCalls: [{ tool: "network-write", args: {} }],
                 }),
               },
             },
@@ -132,9 +132,9 @@ describe("DeveloperAgent", () => {
       },
     });
 
-    const result = await agent.runTurn("Run shell", context);
+    const result = await agent.runTurn("Run unknown tool", context);
 
-    expect(result.content).toBe("Trying shell");
+    expect(result.content).toBe("Trying unknown tool");
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0]?.result.success).toBe(false);
     expect(result.toolCalls[0]?.result.error).toContain("not permitted");
