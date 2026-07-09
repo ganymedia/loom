@@ -13,13 +13,19 @@ export const profileConfigSchema = z.object({
   defaultBackend: z.string().min(1).optional(),
 });
 
+export const defaultsConfigSchema = z.object({
+  theme: z.string().min(1).default("loom-dark"),
+});
+
 export const loomConfigSchema = z.object({
   activeProfile: z.string().min(1).default("default"),
+  defaults: defaultsConfigSchema.default({ theme: "loom-dark" }),
   profiles: z.record(profileConfigSchema).default({ default: {} }),
   backends: z.record(backendConfigSchema).default({}),
 });
 
 export type BackendType = z.infer<typeof backendTypeSchema>;
 export type BackendConfig = z.infer<typeof backendConfigSchema>;
+export type DefaultsConfig = z.infer<typeof defaultsConfigSchema>;
 export type ProfileConfig = z.infer<typeof profileConfigSchema>;
 export type LoomConfig = z.infer<typeof loomConfigSchema>;

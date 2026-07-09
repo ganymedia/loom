@@ -56,6 +56,7 @@ describe("pipeline stage executors", () => {
     const executor = new PromptStageExecutor({
       config: {
         activeProfile: "default",
+        defaults: { theme: "loom-dark" },
         profiles: { default: { defaultBackend: "local" } },
         backends: {
           local: {

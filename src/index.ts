@@ -3,6 +3,7 @@ import { registerConfigCommand } from "@loom/cli/commands/config";
 import { registerLogCommand } from "@loom/cli/commands/log";
 import { registerPlanCommand } from "@loom/cli/commands/plan";
 import { registerRecallCommand } from "@loom/cli/commands/recall";
+import { registerThemeCommand } from "@loom/cli/commands/theme";
 import { loadConfig } from "@loom/config/loader";
 import { Command } from "commander";
 
@@ -43,6 +44,7 @@ async function main(): Promise<void> {
   registerLogCommand(program);
   registerPlanCommand(program);
   registerRecallCommand(program);
+  registerThemeCommand(program, config);
 
   const hasSubcommand = program.commands.some((command) =>
     args.includes(command.name()),

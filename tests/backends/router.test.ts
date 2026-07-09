@@ -14,6 +14,7 @@ function jsonResponse(body: unknown): Response {
 
 const config: LoomConfig = {
   activeProfile: "default",
+  defaults: { theme: "loom-dark" },
   profiles: {
     default: { defaultBackend: "local" },
   },

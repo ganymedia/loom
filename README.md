@@ -73,6 +73,18 @@ bun src/index.ts plan done <task-id>
 
 `plan status` prints a non-secret JSON summary of the current phase, milestone, task, and task counts. `plan done <task-id>` marks that task completed, advances to the next pending task, and writes the updated plan back to `.loom/plan.yaml`. `plan decompose <task-id>` is reserved for future decomposition logic and currently fails loudly instead of guessing.
 
+## Theme management
+
+Theme commands manage the project TUI theme through `.loom/config.yaml`:
+
+```bash
+bun src/index.ts theme list
+bun src/index.ts theme preview [theme-id]
+bun src/index.ts theme use <theme-id>
+```
+
+`theme list` prints built-in themes and marks the active one. `theme preview` prints a theme description and color tokens without changing config. `theme use` writes `defaults.theme`; unknown IDs fall back to `loom-dark` through the theme resolver.
+
 ## Prompt Store commands
 
 Prompt Store CLI commands emit JSON and use the project-local `.loom/prompt-store.sqlite` database:

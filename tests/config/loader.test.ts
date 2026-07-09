@@ -18,6 +18,7 @@ describe("loadConfig", () => {
     });
 
     expect(config.activeProfile).toBe("default");
+    expect(config.defaults.theme).toBe("loom-dark");
     expect(config.profiles.default).toEqual({});
   });
 
@@ -41,6 +42,8 @@ describe("loadConfig", () => {
       join(projectRoot, ".loom", "config.yaml"),
       [
         "activeProfile: default",
+        "defaults:",
+        "  theme: high-contrast",
         "profiles:",
         "  default:",
         "    defaultBackend: local",
@@ -55,6 +58,7 @@ describe("loadConfig", () => {
     const config = await loadConfig({ projectRoot, env: {} });
 
     expect(config.profiles.default?.defaultBackend).toBe("local");
+    expect(config.defaults.theme).toBe("high-contrast");
     expect(config.backends.local?.baseUrl).toBe("http://127.0.0.1:8000");
   });
 });

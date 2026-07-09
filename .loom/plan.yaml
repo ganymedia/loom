@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-3
-current_task: t5-3-4
+current_task: t5-3-5
 phases:
   - id: phase-1
     name: Foundation
@@ -607,7 +607,7 @@ phases:
               theme list/use/preview
             description: Promote the flattened theme CLI reference into a registered command
               group.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/cli/commands/theme.ts
@@ -643,7 +643,7 @@ phases:
             name: Add defaults.theme field to config schema
             description: Add a defaults.theme config field with default loom-dark per the
               prior spec note.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/config/schema.ts
