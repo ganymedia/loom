@@ -139,3 +139,23 @@ Sub-agent/support-doc cleanup was committed as `95fc427`. Foundry HTTP client an
 ## 2026-07-09 — Log command
 
 Decision: implement `loom log` as a small JSON-emitting command group over the existing Prompt Store public API, with `session` to create a session, `add` to record a prompt event, and `show` to retrieve ordered session history. This avoids adding storage APIs or embedding behavior beyond the current Prompt Store contract while still covering prompt history logging and retrieval. The command validates roles and non-negative numeric fields, uses discovered model names only as caller-provided event metadata, opens the project-local `.loom/prompt-store.sqlite`, and closes the store after each operation. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (155 passing tests). `task-4-4-2` is marked completed; there is no next pending task in the current `.loom/plan.yaml`.
+
+## 2026-07-09 — Phase 5 plan activation and repository-state audit
+
+Decision: activate Phase 5 from `support_docs/PHASE-5-ADDENDUM.yaml` because the original `.loom/plan.yaml` had 34/34 tasks complete while the updated spec identifies unverified claims and unbuilt production-readiness work. The raw addendum was copied to root as `PHASE-5-ADDENDUM.yaml`; `.loom/plan.yaml` received a schema-compatible Phase 5 translation using existing status and dependency fields. `git status` at task `t5-1-1` showed only operator-provided planning/spec inputs as uncommitted (`support_docs/KICKOFF.md`, `support_docs/SPEC.md`, and `support_docs/PHASE-5-ADDENDUM.yaml`) plus the new root addendum and plan/narrative edits from this session. No implementation work was dirty before Phase 5 began. These uncommitted planning docs are intentionally carried forward as active task inputs rather than treated as failed or incomplete code.
+
+## 2026-07-09 — Foundry API timing audit
+
+Finding: root `foundry-api.md` did not exist when `src/foundry/client.ts` first entered Git, but `support_docs/foundry-api.md` existed in commit `95fc427` before the Foundry client was committed in `639dc4e`. The narrative entry for the Foundry HTTP client explicitly says it was implemented against `support_docs/foundry-api.md`, so the client was not built with the API reference absent from the working tree. Because the updated Phase 5 spec now treats root `foundry-api.md` as authoritative, `t5-2-5` still must re-verify `src/foundry/` against the root file and fix any drift.
+
+## 2026-07-09 — SPEC section 7 reconciliation
+
+Finding: the updated Section 7 initially disagreed with the filesystem: root `prompt-intelligence.config.toml` and `KICKOFF.md` were missing, while root `foundry-api.md`, `foundry-server.toml`, `loom-config.toml`, and `loom-tests.yaml` were present but still described as missing. The missing root files were copied byte-for-byte from `support_docs/`, `support_docs/SPEC.md` was corrected to list all current root reference paths, and root `SPEC.md` was replaced with the corrected support spec so session-start agents read the same Phase 5 guidance. A final glob confirmed every Section 7 exact root path exists.
+
+## 2026-07-09 — Phase 1-4 deliverable audit
+
+Finding: every Phase 1-4 task marked completed in `.loom/plan.yaml` has corresponding implementation and/or test files in the repository, including the Foundry, Recall, and Log work committed in `639dc4e`. The main scope gap is TUI terminology: the completed tab-switching work is a text renderer (`src/tui/tab-strip.ts:23`) called from a readline/stdout session loop (`src/tui/session.ts:210`, `src/tui/session.ts:240`, `src/tui/session.ts:243`), not an Ink component tree. That was a deliberate interim implementation, but it is narrower than the original Ink TUI requirement. Phase 5 `m5-3` is therefore required rather than optional. The flattened design references currently exist under `support_docs/src_tui_theme.ts`, `support_docs/src_tui_components.tsx`, and `support_docs/src_cli_commands_theme.ts`; they have not yet been promoted into live `src/` modules.
+
+## 2026-07-09 — Foundry client root-spec re-verification
+
+Decision: re-verify `src/foundry/client.ts` against root `foundry-api.md` now that the root reference exists. Drift found: the client covered package, auth, health, and readiness endpoints but did not expose namespace endpoints or public test-run detail. Added typed methods for `GET /namespaces/:name`, `POST /namespaces`, `POST /namespaces/:name/members`, and `GET /test-runs/:publish_id`, with tests asserting encoded paths and request bodies. Verification passed with `bun test tests/foundry/client.test.ts`, `bun run typecheck`, `bun run lint`, `bun test` (157 passing tests), and a final `bun run typecheck`.

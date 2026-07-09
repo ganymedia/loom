@@ -1,10 +1,10 @@
 name: LOOM
 version: 0.1.0
 created: 2026-07-07
-updated: 2026-07-08
-current_phase: phase-4
-current_milestone: milestone-4-4
-current_task: task-4-4-2
+updated: 2026-07-09
+current_phase: phase-5
+current_milestone: m5-3
+current_task: t5-3-1
 phases:
   - id: phase-1
     name: Foundation
@@ -442,3 +442,356 @@ phases:
               - src/cli/commands/log.ts
               - tests/cli/commands/log.test.ts
             dependencies: []
+  - id: phase-5
+    name: Verification, Design System, and Production Readiness
+    description: Close gaps between completed Phase 1-4 plan tasks and the full LOOM
+      specification, including claim audit, missing references, Ink TUI,
+      embeddings, live handoff verification, and production packaging.
+    exit_criterion: A single compiled loom binary exists, opens an Ink-rendered TUI
+      matching the loom-dark theme, performs real semantic recall end-to-end
+      from a natural-language query, has a verified Foundry client against a
+      confirmed API spec, and has zero uncommitted or unverified work.
+    status: in_progress
+    token_estimate: xlarge
+    milestones:
+      - id: m5-1
+        name: Repository and claim audit
+        description: Confirm every narrative claim about implemented and verified work
+          against actual committed, tested code.
+        status: in_progress
+        token_estimate: medium
+        tasks:
+          - id: t5-1-1
+            name: Run git status; commit or explicitly document any uncommitted work
+            description: Establish the repository state before Phase 5 work; uncommitted
+              operator-provided planning docs must be committed or explicitly
+              documented before implementation continues.
+            status: completed
+            token_estimate: small
+            files:
+              - .loom/narrative.md
+            dependencies: []
+          - id: t5-1-2
+            name: Confirm whether foundry-api.md existed in the working tree when
+              src/foundry/ was built
+            description: If foundry-api.md was absent when the Foundry client was written,
+              treat every endpoint shape, auth header, and error envelope in
+              src/foundry/ as unverified against spec rather than trusting tests
+              written against the same assumptions.
+            status: completed
+            token_estimate: small
+            files:
+              - foundry-api.md
+              - src/foundry/client.ts
+              - tests/foundry/client.test.ts
+            dependencies: []
+          - id: t5-1-3
+            name: Reconcile SPEC.md section 7 against the current repo tree one more time
+            description: Verify the exact reference-spec manifest in SPEC.md section 7
+              against actual repository paths and flag mismatches as spec/repo
+              drift.
+            status: completed
+            token_estimate: small
+            files:
+              - SPEC.md
+              - support_docs/SPEC.md
+            dependencies:
+              - t5-1-1
+          - id: t5-1-4
+            name: Audit which plan.yaml tasks 1-34 map to which real deliverable
+            description: Map prior plan tasks to real deliverables and flag broad task names
+              whose implementation was narrower than the original requirement,
+              especially the text tab strip vs Ink TUI scope reduction.
+            status: completed
+            token_estimate: medium
+            files:
+              - .loom/plan.yaml
+              - .loom/narrative.md
+            dependencies: []
+      - id: m5-2
+        name: Add missing reference specs to repository
+        description: Ensure Foundry, config, and agent test reference specs exist at the
+          repository root and re-verify Foundry against the now-present API
+          reference.
+        status: pending
+        token_estimate: medium
+        tasks:
+          - id: t5-2-1
+            name: Add foundry-api.md to repository root
+            description: Add the Foundry REST API reference at the root; request it from the
+              operator if not available locally.
+            status: completed
+            token_estimate: small
+            files:
+              - foundry-api.md
+            dependencies: []
+          - id: t5-2-2
+            name: Add foundry-server.toml to repository root
+            description: Add the self-hosted Foundry server configuration reference at the
+              root.
+            status: completed
+            token_estimate: small
+            files:
+              - foundry-server.toml
+            dependencies: []
+          - id: t5-2-3
+            name: Add loom-config.toml to repository root
+            description: Add the global LOOM config example reference at the root.
+            status: completed
+            token_estimate: small
+            files:
+              - loom-config.toml
+            dependencies: []
+          - id: t5-2-4
+            name: Add loom-tests.yaml to repository root
+            description: Add the agent test suite format reference at the root.
+            status: completed
+            token_estimate: small
+            files:
+              - loom-tests.yaml
+            dependencies: []
+          - id: t5-2-5
+            name: Re-verify src/foundry/ client against foundry-api.md once present; fix any
+              drift
+            description: Compare the Foundry client implementation and tests against the
+              root Foundry API reference and fix any endpoint, auth, or
+              error-envelope drift.
+            status: completed
+            token_estimate: medium
+            files:
+              - foundry-api.md
+              - src/foundry/client.ts
+              - tests/foundry/client.test.ts
+            dependencies:
+              - t5-2-1
+      - id: m5-3
+        name: Ink TUI and design system integration
+        description: Install Ink/React, promote flattened design-system references into
+          live modules, and replace the text session renderer with an Ink
+          component tree.
+        status: pending
+        token_estimate: xlarge
+        tasks:
+          - id: t5-3-1
+            name: Add ink, react, and their type dependencies to package.json
+            description: Add the runtime and type dependencies required for an Ink-rendered
+              TUI.
+            status: pending
+            token_estimate: small
+            files:
+              - package.json
+              - bun.lock
+            dependencies: []
+          - id: t5-3-2
+            name: Move src_tui_theme.ts to src/tui/theme.ts as the live module
+            description: Promote the flattened theme reference into the live TUI module tree
+              without treating the reference as executable code.
+            status: pending
+            token_estimate: small
+            files:
+              - src/tui/theme.ts
+            dependencies: []
+          - id: t5-3-3
+            name: Move src_tui_components.tsx to src/tui/components.tsx as the live module
+            description: Promote the flattened TUI components reference into the live module
+              tree after Ink dependencies and theme support exist.
+            status: pending
+            token_estimate: small
+            files:
+              - src/tui/components.tsx
+            dependencies:
+              - t5-3-1
+              - t5-3-2
+          - id: t5-3-4
+            name: Move src_cli_commands_theme.ts to src/cli/commands/theme.ts; register loom
+              theme list/use/preview
+            description: Promote the flattened theme CLI reference into a registered command
+              group.
+            status: pending
+            token_estimate: small
+            files:
+              - src/cli/commands/theme.ts
+              - src/index.ts
+            dependencies:
+              - t5-3-2
+          - id: t5-3-5
+            name: Rebuild src/tui/session.ts as an Ink component tree, replacing the text
+              tab strip with AgentTabStrip
+            description: Replace the interim text-based tab switching with the originally
+              specified Ink UI while preserving conversation history across
+              tabs, tool-call display, and deterministic test input mode.
+            status: pending
+            token_estimate: large
+            files:
+              - src/tui/session.ts
+              - tests/tui/session.test.ts
+            dependencies:
+              - t5-3-3
+          - id: t5-3-6
+            name: Wire StatusBar into the live session loop
+            description: Show token progress, session id, and active agent through the live
+              StatusBar component.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/tui/session.ts
+              - src/tui/components.tsx
+              - tests/tui/session.test.ts
+            dependencies:
+              - t5-3-5
+          - id: t5-3-7
+            name: Add defaults.theme field to config schema
+            description: Add a defaults.theme config field with default loom-dark per the
+              prior spec note.
+            status: pending
+            token_estimate: small
+            files:
+              - src/config/schema.ts
+              - tests/config/schema.test.ts
+            dependencies:
+              - t5-3-4
+          - id: t5-3-8
+            name: TSX typecheck coverage in tsconfig.json and Biome config
+            description: Ensure TSX files are typechecked and linted by the project
+              configuration.
+            status: pending
+            token_estimate: small
+            files:
+              - tsconfig.json
+              - biome.json
+            dependencies:
+              - t5-3-1
+      - id: m5-4
+        name: Embedding generation
+        description: Add real embedding generation so semantic recall works from
+          natural-language queries and pipeline injection can use Context Bus
+          state.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t5-4-1
+            name: Implement POST /v1/embeddings client against the configured embedding
+              backend
+            description: Resolve backend and model from store embedding configuration
+              through the same model-discovery seam; do not hardcode model
+              names.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/backends/embeddings.ts
+              - tests/backends/embeddings.test.ts
+            dependencies: []
+          - id: t5-4-2
+            name: Wire embedding generation into Prompt Store writes so every session turn
+              is embedded automatically
+            description: Embed stored session turns automatically after the embedding client
+              exists.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/store/prompt-store.ts
+              - tests/store/prompt-store.test.ts
+            dependencies:
+              - t5-4-1
+          - id: t5-4-3
+            name: Update loom recall to accept a natural-language --query in addition to
+              --vector
+            description: Keep explicit --vector support and add --query as the primary path
+              that embeds text through the embedding client.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/cli/commands/recall.ts
+              - tests/cli/commands/recall.test.ts
+            dependencies:
+              - t5-4-1
+          - id: t5-4-4
+            name: Wire inject pipeline stage to call recall automatically using Context Bus
+              state as the query
+            description: Use assembled Context Bus state to generate recall queries for
+              inject stages.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/pipeline/executors/inject.ts
+              - tests/pipeline/executors/stage-executors.test.ts
+            dependencies:
+              - t5-4-3
+      - id: m5-5
+        name: Confirm automatic handoff triggering in the live session loop
+        description: Prove Session Manager and handoff document management are actually
+          wired into the live session loop.
+        status: pending
+        token_estimate: medium
+        tasks:
+          - id: t5-5-1
+            name: Write integration test for automatic handoff past 80 percent token
+              threshold
+            description: Run a real session loop past the threshold and assert
+              .loom/handoff.md is written automatically, not just that Session
+              Manager and handoff utilities pass unit tests independently.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/tui/session.ts
+              - tests/tui/session.test.ts
+            dependencies: []
+          - id: t5-5-2
+            name: Confirm new-session handoff ingestion injects into first agent turn
+              context
+            description: Verify handoff ingestion affects the first agent turn's context
+              rather than only reading the file.
+            status: pending
+            token_estimate: small
+            files:
+              - src/tui/session.ts
+              - tests/tui/session.test.ts
+            dependencies:
+              - t5-5-1
+      - id: m5-6
+        name: Production binary packaging
+        description: Compile and smoke-test a standalone LOOM binary after UI, recall,
+          and session-continuity work is complete.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t5-6-1
+            name: Run bun build --compile and produce a working dist/loom binary
+            description: Build a standalone binary artifact with Bun compile.
+            status: pending
+            token_estimate: small
+            files:
+              - package.json
+              - dist/loom
+            dependencies: []
+          - id: t5-6-2
+            name: Smoke test the compiled binary standalone against a real configured
+              backend
+            description: Execute the compiled binary directly rather than through bun run
+              and confirm it works with a real configured backend.
+            status: pending
+            token_estimate: small
+            files:
+              - dist/loom
+            dependencies:
+              - t5-6-1
+          - id: t5-6-3
+            name: Add build:linux and build:mac targets verification
+            description: Add or verify platform build targets for Linux and macOS.
+            status: pending
+            token_estimate: small
+            files:
+              - package.json
+            dependencies:
+              - t5-6-1
+          - id: t5-6-4
+            name: Full regression pass
+            description: Run bun run typecheck, bun run lint, bun test, plus one live
+              end-to-end session covering agent switching, a pipeline run, a
+              plan command, and a handoff.
+            status: pending
+            token_estimate: large
+            files:
+              - .loom/narrative.md
+            dependencies:
+              - t5-6-2

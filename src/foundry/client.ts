@@ -99,6 +99,52 @@ export interface FoundryCreateKeyResponse {
   created_at: string;
 }
 
+export interface FoundryNamespaceProfile {
+  name: string;
+  type: "user" | "org";
+  verified: boolean;
+  packages: FoundryPackageSummary[];
+  members?: string[];
+  created_at: string;
+}
+
+export interface FoundryCreateNamespaceOptions {
+  name: string;
+  display_name: string;
+  type: "user" | "org";
+}
+
+export interface FoundryNamespaceMemberOptions {
+  username: string;
+  role: "member" | "admin";
+}
+
+export interface FoundryAssertionFailure {
+  path?: string;
+  expected?: unknown;
+  actual?: unknown;
+  message?: string;
+}
+
+export interface FoundryTestRunDetail {
+  publish_id: string;
+  status: "pending" | "running" | "passed" | "failed";
+  started_at: string;
+  finished_at: string;
+  results: Array<{
+    test_id: string;
+    name: string;
+    status: "pass" | "fail" | "skip";
+    duration_ms: number;
+    assertion_failures: FoundryAssertionFailure[];
+  }>;
+  badge: {
+    passing: number;
+    total: number;
+    url: string;
+  };
+}
+
 export interface FoundryHealthResponse {
   status: "ok" | "degraded";
   version: string;
@@ -225,6 +271,37 @@ export class FoundryClient {
     return this.requestJson<{ yanked: boolean }>(
       `packages/${encodePathPart(namespace)}/${encodePathPart(name)}/${encodePathPart(version)}`,
       { method: "DELETE" },
+    );
+  }
+
+  async getNamespace(name: string): Promise<FoundryNamespaceProfile> {
+    return this.requestJson<FoundryNamespaceProfile>(
+      `namespaces/${encodePathPart(name)}`,
+    );
+  }
+
+  async createNamespace(
+    options: FoundryCreateNamespaceOptions,
+  ): Promise<FoundryNamespaceProfile> {
+    return this.requestJson<FoundryNamespaceProfile>("namespaces", {
+      method: "POST",
+      json: options,
+    });
+  }
+
+  async addNamespaceMember(
+    namespace: string,
+    options: FoundryNamespaceMemberOptions,
+  ): Promise<void> {
+    await this.requestRaw(`namespaces/${encodePathPart(namespace)}/members`, {
+      method: "POST",
+      json: options,
+    });
+  }
+
+  async getTestRun(publishId: string): Promise<FoundryTestRunDetail> {
+    return this.requestJson<FoundryTestRunDetail>(
+      `test-runs/${encodePathPart(publishId)}`,
     );
   }
 

@@ -160,35 +160,49 @@ here — it does not redefine an equivalent shape locally.
 
 ## 7. Reference specs (full detail, produced earlier in design)
 
-These are the EXACT filenames that must exist in the project root. If any
-file listed here is missing, stop and tell the human operator which exact
-filename is absent — do not invent a replacement, do not guess at its
-contents, and do not proceed with implementation of that subsystem until
-the file is provided or its absence is explicitly acknowledged as
-intentional.
+These are the EXACT paths, relative to the repository root, confirmed
+against the actual repository tree as of 2026-07-09. If any file listed
+here is missing, stop and tell the human operator which exact path is
+absent — do not invent a replacement, do not guess at its contents, and do
+not proceed with implementation of that subsystem until the file is
+provided or its absence is explicitly acknowledged as intentional.
 
-| Filename (exact) | Subsystem | Contents |
+| Path (exact) | Subsystem | Contents |
 |---|---|---|
-| `loom-agent.primary.yaml` | Agent package schema | Primary agent manifest format — `package`, `agent`, `model`, `tools`, `sub_agents`, `handoff` blocks |
-| `loom-agent.sub.yaml` | Agent package schema | Sub-agent manifest format — typed `interface` (input/output schema), `execution` constraints |
-| `loom-tests.yaml` | Agent testing | Test suite format — behavioral, safety, unit, integration, regression test types; mock/live/snapshot inference modes |
-| `plan.yaml` | Project planner | Reference instance of the plan schema — phases → milestones → tasks, token_estimate labels (small/medium/large/xlarge) |
-| `foundry-api.md` | Foundry server | Full REST API — endpoints, auth model, package tarball structure |
-| `foundry-server.toml` | Foundry server | Self-hosting config — database, storage, auth, rate limits, upstream proxy |
+| `agent-manifest-schema.yaml` | Agent package schema | Combined primary + sub-agent manifest format — `package`, `agent`, `model`, `tools`, `sub_agents`, `handoff` blocks, plus the typed sub-agent `interface` block |
+| `plan-yaml-schema.yaml` | Project planner | Reference instance of the plan schema — phases → milestones → tasks, token_estimate labels (small/medium/large/xlarge) |
 | `prompt-intelligence.config.toml` | Prompt Intelligence | Three-level override schema (global → agent → stage) — budget, compression, retry, validation config |
-| `agent-architect.yaml` | Built-in agents | Architect agent — full system prompt, scope boundaries, sub-agent rules |
-| `agent-developer.yaml` | Built-in agents | Developer agent — full system prompt, scope boundaries, sub-agent rules |
-| `agent-tester.yaml` | Built-in agents | Tester agent — full system prompt, scope boundaries, sub-agent rules |
-| `agent-security.yaml` | Built-in agents | Security agent — full system prompt, scope boundaries, sub-agent rules |
-| `loom-config.toml` | Config reference | Example `~/.loom/config.toml` — backend endpoint registration, profiles |
+| `agents/architect.yaml` | Built-in agents | Architect agent — full system prompt, scope boundaries, sub-agent rules |
+| `agents/developer.yaml` | Built-in agents | Developer agent — full system prompt, scope boundaries, sub-agent rules |
+| `agents/tester.yaml` | Built-in agents | Tester agent — full system prompt, scope boundaries, sub-agent rules |
+| `agents/security.yaml` | Built-in agents | Security agent — full system prompt, scope boundaries, sub-agent rules |
+| `BUILDING.md` | Build order | Phase gates and per-module implementation sequence |
+| `KICKOFF.md` | Session orientation | Repeatable session-start prompt, including handoff detection |
+| `foundry-api.md` | Foundry server | Full REST API — endpoints, auth model, package tarball structure |
+| `foundry-server.toml` | Foundry server | Self-hosting config for optional private Foundry server deployments |
+| `loom-config.toml` | Config reference | Example `~/.loom/config.toml`; reference only, real runtime schema lives in `src/config/schema.ts` |
+| `loom-tests.yaml` | Agent testing | Reference instance of the agent test suite format — behavioral, safety, unit, integration, and regression test types |
+| `PHASE-5-ADDENDUM.yaml` | Phase 5 planning | Authoritative Phase 5 task breakdown; append into `.loom/plan.yaml` after `phase-4` |
+
+All files in this table are expected to exist at the repository root. If one is
+missing, stop and reconcile the spec/filesystem mismatch before implementing
+the subsystem that depends on it.
 
 Deployment tiers (solo / small team / enterprise) are documented in this
 file, section 9 below — no separate file for that topic.
 
-**If you rename any of these files, update this table in the same commit.**
-A mismatch between this table and the actual project root is what causes a
-local agent to report a file as "missing" when it has simply been renamed —
-treat a table/filesystem mismatch as a bug in this spec, not in the codebase.
+**If you rename or move any file in the first table, update this table in
+the same commit.** A mismatch between this table and the actual repository
+is what has caused local agents to report present files as missing —
+treat a table/filesystem mismatch as a bug in this spec, not in the
+codebase.
+
+Note: `src_cli_commands_theme.ts`, `src_tui_components.tsx`, and
+`src_tui_theme.ts` remain as flattened root-level references per operator
+request (2026-07-07 canonical layout decision) and are intentionally
+duplicated inside the real `src/tui/` and `src/cli/commands/` tree once
+those modules are implemented. Do not delete the flattened references
+without operator confirmation — they exist for provenance, not as dead code.
 
 ---
 
@@ -247,7 +261,52 @@ Foundry server exists and whether it's self-hosted or public.
 
 ---
 
-## Changelog
+## 10. Phase 5 — Verification, design system, and production readiness
+
+`.loom/plan.yaml` reported 34/34 tasks complete with no pending work as of
+2026-07-09. That completion reflects the original `BUILDING.md` phase
+checklist scoped early in the project — it does not reflect everything
+specified across this document and the reference specs in section 7.
+"All plan.yaml tasks complete" and "LOOM matches spec" are not the same
+claim, and the gap between them is Phase 5.
+
+The authoritative task breakdown for Phase 5 is `PHASE-5-ADDENDUM.yaml` in
+the repository root. It must be merged into `.loom/plan.yaml`'s `phases:`
+list (append after `phase-4`, do not replace anything) before work resumes.
+
+Phase 5 exists to close six specific gaps identified during a
+completion audit, each with its own milestone in the addendum:
+
+1. **Unverified claims** (`m5-1`) — several narrative.md entries describe
+   work as "implemented and verified" that has not been independently
+   confirmed against the actual repository state, most notably whether
+   `foundry-api.md` existed when `src/foundry/` was built.
+2. **Missing reference specs** (`m5-2`) — `foundry-api.md`,
+   `foundry-server.toml`, `loom-config.toml`, and `loom-tests.yaml` are
+   referenced throughout this document and the narrative but are not
+   present in the repository.
+3. **Ink TUI never built** (`m5-3`) — agent tab switching was implemented
+   as a plain-text tab strip on 2026-07-08 because Ink/React dependencies
+   were not yet installed. The design system (`theme.ts`, `components.tsx`)
+   exists only as flattened root-level references, never wired into a real
+   Ink component tree.
+4. **No embedding generation** (`m5-4`) — `loom recall` accepts only a raw
+   `--vector`. There is no path from a natural-language query to an
+   embedding to a recall result, meaning semantic recall does not work
+   end-to-end for an actual user.
+5. **Session Continuity unverified in the live loop** (`m5-5`) — Session
+   Manager and handoff.ts were built and unit-tested independently. Whether
+   the 80% threshold actually triggers an automatic handoff inside a real,
+   running session has not been confirmed by an integration test.
+6. **No production binary** (`m5-6`) — `bun build --compile` has not been
+   confirmed to produce a working standalone binary.
+
+Do not consider LOOM feature-complete until every task in
+`PHASE-5-ADDENDUM.yaml` is done and its exit criterion is met.
+
+---
+
+
 - v0.1 — Initial consolidated spec.
 - v0.2 — Section 7 rewritten from a descriptive list to an exact filename
   manifest table, in response to a local agent reporting
@@ -255,3 +314,20 @@ Foundry server exists and whether it's self-hosted or public.
   unindexed by exact name. Added section 9 (deployment tiers) since it
   was previously folded into the section 7 bullet list without its own
   filename.
+- v0.3 — Section 7 corrected against the confirmed actual repository tree
+  (operator-provided screenshots, 2026-07-09): updated paths to match
+  real renames (`agent-manifest-schema.yaml`, `plan-yaml-schema.yaml`,
+  `agents/*.yaml`). Flagged `foundry-api.md`, `foundry-server.toml`,
+  `loom-config.toml`, and `loom-tests.yaml` as genuinely absent from the
+  repository — not a naming mismatch this time. The 2026-07-09 narrative
+  entries describing an implemented Foundry HTTP client predate this
+  correction and should be re-verified against whether `foundry-api.md`
+  actually existed in the working tree at the time, or whether that work
+  was built without its reference spec present.
+- v0.4 — Added section 10 documenting Phase 5 (verification, design system,
+  production readiness), created in response to plan.yaml reporting 34/34
+  tasks complete while six specified deliverables remained unbuilt or
+  unverified: Foundry spec/client verification, Ink TUI integration,
+  embedding generation for recall, live Session Continuity verification,
+  and production binary packaging. Authoritative task breakdown lives in
+  `PHASE-5-ADDENDUM.yaml`.

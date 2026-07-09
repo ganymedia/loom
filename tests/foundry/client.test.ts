@@ -116,6 +116,87 @@ describe("FoundryClient", () => {
     expect(path).toBe("/v1/packages/%40loom/security%2Fauditor/1.2.3");
   });
 
+  test("covers namespace endpoints from the Foundry API spec", async () => {
+    const requests: Array<{ path: string; method: string; body?: unknown }> =
+      [];
+    const client = new FoundryClient({
+      baseUrl: "https://foundry.example/v1",
+      fetchImpl: async (input, init) => {
+        const bodyText =
+          typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+        requests.push({
+          path: new URL(input.toString()).pathname,
+          method: init?.method ?? "GET",
+          ...(bodyText === undefined ? {} : { body: bodyText }),
+        });
+        return jsonResponse({
+          name: "@loom",
+          type: "org",
+          verified: true,
+          packages: [],
+          members: ["alice"],
+          created_at: "now",
+        });
+      },
+    });
+
+    await client.getNamespace("@loom");
+    await client.createNamespace({
+      name: "loom-tools",
+      display_name: "LOOM Tools",
+      type: "org",
+    });
+    await client.addNamespaceMember("@loom", {
+      username: "alice",
+      role: "admin",
+    });
+
+    expect(requests).toEqual([
+      { path: "/v1/namespaces/%40loom", method: "GET" },
+      {
+        path: "/v1/namespaces",
+        method: "POST",
+        body: { name: "loom-tools", display_name: "LOOM Tools", type: "org" },
+      },
+      {
+        path: "/v1/namespaces/%40loom/members",
+        method: "POST",
+        body: { username: "alice", role: "admin" },
+      },
+    ]);
+  });
+
+  test("fetches public test-run detail", async () => {
+    let path = "";
+    const client = new FoundryClient({
+      baseUrl: "https://foundry.example/v1",
+      fetchImpl: async (input) => {
+        path = new URL(input.toString()).pathname;
+        return jsonResponse({
+          publish_id: "publish/1",
+          status: "passed",
+          started_at: "start",
+          finished_at: "finish",
+          results: [
+            {
+              test_id: "sec-001",
+              name: "detects SQL injection",
+              status: "pass",
+              duration_ms: 12,
+              assertion_failures: [],
+            },
+          ],
+          badge: { passing: 1, total: 1, url: "https://badge" },
+        });
+      },
+    });
+
+    const result = await client.getTestRun("publish/1");
+
+    expect(path).toBe("/v1/test-runs/publish%2F1");
+    expect(result.results[0]?.test_id).toBe("sec-001");
+  });
+
   test("fails loudly on malformed JSON responses", async () => {
     const client = new FoundryClient({
       baseUrl: "https://foundry.example/v1",
