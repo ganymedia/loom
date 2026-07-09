@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-3
-current_task: t5-3-1
+current_task: t5-3-2
 phases:
   - id: phase-1
     name: Foundation
@@ -576,7 +576,7 @@ phases:
             name: Add ink, react, and their type dependencies to package.json
             description: Add the runtime and type dependencies required for an Ink-rendered
               TUI.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - package.json

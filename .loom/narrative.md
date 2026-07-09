@@ -159,3 +159,7 @@ Finding: every Phase 1-4 task marked completed in `.loom/plan.yaml` has correspo
 ## 2026-07-09 — Foundry client root-spec re-verification
 
 Decision: re-verify `src/foundry/client.ts` against root `foundry-api.md` now that the root reference exists. Drift found: the client covered package, auth, health, and readiness endpoints but did not expose namespace endpoints or public test-run detail. Added typed methods for `GET /namespaces/:name`, `POST /namespaces`, `POST /namespaces/:name/members`, and `GET /test-runs/:publish_id`, with tests asserting encoded paths and request bodies. Verification passed with `bun test tests/foundry/client.test.ts`, `bun run typecheck`, `bun run lint`, `bun test` (157 passing tests), and a final `bun run typecheck`.
+
+## 2026-07-09 — Ink dependency installation
+
+Decision: satisfy `t5-3-1` by adding `ink` and `react` as runtime dependencies and `@types/react` as a development dependency through `bun add`, so `package.json` and `bun.lock` remain synchronized. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (157 passing tests). Next work is `t5-3-2`, promoting the flattened TUI theme reference into `src/tui/theme.ts`.
