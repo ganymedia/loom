@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-08
 current_phase: phase-4
-current_milestone: milestone-4-2
-current_task: task-4-2-1
+current_milestone: milestone-4-3
+current_task: task-4-3-1
 phases:
   - id: phase-1
     name: Foundation
@@ -397,7 +397,7 @@ phases:
           - id: task-4-2-1
             name: Sub-agent runner
             description: Sub-agent spawning and context passing
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/agents/sub-agent-runner.ts

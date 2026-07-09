@@ -65,6 +65,8 @@ you are approaching your context limit, stop implementation work and write
 Also append a summary entry to `.loom/narrative.md` covering this session.
 Then stop. Do not start new work after writing the handoff.
 
+**NOTE**
+All support docs are now in /support_docs folder.
 ---
 
 Begin now with Step 0.

@@ -1,0 +1,116 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM Agent Package Manifest — SUB-AGENT
+# Schema version: 1.0.0
+# Reference: https://foundry.loom.dev/schema/sub-agent/1.0.0
+#
+# A sub-agent is a scoped, typed worker spawned automatically by a primary agent.
+# It never appears in the TUI tab bar. It receives a typed task, executes it,
+# and returns a typed result injected into the parent agent's context.
+# The user does not invoke sub-agents directly.
+#
+# Key differences from primary agent schema:
+#   - Has a typed interface (input/output schema)
+#   - Has strict execution constraints (timeout, token ceiling)
+#   - Cannot spawn further sub-agents (no recursive spawning)
+#   - Uses lighter models; favors speed and determinism over reasoning depth
+#   - Minimal capabilities by default (file-read only unless explicitly granted)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── PACKAGE IDENTITY ─────────────────────────────────────────────────────────
+package:
+  name:        sast-scanner
+  namespace:   "@loom-community"
+  version:     "1.3.0"
+  type:        sub-agent                  # REQUIRED: distinguishes schema branch
+  description: >
+    Static analysis sub-agent. Scans source files for common vulnerability
+    patterns using semgrep rules. Returns structured findings to the calling
+    primary agent. Designed for fast, deterministic output.
+  author:
+    name: LOOM Community
+    url:  https://github.com/loom-community/sast-scanner
+  license: MIT
+  tags:   [security, sast, static-analysis, vulnerability]
+
+# ── TYPED INTERFACE ───────────────────────────────────────────────────────────
+# Sub-agents are strongly typed. The calling primary agent must pass inputs
+# matching this schema. LOOM validates at spawn time.
+interface:
+  input:
+    files:
+      type:     array
+      items:    string                    # absolute file paths to scan
+      required: true
+    language:
+      type:     string
+      optional: true                      # hint for rule selection; inferred if absent
+      enum:     [javascript, typescript, python, go, rust, java, ruby, php, auto]
+    ruleset:
+      type:     string
+      optional: true
+      default:  "default"
+      enum:     [default, owasp-top-10, strict, minimal]
+
+  output:
+    findings:
+      type:  array
+      items:
+        schema: ./schemas/finding.json    # versioned output schema; callers depend on this
+        # finding.json shape:
+        # {
+        #   rule_id:     string,
+        #   severity:    CRITICAL|HIGH|MEDIUM|LOW|INFO,
+        #   file:        string,
+        #   line:        integer,
+        #   message:     string,
+        #   cwe:         string | null,
+        #   cvss_score:  float | null,
+        #   fix_hint:    string | null
+        # }
+    summary:
+      type: string                        # one-paragraph plain-text summary for context injection
+    files_scanned:
+      type: integer
+    scan_duration_ms:
+      type: integer
+    error:
+      type:     string
+      optional: true                      # populated only on failure; primary agent handles
+
+# ── EXECUTION CONSTRAINTS ─────────────────────────────────────────────────────
+execution:
+  timeout_seconds:       45               # hard kill after this; primary agent receives error
+  max_tokens:            2048             # sub-agents are terse by design
+  can_spawn_sub_agents:  false            # no recursive spawning
+  sandboxed:             true             # no shell access unless capabilities grant it
+  retry_on_timeout:      false            # fail fast; let primary agent decide to retry
+  result_injection:      context          # where result lands: context | file | both
+  result_key:            sast_findings    # key under which result appears in parent context
+
+# ── AGENT CORE (simplified vs primary) ────────────────────────────────────────
+agent:
+  system_prompt: ./prompts/sast.md       # short, task-focused prompt
+  capabilities:
+    - file-read                           # minimal; sub-agents get least-privilege by default
+  # No display_name, no persona, no tab_label — sub-agents are invisible to the user
+
+# ── MODEL PREFERENCES ────────────────────────────────────────────────────────
+# Sub-agents use lighter, faster models. Speed and determinism > reasoning depth.
+model:
+  preferred:
+    - backend:  vllm
+      model:    gemma-4-26b              # lighter than primary agent's 31b
+      priority: 1
+    - backend:  ollama
+      model:    "llama3.1:8b"
+      priority: 2
+  constraints:
+    temperature:  0.0                    # fully deterministic — scan results must be reproducible
+    max_tokens:   2048
+    # No min_context_window constraint — sub-agents get focused, small inputs
+
+# ── FOUNDRY COMPATIBILITY ─────────────────────────────────────────────────────
+compatibility:
+  loom_version: ">=1.0.0"
+  platforms:    [linux, macos]
+  # No min_vram_gb — sub-agents defer to the backend already running for the primary agent

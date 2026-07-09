@@ -1,0 +1,225 @@
+# .loom/plan.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM Project Plan
+#
+# Managed by:
+#   loom plan init                        — interactive setup, AI-assisted breakdown
+#   loom plan done <task-id>              — mark a task complete
+#   loom plan block <task-id> --reason    — mark a task blocked
+#   loom plan decompose <task-id>         — AI-assisted decomposition of large tasks
+#   loom plan next                        — print the next recommended task
+#   loom plan status                      — full plan view (also shown in TUI)
+#
+# This file is injected into every session context automatically.
+# It drives the handoff document when the session continuity engine triggers.
+#
+# ── TOKEN ESTIMATE GUIDE ──────────────────────────────────────────────────────
+# Estimates are relative to your active model's context window.
+# Tune the boundaries in [session.token_estimates] below if your model differs.
+#
+#   small  — < 10k tokens    — group 3–4 of these comfortably in one session
+#   medium — 10–30k tokens   — plan for 1–2 per session
+#   large  — 30–60k tokens   — one per session; clear context before starting
+#   xlarge — 60k+ tokens     — decompose before attempting
+#                               run: loom plan decompose <task-id>
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── PROJECT ───────────────────────────────────────────────────────────────────
+project:
+  name:           "LOOM — Auth System"
+  description:    "JWT authentication and authorization layer for the Express API"
+  stack:          [Node.js, Express, PostgreSQL, Redis]
+  started:        "2025-06-14"
+  active_profile: dev                  # links to [profiles.dev] in ~/.loom/config.toml
+
+# ── SESSION INTEGRATION ───────────────────────────────────────────────────────
+session:
+  inject_on_start: true                # auto-inject plan state into every new session
+  handoff_fields:                      # what this plan contributes to handoff documents
+    - active_phase
+    - active_milestone
+    - current_task
+    - completed_this_session
+    - blocked_tasks
+    - next_task
+  token_estimates:                     # token boundaries for estimate labels
+    small:  10000                      # < 10k
+    medium: 30000                      # 10k–30k
+    large:  60000                      # 30k–60k
+    # xlarge = anything above large
+
+# ── PHASES ────────────────────────────────────────────────────────────────────
+# Status values: planned | active | complete | blocked
+# depends_on: list of phase ids that must be complete before this phase starts
+phases:
+
+  # ── PHASE 1 ─────────────────────────────────────────────────────────────────
+  - id:     phase-1
+    name:   "Foundation & Auth Core"
+    status: complete
+
+    milestones:
+
+      - id:     m1-1
+        name:   "Database schema"
+        status: complete
+        agent:  architect                # which agent handles this milestone
+        tasks:
+          - id:             t1-1-1
+            name:           "Design user and session table schemas"
+            status:         complete
+            token_estimate: small
+            completed_at:   "2025-06-14T16:40:00Z"
+            notes: >
+              Three tables: users, sessions, refresh_tokens.
+              sessions.user_id FK → users.id with CASCADE DELETE.
+              refresh_tokens are hashed (SHA-256) before storage.
+
+          - id:             t1-1-2
+            name:           "Write and run migrations"
+            status:         complete
+            token_estimate: small
+            depends_on:     [t1-1-1]
+            completed_at:   "2025-06-14T17:55:00Z"
+
+      - id:     m1-2
+        name:   "JWT middleware"
+        status: complete
+        agent:  developer
+        tasks:
+          - id:             t1-2-1
+            name:           "Implement auth.middleware.js"
+            status:         complete
+            token_estimate: medium
+            completed_at:   "2025-06-15T11:20:00Z"
+            notes: >
+              Decided against cookie-based storage; using Authorization header only.
+              Token expiry: 15m access, 7d refresh. Stored in Redis with prefix auth:.
+
+          - id:             t1-2-2
+            name:           "Implement refresh token rotation"
+            status:         complete
+            token_estimate: medium
+            depends_on:     [t1-2-1]
+            completed_at:   "2025-06-16T09:45:00Z"
+
+          - id:             t1-2-3
+            name:           "Write unit tests — auth middleware"
+            status:         complete
+            token_estimate: small
+            depends_on:     [t1-2-1]
+            agent:          tester       # override milestone agent for this task
+            completed_at:   "2025-06-16T14:30:00Z"
+
+  # ── PHASE 2 ─────────────────────────────────────────────────────────────────
+  - id:        phase-2
+    name:      "Security Hardening"
+    status:    active
+    depends_on: [phase-1]
+
+    milestones:
+
+      - id:     m2-1
+        name:   "Dependency audit"
+        status: complete
+        agent:  security
+        tasks:
+          - id:             t2-1-1
+            name:           "Audit npm dependencies for known CVEs"
+            status:         complete
+            token_estimate: small
+            completed_at:   "2025-06-18T14:23:00Z"
+            notes: >
+              trivy found 2 medium CVEs in jsonwebtoken@8.5.1.
+              Upgraded to 9.0.0. All other deps clean.
+              No critical findings.
+
+      - id:     m2-2
+        name:   "Static analysis"
+        status: active
+        agent:  security
+        depends_on: [m2-1]
+        tasks:
+          - id:             t2-2-1
+            name:           "SAST scan — auth layer"
+            status:         in-progress
+            token_estimate: medium
+
+          - id:             t2-2-2
+            name:           "SAST scan — API handlers"
+            status:         planned
+            token_estimate: medium
+            depends_on:     [t2-2-1]
+
+          - id:             t2-2-3
+            name:           "Secret detection sweep — config and env files"
+            status:         planned
+            token_estimate: small
+
+          - id:             t2-2-4
+            name:           "Threat model report"
+            status:         planned
+            token_estimate: xlarge       # run: loom plan decompose t2-2-4
+            depends_on:     [t2-2-1, t2-2-2, t2-2-3]
+
+      - id:     m2-3
+        name:   "Remediation"
+        status: planned
+        agent:  developer
+        depends_on: [m2-2]
+        tasks:
+          - id:             t2-3-1
+            name:           "Remediate findings from static analysis"
+            status:         planned
+            token_estimate: large        # scope depends on m2-2 findings
+            notes: >
+              Estimate is provisional — true scope known after m2-2 completes.
+              Revisit with loom plan estimate t2-3-1 after static analysis.
+
+  # ── PHASE 3 ─────────────────────────────────────────────────────────────────
+  - id:        phase-3
+    name:      "Integration & Testing"
+    status:    planned
+    depends_on: [phase-2]
+    milestones:
+      - id:     m3-1
+        name:   "Integration tests — auth flow"
+        status: planned
+        agent:  tester
+        tasks:
+          - id:             t3-1-1
+            name:           "Write integration tests — login, refresh, logout"
+            status:         planned
+            token_estimate: medium
+
+          - id:             t3-1-2
+            name:           "Write integration tests — protected routes"
+            status:         planned
+            token_estimate: medium
+            depends_on:     [t3-1-1]
+
+  # ── PHASE 4 ─────────────────────────────────────────────────────────────────
+  - id:        phase-4
+    name:      "Documentation & Deploy"
+    status:    planned
+    depends_on: [phase-3]
+    milestones:
+      - id:     m4-1
+        name:   "API documentation"
+        status: planned
+        agent:  developer
+        tasks:
+          - id:             t4-1-1
+            name:           "Write OpenAPI spec for auth endpoints"
+            status:         planned
+            token_estimate: medium
+
+      - id:     m4-2
+        name:   "Deployment runbook"
+        status: planned
+        agent:  architect
+        tasks:
+          - id:             t4-2-1
+            name:           "Write deployment and rollback runbook"
+            status:         planned
+            token_estimate: small

@@ -1,0 +1,142 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM Agent Package Manifest — PRIMARY AGENT
+# Schema version: 1.0.0
+# Reference: https://foundry.loom.dev/schema/primary/1.0.0
+#
+# A primary agent is a named, tabbed persona in the LOOM TUI. It has its own
+# system prompt, model preferences, tool access list, and can spawn sub-agents.
+# Installed via: loom foundry install @loom-community/security-auditor
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── PACKAGE IDENTITY ─────────────────────────────────────────────────────────
+package:
+  name:        security-auditor
+  namespace:   "@loom-community"          # Foundry namespace: @org or @username
+  version:     "2.1.0"                    # semver — strictly enforced
+  type:        primary                    # primary | sub-agent (determines schema branch)
+  description: >
+    Security assessment agent specializing in SAST, dependency auditing,
+    secret detection, and OWASP threat modeling. Designed for self-hosted
+    vLLM deployments with Gemma 4 and Llama 3.1 class models.
+  author:
+    name:  LOOM Community
+    url:   https://github.com/loom-community/security-auditor
+  license:     MIT
+  tags:        [security, sast, owasp, vulnerability, audit, devsecops]
+  repository:  https://github.com/loom-community/security-auditor
+  homepage:    https://foundry.loom.dev/packages/@loom-community/security-auditor
+
+# ── AGENT CORE ───────────────────────────────────────────────────────────────
+agent:
+  display_name: Security                  # label shown in TUI tab bar
+  persona: >
+    Senior application security engineer focused on identifying vulnerabilities,
+    misconfigurations, and threat vectors. Prioritizes findings by CVSS score
+    and exploitability. Favors static analysis before dynamic recommendations.
+  system_prompt: ./prompts/security.md    # relative to package root; can be inline
+  capabilities:
+    - file-read
+    - file-write
+    - shell-exec
+    - web-search
+    - git-ops
+    # Available capability IDs:
+    # file-read, file-write, file-delete, shell-exec, web-search,
+    # git-ops, network-read, network-write, process-spawn, env-read
+
+# ── MODEL PREFERENCES ────────────────────────────────────────────────────────
+model:
+  preferred:
+    - backend:   vllm
+      model:     gemma-4-31b
+      priority:  1                        # try first; most capable local option
+    - backend:   anthropic
+      model:     claude-sonnet-4-6
+      priority:  2                        # fallback if local is unavailable
+    - backend:   ollama
+      model:     "llama3.1:70b"
+      priority:  3                        # fallback for lighter environments
+  constraints:
+    min_context_window: 32000             # refuse backends below this threshold
+    temperature:        0.1              # low = deterministic; good for security findings
+    max_tokens:         8192
+
+# ── TOOL ACCESS ──────────────────────────────────────────────────────────────
+tools:
+  required:                               # session fails to start if these are absent
+    - file-reader
+    - shell
+  allowed:
+    - name: semgrep
+      config:
+        rulesets: ["p/owasp-top-10", "p/security-audit", "p/secrets"]
+    - name: trivy
+      config:
+        severity: [CRITICAL, HIGH, MEDIUM]
+        scan_types: [fs, config, secret]
+    - name: git
+    - name: grep
+    - name: find
+  denied:                                 # explicit deny overrides any allowed entry
+    - file-delete
+    - network-write
+
+# ── SUB-AGENTS ───────────────────────────────────────────────────────────────
+# Sub-agents are spawned automatically by this agent based on trigger rules.
+# The user never invokes these directly.
+sub_agents:
+  - ref: "@loom-community/sast-scanner@^1.0"
+    auto_spawn:
+      trigger:    file-write
+      file_match: "*.{js,ts,jsx,tsx,py,go,rs,java,rb,php}"
+    pass_context: [file_path, language_hint]
+
+  - ref: "@loom-community/dep-auditor@^2.0"
+    auto_spawn:
+      trigger:    session-start
+      file_match: "package.json,Cargo.toml,go.mod,requirements.txt,pyproject.toml,Gemfile"
+    pass_context: [project_root]
+
+  - ref: "@loom-community/secret-scanner@^1.0"
+    auto_spawn:
+      trigger:    file-write
+      file_match: "*.{env,yaml,yml,json,toml,conf,config,ini}"
+    pass_context: [file_path]
+
+  - ref: "@loom-community/threat-modeler@^1.0"
+    auto_spawn:
+      trigger:    milestone            # spawned when agent detects scope is complete
+      condition:  "findings_count > 0"
+    pass_context: [findings_summary, architecture_notes]
+
+# ── SESSION HANDOFF BEHAVIOR ──────────────────────────────────────────────────
+handoff:
+  narrative_fields:                       # fields this agent appends to narrative log
+    - active_findings
+    - scan_coverage_percent
+    - remediation_status
+    - files_pending_review
+    - decisions_made
+  handoff_fields:                         # fields emphasized in ephemeral handoff prompt
+    - critical_findings_summary
+    - files_not_yet_scanned
+    - next_scan_target
+    - blocked_on                          # if agent is blocked, surface the blocker
+  trigger_override:                       # agent-specific trigger rules (additive to global)
+    on_finding_count: 10                  # also trigger handoff after 10 new findings
+
+# ── INVOCATION ───────────────────────────────────────────────────────────────
+invocation:
+  tab_label: Security                     # TUI tab text (max 12 chars)
+  context_preamble: |
+    Active project: {{ project.name }}
+    Git branch:     {{ git.branch }}
+    Project phase:  {{ project.current_phase }}
+    Prior findings: {{ handoff.active_findings | default('none') }}
+
+# ── FOUNDRY COMPATIBILITY ─────────────────────────────────────────────────────
+compatibility:
+  loom_version:    ">=1.0.0"
+  backends:        [vllm, anthropic, openai, ollama]
+  platforms:       [linux, macos]
+  min_vram_gb:     16                     # advisory; enforced only for vllm backend
