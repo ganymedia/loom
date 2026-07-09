@@ -4,9 +4,9 @@ This file tracks the build order from `SPEC.md`. Each phase must be independentl
 
 ## Current phase
 
-- Phase: Phase 3 — intelligence
-- Current task: Retry loop.
-- Next unbuilt item: Retry loop.
+- Phase: Phase 4 — platform
+- Current task: Pipeline parser.
+- Next unbuilt item: Pipeline engine.
 
 ## GitHub synchronization policy
 

@@ -8,9 +8,9 @@ created: "2026-07-07"
 updated: "2026-07-08"
 
 # Current state
-current_phase: phase-3
-current_milestone: milestone-3-1
-current_task: task-3-1-3
+current_phase: phase-4
+current_milestone: milestone-4-1
+current_task: task-4-1-1
 
 # Token estimate labels: small, medium, large, xlarge
 # small: < 1000 tokens, medium: 1000-5000 tokens, large: 5000-20000 tokens, xlarge: > 20000 tokens
@@ -288,14 +288,14 @@ phases:
   - id: phase-3
     name: "Intelligence"
     description: "Prompt Intelligence pipeline and Project Planner"
-    status: in_progress
+    status: completed
     token_estimate: xlarge
 
     milestones:
       - id: milestone-3-1
         name: "Prompt Intelligence Pipeline"
         description: "Assembly → budget → optimization → backend request → validation → retry"
-        status: in_progress
+        status: completed
         token_estimate: xlarge
 
         tasks:
@@ -320,7 +320,7 @@ phases:
           - id: task-3-1-3
             name: "Retry loop"
             description: "Structured retry with exponential backoff"
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/prompt/retry.ts
@@ -329,22 +329,23 @@ phases:
       - id: milestone-3-2
         name: "Project Planner"
         description: "plan.yaml schema and loom plan * commands"
-        status: pending
+        status: completed
         token_estimate: large
 
         tasks:
           - id: task-3-2-1
             name: "Plan.yaml schema"
             description: "Zod schema for plan.yaml structure"
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/planner/schema.ts
+              - tests/planner/schema.test.ts
 
           - id: task-3-2-2
             name: "Plan parser"
             description: "Plan.yaml parsing and validation"
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/planner/parser.ts
@@ -353,16 +354,19 @@ phases:
           - id: task-3-2-3
             name: "Plan commands"
             description: "loom plan * subcommands (decompose, status, etc.)"
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/cli/commands/plan.ts
+              - src/planner/operations.ts
+              - src/planner/writer.ts
               - tests/cli/commands/plan.test.ts
+              - tests/planner/operations.test.ts
 
   - id: phase-4
     name: "Platform"
     description: "Pipeline engine, sub-agent runtime, Foundry client, and recall/log commands"
-    status: pending
+    status: in_progress
     token_estimate: xlarge
 
     milestones:

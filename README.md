@@ -1,6 +1,6 @@
 # LOOM
 
-LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is in Phase 1 foundation work; `SPEC.md` remains the source of truth for architecture and build order.
+LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is in Phase 4 platform work; `SPEC.md` remains the source of truth for architecture and build order.
 
 ## Development commands
 
@@ -61,6 +61,17 @@ bun src/index.ts --prompt "Summarize this project"
 This path resolves the active backend, discovers the current model through `/v1/models`, and sends one OpenAI-compatible `/v1/chat/completions` request. The prompt gateway currently supports `openai-compatible` backends only; unsupported backend types fail with a clear message instead of falling back silently.
 
 The one-turn Developer agent is stateless across process runs. It does not yet provide follow-up turns or streaming output. It proves the Phase 1 backend request path without hardcoding model names.
+
+## Project planner commands
+
+LOOM reads `.loom/plan.yaml` through the Project Planner schema and parser:
+
+```bash
+bun src/index.ts plan status
+bun src/index.ts plan done <task-id>
+```
+
+`plan status` prints a non-secret JSON summary of the current phase, milestone, task, and task counts. `plan done <task-id>` marks that task completed, advances to the next pending task, and writes the updated plan back to `.loom/plan.yaml`. `plan decompose <task-id>` is reserved for future decomposition logic and currently fails loudly instead of guessing.
 
 ### Developer tool-call envelope
 

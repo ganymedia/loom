@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { registerConfigCommand } from "@loom/cli/commands/config";
+import { registerPlanCommand } from "@loom/cli/commands/plan";
 import { loadConfig } from "@loom/config/loader";
 import { Command } from "commander";
 
@@ -37,6 +38,7 @@ async function main(): Promise<void> {
     profileOverride === undefined ? {} : { profileOverride },
   );
   registerConfigCommand(program, config);
+  registerPlanCommand(program);
 
   const hasSubcommand = program.commands.some((command) =>
     args.includes(command.name()),

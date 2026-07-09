@@ -91,3 +91,15 @@ Decision: implement Prompt Intelligence assembly as a deterministic module befor
 ## 2026-07-08 — Prompt optimization
 
 Decision: implement Prompt Intelligence optimization as a pure deterministic transformation over assembled chat messages, not as backend-driven summarization, because model-generated compression and validation retries belong to later pipeline stages. `optimizePrompt()` normalizes whitespace, removes exact duplicated instruction lines already present in system context, keeps the current message last while grouping system context before history, and injects JSON-only schema enforcement when an output schema is supplied. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (99 passing tests). Next work is the retry loop.
+
+## 2026-07-08 — Retry loop
+
+Decision: implement the Prompt Intelligence retry loop as an injected-executor orchestrator instead of modifying `runPrompt()` directly, because backend fallback and temperature controls need the full transparent pipeline wiring before they can safely alter live requests. `runPromptWithRetry()` now retries failed validation with a deterministic repair prompt, includes the invalid assistant response for context, aggregates token usage, reports each attempt, exposes fallback model hints from the third retry attempt, and fails loudly with attempt reports on exhaustion. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (104 passing tests). The Prompt Intelligence pipeline milestone is complete; next work is the Project Planner plan.yaml schema.
+
+## 2026-07-08 — Plan.yaml schema
+
+Decision: implement the Project Planner schema as Zod types that mirror `plan-yaml-schema.yaml` and add cross-reference validation now, before building the parser. The schema applies documented defaults for statuses and task arrays, enforces token-estimate/status enums, rejects duplicate phase/milestone/task IDs, and fails loudly when current phase/milestone/task pointers do not match declared IDs. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (109 passing tests). Next work is the Plan parser.
+
+## 2026-07-08 — Plan parser and commands
+
+Decision: implement the Project Planner parser as a project-root-safe `.loom/plan.yaml` reader and keep mutations in separate planner operations/writer helpers so command code stays thin. The CLI now registers `loom plan status` and `loom plan done <task-id>`; `status` emits a non-secret JSON summary, and `done` marks a task complete and advances to the next pending task. `loom plan decompose` intentionally fails loudly because xlarge task decomposition logic is not specified or implemented yet. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (120 passing tests). Phase 3 is complete; next work is Phase 4 Pipeline parser.
