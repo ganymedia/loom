@@ -110,12 +110,18 @@ describe("pipeline stage executors", () => {
 
   test("inject delegates recall without opening storage directly", async () => {
     const bus = new ContextBus();
+    bus.set("stages.summary.output", "recent parser work");
     const executor = new InjectStageExecutor({
       recall: (query) => [{ query: query.query, topK: query.topK }],
     });
 
     const result = await executor.execute(
-      { id: "recall", type: "inject", query: "recent parser work", topK: 2 },
+      {
+        id: "recall",
+        type: "inject",
+        query: "{{ stages.summary.output }}",
+        topK: 2,
+      },
       bus,
       undefined,
     );
@@ -124,6 +130,18 @@ describe("pipeline stage executors", () => {
     expect(bus.get("stages.recall.output")).toEqual([
       { query: "recent parser work", topK: 2 },
     ]);
+  });
+
+  test("inject fails loudly when query context is missing", async () => {
+    const executor = new InjectStageExecutor({ recall: () => [] });
+
+    await expect(
+      executor.execute(
+        { id: "recall", type: "inject", query: "{{ missing.value }}" },
+        new ContextBus(),
+        undefined,
+      ),
+    ).rejects.toThrow('Template reference "missing.value" did not resolve');
   });
 
   test("parallel executes registered child stages and merges a dict", async () => {

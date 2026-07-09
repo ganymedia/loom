@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
-current_milestone: m5-4
-current_task: t5-4-4
+current_milestone: m5-5
+current_task: t5-5-1
 phases:
   - id: phase-1
     name: Foundation
@@ -354,7 +354,7 @@ phases:
       - id: milestone-4-1
         name: Pipeline Engine
         description: .loom YAML parser and stage executors
-        status: pending
+        status: completed
         token_estimate: xlarge
         tasks:
           - id: task-4-1-1
@@ -715,7 +715,7 @@ phases:
               state as the query
             description: Use assembled Context Bus state to generate recall queries for
               inject stages.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/pipeline/executors/inject.ts

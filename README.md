@@ -103,6 +103,8 @@ bun src/index.ts log show --session <session-id>
 
 Embedding generation is wired into Prompt Store writes when `store.embeddingBackend` is configured. Runtime config also supports optional `store.embeddingModel`; LOOM performs fresh `GET /v1/models` discovery for that backend, treats `embeddingModel` only as a preferred hint, and posts text to OpenAI-compatible `POST /v1/embeddings` with the resolved model before storing the event and embedding together.
 
+Pipeline `inject` stages use their `query` field as a Context Bus template before invoking recall, so stage outputs can drive retrieval (for example `query: "{{ stages.summary.output }}"`). Missing template references fail loudly instead of producing an empty recall query.
+
 ### Developer tool-call envelope
 
 For Phase 1, the Developer agent can execute a constrained JSON response envelope from the model:

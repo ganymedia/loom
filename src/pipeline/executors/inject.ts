@@ -1,3 +1,4 @@
+import { renderTemplate } from "@loom/pipeline/executors/prompt";
 import { elapsed, stageOutputKey } from "@loom/pipeline/executors/transform";
 import type {
   ContextBus,
@@ -30,7 +31,7 @@ export class InjectStageExecutor implements StageExecutor<InjectStage> {
   ): Promise<StageExecutionResult> {
     const startedAt = performance.now();
     const query: InjectRecallQuery = {
-      query: stage.query,
+      query: renderTemplate(stage.query, bus),
       topK: stage.topK ?? 5,
     };
     if (stage.ref !== undefined) query.ref = stage.ref;
