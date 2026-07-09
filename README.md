@@ -92,13 +92,14 @@ The live session renders its agent tab strip with Ink's `AgentTabStrip` inside `
 Prompt Store CLI commands emit JSON and use the project-local `.loom/prompt-store.sqlite` database:
 
 ```bash
+bun src/index.ts recall --query "natural language search" --top-k 5
 bun src/index.ts recall --vector 1,0 --top-k 5
 bun src/index.ts log session --id <session-id> --agent <agent>
 bun src/index.ts log add --session <session-id> --turn <index> --role <system|user|assistant|tool> --agent <agent> --content <text>
 bun src/index.ts log show --session <session-id>
 ```
 
-`recall` performs cosine-similarity recall from stored embeddings and currently requires an explicit numeric `--vector` because embedding generation is not implemented. `log session` creates a Prompt Store session, `log add` records a prompt event, and `log show` prints ordered events for a session. The Log command validates roles and non-negative numeric fields before writing.
+`recall` performs cosine-similarity recall from stored embeddings. `--query` embeds natural-language text through the configured embedding backend; `--vector` remains available for explicit numeric vectors. `log session` creates a Prompt Store session, `log add` records a prompt event, and `log show` prints ordered events for a session. The Log command validates roles and non-negative numeric fields before writing.
 
 Embedding generation is wired into Prompt Store writes when `store.embeddingBackend` is configured. Runtime config also supports optional `store.embeddingModel`; LOOM performs fresh `GET /v1/models` discovery for that backend, treats `embeddingModel` only as a preferred hint, and posts text to OpenAI-compatible `POST /v1/embeddings` with the resolved model before storing the event and embedding together.
 

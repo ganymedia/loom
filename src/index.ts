@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   registerConfigCommand(program, config);
   registerLogCommand(program, { config });
   registerPlanCommand(program);
-  registerRecallCommand(program);
+  registerRecallCommand(program, { config });
   registerThemeCommand(program, config);
 
   const hasSubcommand = program.commands.some((command) =>

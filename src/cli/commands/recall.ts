@@ -1,4 +1,7 @@
 import { join } from "node:path";
+import type { FetchLike } from "@loom/backends/discovery";
+import { generateEmbedding } from "@loom/backends/embeddings";
+import type { LoomConfig } from "@loom/config/schema";
 import { PromptStore } from "@loom/store/prompt-store";
 import type { Command } from "commander";
 
@@ -6,10 +9,14 @@ export interface RegisterRecallCommandOptions {
   projectRoot?: string;
   writeOut?: (message: string) => void;
   storePath?: string;
+  config?: LoomConfig;
+  fetchImpl?: FetchLike;
+  env?: NodeJS.ProcessEnv;
 }
 
 interface RecallCommandOptions {
   vector?: string;
+  query?: string;
   topK?: string;
 }
 
@@ -22,20 +29,35 @@ export function registerRecallCommand(
 
   program
     .command("recall")
-    .description("Recall similar Prompt Store events by embedding vector")
+    .description(
+      "Recall similar Prompt Store events by query text or embedding vector",
+    )
+    .option("--query <text>", "natural-language query to embed for recall")
     .option(
       "--vector <csv>",
       "comma-separated numeric embedding vector for cosine recall",
     )
     .option("--top-k <count>", "maximum number of recall results", "5")
-    .action((commandOptions: RecallCommandOptions) => {
-      if (commandOptions.vector === undefined) {
+    .action(async (commandOptions: RecallCommandOptions) => {
+      if (
+        commandOptions.vector !== undefined &&
+        commandOptions.query !== undefined
+      ) {
         throw new Error(
-          "loom recall requires --vector until embedding generation is implemented",
+          "loom recall accepts either --query or --vector, not both",
         );
       }
+      if (
+        commandOptions.vector === undefined &&
+        commandOptions.query === undefined
+      ) {
+        throw new Error("loom recall requires either --query or --vector");
+      }
 
-      const vector = parseVector(commandOptions.vector);
+      const vector =
+        commandOptions.query === undefined
+          ? parseVector(commandOptions.vector as string)
+          : await queryVector(commandOptions.query, options);
       const topK = parseTopK(commandOptions.topK ?? "5");
       const store = PromptStore.open(storePath(options));
       try {
@@ -56,6 +78,25 @@ export function registerRecallCommand(
         store.close();
       }
     });
+}
+
+async function queryVector(
+  query: string,
+  options: RegisterRecallCommandOptions,
+): Promise<number[]> {
+  if (options.config === undefined) {
+    throw new Error("loom recall --query requires loaded runtime config");
+  }
+
+  const embedding = await generateEmbedding({
+    config: options.config,
+    input: query,
+    ...(options.fetchImpl === undefined
+      ? {}
+      : { fetchImpl: options.fetchImpl }),
+    ...(options.env === undefined ? {} : { env: options.env }),
+  });
+  return embedding.embedding;
 }
 
 function storePath(options: RegisterRecallCommandOptions): string {

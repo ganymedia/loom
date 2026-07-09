@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-4
-current_task: t5-4-3
+current_task: t5-4-4
 phases:
   - id: phase-1
     name: Foundation
@@ -702,10 +702,11 @@ phases:
               --vector
             description: Keep explicit --vector support and add --query as the primary path
               that embeds text through the embedding client.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/cli/commands/recall.ts
+              - src/index.ts
               - tests/cli/commands/recall.test.ts
             dependencies:
               - t5-4-1
