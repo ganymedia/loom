@@ -85,6 +85,8 @@ bun src/index.ts theme use <theme-id>
 
 `theme list` prints built-in themes and marks the active one. `theme preview` prints a theme description and color tokens without changing config. `theme use` writes `defaults.theme`; unknown IDs fall back to `loom-dark` through the theme resolver.
 
+The live session renders its agent tab strip with Ink's `AgentTabStrip` inside `ThemeProvider`, using `defaults.theme` (`loom-dark` by default). `/agents`, `/tab`, and `/agent <name>` still control agent visibility and switching; conversation history and tool-call output behavior are unchanged.
+
 ## Prompt Store commands
 
 Prompt Store CLI commands emit JSON and use the project-local `.loom/prompt-store.sqlite` database:
