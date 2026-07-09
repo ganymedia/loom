@@ -1,0 +1,137 @@
+# foundry-server.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM Foundry Server — Self-Hosted Configuration
+#
+# Docker image:  ghcr.io/loom-dev/foundry-server:latest
+# Run with:      docker run --env-file .env -p 8080:8080 \
+#                  -v $(pwd)/foundry-server.toml:/config/foundry-server.toml \
+#                  ghcr.io/loom-dev/foundry-server:latest
+#
+# All values can be overridden with environment variables.
+# Env var format: FOUNDRY_<SECTION>_<KEY> (uppercased, underscores for dots)
+# e.g. FOUNDRY_SERVER_PORT=9090 overrides [server].port
+# ─────────────────────────────────────────────────────────────────────────────
+
+[server]
+host              = "0.0.0.0"
+port              = 8080
+base_url          = "https://foundry.your-org.internal"  # used for badge URLs, tarball links
+read_timeout_sec  = 30
+write_timeout_sec = 60
+max_upload_mb     = 25            # max tarball size
+
+[server.tls]
+enabled     = false               # set true and provide cert/key for HTTPS
+cert_file   = "/etc/certs/tls.crt"
+key_file    = "/etc/certs/tls.key"
+
+# ── DATABASE ──────────────────────────────────────────────────────────────────
+
+[database]
+url             = "postgresql://foundry:password@localhost:5432/foundry"
+max_connections = 20
+run_migrations  = true            # auto-migrate schema on startup
+
+# ── OBJECT STORAGE ────────────────────────────────────────────────────────────
+
+[storage]
+provider = "minio"                # minio | s3 | gcs | filesystem
+bucket   = "loom-foundry"
+
+[storage.minio]
+endpoint   = "http://minio:9000"
+access_key = "${MINIO_ACCESS_KEY}"
+secret_key = "${MINIO_SECRET_KEY}"
+use_ssl    = false
+
+# For AWS S3:
+# [storage.s3]
+# region          = "us-east-1"
+# bucket          = "loom-foundry"
+# access_key_id   = "${AWS_ACCESS_KEY_ID}"
+# secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
+
+# For local filesystem (development only):
+# [storage.filesystem]
+# path = "/var/lib/foundry/packages"
+
+[storage.cdn]
+enabled     = false               # set true to serve tarballs via CDN
+base_url    = "https://cdn.your-org.internal/foundry"
+# When enabled, download URLs point to CDN. CDN must proxy from object store.
+
+# ── AUTHENTICATION ────────────────────────────────────────────────────────────
+
+[auth]
+session_secret    = "${AUTH_SESSION_SECRET}"   # 32+ char random string
+jwt_expiry_hours  = 24
+api_key_prefix    = "loom_"        # all issued API keys start with this prefix
+allow_registration = true          # set false to require admin to create users
+
+[auth.password]
+min_length    = 12
+require_upper = true
+require_digit = true
+
+[auth.sso]
+enabled   = false
+provider  = "oidc"                # oidc | saml | ldap
+# OIDC example:
+# issuer_url    = "https://sso.your-org.internal"
+# client_id     = "${OIDC_CLIENT_ID}"
+# client_secret = "${OIDC_CLIENT_SECRET}"
+
+# ── TEST RUNNER ───────────────────────────────────────────────────────────────
+
+[test_runner]
+enabled        = true
+workers        = 4                 # concurrent test jobs
+timeout_sec    = 120               # max test job duration
+inference_mode = "mock"            # always mock — no real inference in CI
+block_on_fail  = true             # fail publish if tests fail
+sandbox        = true              # run tests in isolated container
+
+# Optionally point test runner at a live endpoint (only if inference_mode=live)
+# [test_runner.backend]
+# endpoint = "http://vllm-internal:8000/v1"
+# model    = "gemma-4-26b"
+
+# ── RATE LIMITING ─────────────────────────────────────────────────────────────
+
+[rate_limits]
+publish_per_hour_per_ns  = 10     # max publishes per namespace per hour
+search_per_min_per_ip    = 60
+download_per_min_per_ip  = 300
+auth_attempts_per_15min  = 10
+
+# ── UPSTREAM PROXY (air-gapped support) ───────────────────────────────────────
+
+[upstream]
+enabled  = false
+# When enabled, packages not found locally are fetched from the upstream Foundry.
+# Supports air-gapped environments: seed with a package bundle, proxy the rest.
+url      = "https://foundry.loom.dev"
+api_key  = "${UPSTREAM_API_KEY}"   # read-only install key for the public Foundry
+cache    = true                    # cache upstream packages locally on first download
+cache_ttl_hours = 24
+
+# ── NAMESPACE POLICY ──────────────────────────────────────────────────────────
+
+[namespace_policy]
+require_verified_to_publish = false   # set true to require verified namespace badge
+reserved_namespaces = [
+  "loom", "loom-community", "loom-dev",
+  "admin", "root", "system", "foundry"
+]
+
+# ── OBSERVABILITY ─────────────────────────────────────────────────────────────
+
+[metrics]
+enabled   = true
+path      = "/metrics"            # Prometheus scrape endpoint
+namespace = "loom_foundry"
+
+[logging]
+level  = "info"                   # debug | info | warn | error
+format = "json"                   # json | text
+output = "stdout"                 # stdout | /var/log/foundry.log

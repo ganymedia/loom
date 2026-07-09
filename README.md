@@ -73,6 +73,19 @@ bun src/index.ts plan done <task-id>
 
 `plan status` prints a non-secret JSON summary of the current phase, milestone, task, and task counts. `plan done <task-id>` marks that task completed, advances to the next pending task, and writes the updated plan back to `.loom/plan.yaml`. `plan decompose <task-id>` is reserved for future decomposition logic and currently fails loudly instead of guessing.
 
+## Prompt Store commands
+
+Prompt Store CLI commands emit JSON and use the project-local `.loom/prompt-store.sqlite` database:
+
+```bash
+bun src/index.ts recall --vector 1,0 --top-k 5
+bun src/index.ts log session --id <session-id> --agent <agent>
+bun src/index.ts log add --session <session-id> --turn <index> --role <system|user|assistant|tool> --agent <agent> --content <text>
+bun src/index.ts log show --session <session-id>
+```
+
+`recall` performs cosine-similarity recall from stored embeddings and currently requires an explicit numeric `--vector` because embedding generation is not implemented. `log session` creates a Prompt Store session, `log add` records a prompt event, and `log show` prints ordered events for a session. The Log command validates roles and non-negative numeric fields before writing.
+
 ### Developer tool-call envelope
 
 For Phase 1, the Developer agent can execute a constrained JSON response envelope from the model:

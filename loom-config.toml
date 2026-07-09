@@ -1,0 +1,86 @@
+# ~/.loom/config.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM global configuration
+# Project-level overrides: .loom/config.toml in your project root
+# Environment variable overrides take precedence over all file config
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── BACKENDS ──────────────────────────────────────────────────────────────────
+# Register any endpoint LOOM can route to.
+# type = "openai-compatible" works for vLLM, Ollama, LM Studio, LocalAI, etc.
+# type = "anthropic" uses the Anthropic client.
+# No process management, no health polling — LOOM just sends requests.
+# If an endpoint is unreachable, the request fails and LOOM falls back to the
+# next backend in the agent's preferred list.
+
+[backends.vllm-31b]
+endpoint  = "http://localhost:8000/v1"
+type      = "openai-compatible"
+models    = ["gemma-4-31b"]
+
+[backends.vllm-26b]
+endpoint  = "http://localhost:7000/v1"
+type      = "openai-compatible"
+models    = ["gemma-4-26b"]
+
+[backends.anthropic]
+endpoint  = "https://api.anthropic.com"
+type      = "anthropic"
+api_key   = "${ANTHROPIC_API_KEY}"          # env var reference; never hardcode
+models    = ["claude-sonnet-4-6", "claude-opus-4-6"]
+
+[backends.openai]
+endpoint  = "https://api.openai.com/v1"
+type      = "openai-compatible"
+api_key   = "${OPENAI_API_KEY}"
+models    = ["gpt-4o", "gpt-4o-mini"]
+
+# Additional endpoints follow the same pattern — point at anything
+# that speaks the OpenAI-compatible API:
+#
+# [backends.remote-lab]
+# endpoint = "https://inference.internal.corp/v1"
+# type     = "openai-compatible"
+# api_key  = "${CORP_API_KEY}"
+# models   = ["mistral-small-3.2"]
+
+# ── PROFILES ─────────────────────────────────────────────────────────────────
+# Named profiles let you switch the active backend set instantly.
+# loom config profile use dev
+
+[profiles.dev]
+default_backend = "vllm-31b"
+default_model   = "gemma-4-31b"
+
+[profiles.lightweight]
+default_backend = "vllm-26b"
+default_model   = "gemma-4-26b"
+
+[profiles.cloud]
+default_backend = "anthropic"
+default_model   = "claude-sonnet-4-6"
+
+# ── GLOBAL DEFAULTS ──────────────────────────────────────────────────────────
+
+[defaults]
+active_profile  = "dev"
+temperature     = 0.2
+max_tokens      = 8192
+stream          = true                      # stream responses to terminal by default
+request_timeout = 120                       # seconds; applies to all endpoints
+
+# ── SESSION CONTINUITY ────────────────────────────────────────────────────────
+
+[session]
+handoff_threshold  = 0.80                   # trigger handoff at 80% context usage
+narrative_path     = ".loom/narrative.md"   # relative to project root
+handoff_path       = ".loom/handoff.md"
+handoff_archive    = ".loom/handoffs/"
+
+# ── PROMPT STORE ─────────────────────────────────────────────────────────────
+
+[store]
+path              = "~/.loom/store.db"      # global SQLite store; shared across projects
+embedding_backend = "vllm-26b"             # which endpoint to use for embeddings
+embedding_model   = "gemma-4-26b"          # model must support embeddings
+top_k             = 3                       # default recall depth for inject stages

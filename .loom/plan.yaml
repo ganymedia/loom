@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-08
 current_phase: phase-4
-current_milestone: milestone-4-3
-current_task: task-4-3-1
+current_milestone: milestone-4-4
+current_task: task-4-4-2
 phases:
   - id: phase-1
     name: Foundation
@@ -412,7 +412,7 @@ phases:
           - id: task-4-3-1
             name: Foundry HTTP client
             description: HTTP client for Foundry package registry
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/foundry/client.ts
@@ -427,7 +427,7 @@ phases:
           - id: task-4-4-1
             name: Recall command
             description: Cosine-similarity recall from Prompt Store
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/cli/commands/recall.ts
@@ -436,7 +436,7 @@ phases:
           - id: task-4-4-2
             name: Log command
             description: Prompt history logging and retrieval
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/cli/commands/log.ts

@@ -1,7 +1,7 @@
 # Handoff
 
-- **Goal & status** — Phase 4 platform work is active; current plan task is `task-4-3-1` Foundry HTTP client, but uncommitted cleanup/state work must be resolved first.
-- **Completed work** — Pipeline engine parser/executors/DAG walker was implemented, verified, committed, and pushed in `229d58c`; sub-agent runner was implemented and verified locally with `bun run typecheck`, `bun run lint`, and `bun test` (145 pass); support reference docs were added under `support_docs/` and byte-identical root duplicate docs were removed.
-- **Failed attempts** — Foundry client implementation was blocked until `support_docs/foundry-api.md` was identified as the source of truth; no code implementation failed, only Biome formatting/import-order fixes were needed.
+- **Goal & status** — Phase 4 platform work is active; current plan task is `task-4-4-2` Log command, with verified Foundry and Recall changes still uncommitted.
+- **Completed work** — Prior sub-agent/support-doc cleanup was committed as `95fc427`; Foundry HTTP client and Recall command were implemented, plan/narrative updated, and verified with `bun run typecheck`, `bun run lint`, and `bun test` (153 pass).
+- **Failed attempts** — Recall command test initially used SQLite `:memory:` across separate connections and returned no rows; fixed by using a temp SQLite file. Foundry/Recall lint issues were formatting only.
 - **Branch name** — main
-- **Next action** — Review `git status`, inspect/stage the uncommitted sub-agent runner, `.loom` updates, `support_docs/`, and root duplicate deletions, then commit before starting `task-4-3-1` from `support_docs/foundry-api.md`.
+- **Next action** — Inspect `git status` and commit the verified uncommitted Foundry/Recall files, then start `task-4-4-2` Log command.

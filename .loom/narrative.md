@@ -123,3 +123,19 @@ Decision: implement the sub-agent runner as deterministic in-process orchestrati
 ## 2026-07-09 — Session wrap-up and support docs source of truth
 
 Pipeline engine work was committed and pushed in `229d58c`. Sub-agent runner work is implemented and verified locally but not committed. Foundry client work was paused after confirming `support_docs/foundry-api.md` and `support_docs/foundry-server.toml` are now the authoritative Foundry references. Decision: treat `support_docs/` as the source of truth for reference documents; root duplicates that were byte-identical to `support_docs` were removed, while differing root files (`SPEC.md`, `BUILDING.md`, `package.json`, `biome.json`, `tsconfig.json`) were left untouched pending an explicit reconciliation decision. Next session must review and commit the uncommitted sub-agent runner, `.loom` state, `support_docs/`, and root duplicate deletions before implementing the Foundry HTTP client.
+
+## 2026-07-09 — Foundry HTTP client
+
+Decision: implement the Foundry client as a typed, injectable-fetch HTTP wrapper rather than CLI command wiring or credential-file handling. The client covers the package search/detail/version/download, publish/poll/yank, auth key/session, health, and readiness endpoints from `support_docs/foundry-api.md`; callers pass an API key explicitly so this layer does not read or persist secrets. Errors parse the standard Foundry error envelope and never include Authorization headers or API-key values. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (150 passing tests). Next work is `task-4-4-1`, Recall command.
+
+## 2026-07-09 — Recall command
+
+Decision: implement `loom recall` as a JSON-emitting CLI over the existing Prompt Store cosine-similarity API with an explicit `--vector` input, not text-query embedding generation. The project has stored embeddings and local cosine recall, but no built embedding-generation module yet; accepting a raw vector avoids hardcoding an embedding model or inventing backend behavior outside the current spec slice. The command fails loudly without `--vector`, validates finite numeric vectors and positive `--top-k`, opens the project-local `.loom/prompt-store.sqlite`, and closes the store after recall. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (153 passing tests). Next work is `task-4-4-2`, Log command.
+
+## 2026-07-09 — Session handoff summary
+
+Sub-agent/support-doc cleanup was committed as `95fc427`. Foundry HTTP client and Recall command are implemented and verified but not committed; `.loom/plan.yaml` now points to `task-4-4-2`, Log command. Next session should inspect/stage/commit the uncommitted Foundry/Recall work before starting the Log command.
+
+## 2026-07-09 — Log command
+
+Decision: implement `loom log` as a small JSON-emitting command group over the existing Prompt Store public API, with `session` to create a session, `add` to record a prompt event, and `show` to retrieve ordered session history. This avoids adding storage APIs or embedding behavior beyond the current Prompt Store contract while still covering prompt history logging and retrieval. The command validates roles and non-negative numeric fields, uses discovered model names only as caller-provided event metadata, opens the project-local `.loom/prompt-store.sqlite`, and closes the store after each operation. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (155 passing tests). `task-4-4-2` is marked completed; there is no next pending task in the current `.loom/plan.yaml`.
