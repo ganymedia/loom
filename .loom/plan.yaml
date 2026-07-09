@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-3
-current_task: t5-3-3
+current_task: t5-3-4
 phases:
   - id: phase-1
     name: Foundation
@@ -595,7 +595,7 @@ phases:
             name: Move src_tui_components.tsx to src/tui/components.tsx as the live module
             description: Promote the flattened TUI components reference into the live module
               tree after Ink dependencies and theme support exist.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/tui/components.tsx
@@ -654,7 +654,7 @@ phases:
             name: TSX typecheck coverage in tsconfig.json and Biome config
             description: Ensure TSX files are typechecked and linted by the project
               configuration.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - tsconfig.json
