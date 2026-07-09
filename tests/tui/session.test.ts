@@ -110,6 +110,7 @@ describe("startSession", () => {
 
     await startSession(config, {
       projectRoot,
+      contextLimit: 100,
       initialPrompt: "Say hello",
       fetchImpl: async (input) => {
         if (input.endsWith("/v1/models")) {
@@ -127,6 +128,10 @@ describe("startSession", () => {
 
     expect(output).toContain("Agents:\n┌");
     expect(output).toContain("Developer  Architect  Tester  Security");
+    expect(output.match(/Status:/g)?.length).toBe(2);
+    expect(output).toContain("tokens");
+    expect(output).toContain("8%");
+    expect(output).toContain("developer ▸");
     expect(output).toContain("Developer: Hello from Developer");
   });
 
@@ -138,6 +143,7 @@ describe("startSession", () => {
 
     await startSession(config, {
       projectRoot,
+      contextLimit: 100,
       initialPrompt: "First turn",
       input: ["Read note.txt", "/exit"],
       fetchImpl: async (input, init) => {
@@ -194,6 +200,7 @@ describe("startSession", () => {
     );
     expect(output).toContain("Developer: First answer");
     expect(output).toContain("Developer: Read the note");
+    expect(output).toContain("20%");
     expect(output).toContain("Tool 1 (file-reader): ok — tool output");
   });
 
@@ -204,6 +211,7 @@ describe("startSession", () => {
 
     await startSession(config, {
       projectRoot,
+      contextLimit: 100,
       input: [
         "/tab",
         "Plan architecture",
@@ -242,9 +250,13 @@ describe("startSession", () => {
 
     expect(chatRequestCount).toBe(2);
     expect(output.match(/Agents:/g)?.length).toBe(3);
+    expect(output.match(/Status:/g)?.length).toBe(5);
     expect(output).toContain("Developer  Architect  Tester  Security");
     expect(output).toContain("Architect: Architecture answer");
+    expect(output).toContain("architect ▸");
     expect(output).toContain("Security: Security answer");
+    expect(output).toContain("security ▸");
+    expect(output).toContain("16%");
   });
 
   test("reports unknown agent names without running a prompt", async () => {

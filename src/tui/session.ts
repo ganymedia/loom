@@ -11,9 +11,10 @@ import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
+import { SessionManager } from "@loom/session/manager";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
-import { AgentTabStrip, ThemeProvider } from "@loom/tui/components";
+import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import {
   type BuiltInAgentName,
   builtInAgentTabs,
@@ -26,6 +27,7 @@ import { createElement } from "react";
 export interface StartSessionOptions {
   initialAgent?: BuiltInAgentName;
   backendOverride?: string;
+  contextLimit?: number;
   fetchImpl?: FetchLike;
   initialPrompt?: string;
   input?: AsyncIterable<string> | Iterable<string>;
@@ -34,6 +36,8 @@ export interface StartSessionOptions {
   smokeFilePath?: string;
   writeOutput?: (message: string) => void;
 }
+
+const DEFAULT_SESSION_CONTEXT_LIMIT = 128_000;
 
 export interface SessionSmokeResult {
   backend?: ResolvedBackend;
@@ -146,6 +150,30 @@ function renderAgentTabs(
   );
 }
 
+function renderSessionStatus({
+  sessionId,
+  tokenPercent,
+  activeAgentName,
+  themeId,
+}: {
+  sessionId: string;
+  tokenPercent: number;
+  activeAgentName: BuiltInAgentName;
+  themeId: string | undefined;
+}): string {
+  return renderToString(
+    createElement(
+      ThemeProvider,
+      { themeId },
+      createElement(StatusBar, {
+        sessionId,
+        tokenPercent,
+        activeAgentName,
+      }),
+    ),
+  );
+}
+
 function createBuiltInAgent(
   agentName: BuiltInAgentName,
   config: LoomConfig,
@@ -182,7 +210,7 @@ async function runAgentPrompt(
     conversationHistory: AgentMessage[];
   },
   writeOutput: (message: string) => void,
-): Promise<void> {
+): Promise<AgentTurnResult> {
   const turn = await agent.runTurn(prompt, context);
   writeOutput(`${agent.displayName}: ${turn.content}\n`);
   for (const toolResultLine of formatToolCallResults(turn)) {
@@ -194,6 +222,8 @@ async function runAgentPrompt(
     { role: "user", content: prompt, timestamp },
     { role: "assistant", content: turn.content, timestamp },
   );
+
+  return turn;
 }
 
 export async function startSession(
@@ -234,21 +264,41 @@ export async function startSession(
       projectRoot: options.projectRoot ?? process.cwd(),
       conversationHistory: [] as AgentMessage[],
     };
+    const sessionManager = new SessionManager({
+      sessionId: context.sessionId,
+      contextLimit: options.contextLimit ?? DEFAULT_SESSION_CONTEXT_LIMIT,
+    });
+    const writeSessionStatus = (): void => {
+      writeOutput(
+        `Status:\n${renderSessionStatus({
+          sessionId: context.sessionId,
+          tokenPercent: sessionManager.currentDecision().usageRatio,
+          activeAgentName,
+          themeId: config.defaults.theme,
+        })}\n`,
+      );
+    };
 
     try {
       writeOutput(
         `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
       );
+      writeSessionStatus();
       if (
         options.initialPrompt !== undefined &&
         options.initialPrompt.length > 0
       ) {
-        await runAgentPrompt(
+        const turn = await runAgentPrompt(
           agent,
           options.initialPrompt,
           context,
           writeOutput,
         );
+        sessionManager.recordTurn({
+          promptTokens: turn.promptTokens,
+          completionTokens: turn.completionTokens,
+        });
+        writeSessionStatus();
       }
 
       const interactive =
@@ -268,6 +318,7 @@ export async function startSession(
             writeOutput(
               `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
             );
+            writeSessionStatus();
             continue;
           }
           if (prompt === "/tab") {
@@ -276,6 +327,7 @@ export async function startSession(
             writeOutput(
               `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
             );
+            writeSessionStatus();
             continue;
           }
           if (prompt.startsWith("/agent ")) {
@@ -289,9 +341,20 @@ export async function startSession(
             writeOutput(
               `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
             );
+            writeSessionStatus();
             continue;
           }
-          await runAgentPrompt(agent, prompt, context, writeOutput);
+          const turn = await runAgentPrompt(
+            agent,
+            prompt,
+            context,
+            writeOutput,
+          );
+          sessionManager.recordTurn({
+            promptTokens: turn.promptTokens,
+            completionTokens: turn.completionTokens,
+          });
+          writeSessionStatus();
         }
       }
     } catch (error) {

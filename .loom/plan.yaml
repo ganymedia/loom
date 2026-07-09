@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
-current_milestone: m5-3
-current_task: t5-3-6
+current_milestone: m5-4
+current_task: t5-4-1
 phases:
   - id: phase-1
     name: Foundation
@@ -569,7 +569,7 @@ phases:
         description: Install Ink/React, promote flattened design-system references into
           live modules, and replace the text session renderer with an Ink
           component tree.
-        status: pending
+        status: completed
         token_estimate: xlarge
         tasks:
           - id: t5-3-1
@@ -632,7 +632,7 @@ phases:
             name: Wire StatusBar into the live session loop
             description: Show token progress, session id, and active agent through the live
               StatusBar component.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/tui/session.ts
