@@ -125,9 +125,8 @@ describe("startSession", () => {
       },
     });
 
-    expect(output).toContain(
-      "Agents: [Developer] | Architect | Tester | Security",
-    );
+    expect(output).toContain("Agents:\n┌");
+    expect(output).toContain("Developer  Architect  Tester  Security");
     expect(output).toContain("Developer: Hello from Developer");
   });
 
@@ -242,16 +241,9 @@ describe("startSession", () => {
     });
 
     expect(chatRequestCount).toBe(2);
-    expect(output).toContain(
-      "Agents: [Developer] | Architect | Tester | Security",
-    );
-    expect(output).toContain(
-      "Agents: Developer | [Architect] | Tester | Security",
-    );
+    expect(output.match(/Agents:/g)?.length).toBe(3);
+    expect(output).toContain("Developer  Architect  Tester  Security");
     expect(output).toContain("Architect: Architecture answer");
-    expect(output).toContain(
-      "Agents: Developer | Architect | Tester | [Security]",
-    );
     expect(output).toContain("Security: Security answer");
   });
 

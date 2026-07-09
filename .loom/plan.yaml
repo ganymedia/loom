@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-3
-current_task: t5-3-5
+current_task: t5-3-6
 phases:
   - id: phase-1
     name: Foundation
@@ -620,10 +620,11 @@ phases:
             description: Replace the interim text-based tab switching with the originally
               specified Ink UI while preserving conversation history across
               tabs, tool-call display, and deterministic test input mode.
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - src/tui/session.ts
+              - src/tui/components.tsx
               - tests/tui/session.test.ts
             dependencies:
               - t5-3-3

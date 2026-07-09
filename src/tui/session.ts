@@ -13,12 +13,15 @@ import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
+import { AgentTabStrip, ThemeProvider } from "@loom/tui/components";
 import {
   type BuiltInAgentName,
-  formatAgentTabStrip,
+  builtInAgentTabs,
   isBuiltInAgentName,
   nextAgentName,
 } from "@loom/tui/tab-strip";
+import { renderToString } from "ink";
+import { createElement } from "react";
 
 export interface StartSessionOptions {
   initialAgent?: BuiltInAgentName;
@@ -117,6 +120,32 @@ function formatToolCallResults(turn: AgentTurnResult): string[] {
   });
 }
 
+function renderAgentTabs(
+  activeAgentName: BuiltInAgentName,
+  themeId: string | undefined,
+): string {
+  const activeIndex = builtInAgentTabs.findIndex(
+    (tab) => tab.name === activeAgentName,
+  );
+
+  if (activeIndex === -1) {
+    throw new Error(
+      `Unable to render unknown active agent "${activeAgentName}"`,
+    );
+  }
+
+  return renderToString(
+    createElement(
+      ThemeProvider,
+      { themeId },
+      createElement(AgentTabStrip, {
+        tabs: builtInAgentTabs,
+        activeIndex,
+      }),
+    ),
+  );
+}
+
 function createBuiltInAgent(
   agentName: BuiltInAgentName,
   config: LoomConfig,
@@ -207,7 +236,9 @@ export async function startSession(
     };
 
     try {
-      writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+      writeOutput(
+        `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+      );
       if (
         options.initialPrompt !== undefined &&
         options.initialPrompt.length > 0
@@ -234,13 +265,17 @@ export async function startSession(
           if (prompt.length === 0) continue;
           if (prompt === "/exit" || prompt === "/quit") break;
           if (prompt === "/agents") {
-            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            writeOutput(
+              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+            );
             continue;
           }
           if (prompt === "/tab") {
             activeAgentName = nextAgentName(activeAgentName);
             agent = createBuiltInAgent(activeAgentName, config, options);
-            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            writeOutput(
+              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+            );
             continue;
           }
           if (prompt.startsWith("/agent ")) {
@@ -251,7 +286,9 @@ export async function startSession(
             }
             activeAgentName = requestedAgent;
             agent = createBuiltInAgent(activeAgentName, config, options);
-            writeOutput(`Agents: ${formatAgentTabStrip(activeAgentName)}\n`);
+            writeOutput(
+              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+            );
             continue;
           }
           await runAgentPrompt(agent, prompt, context, writeOutput);

@@ -24,7 +24,7 @@ export function ThemeProvider({
   children,
 }: {
   themeId: string | undefined;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   const theme = resolveTheme(themeId);
   return (
