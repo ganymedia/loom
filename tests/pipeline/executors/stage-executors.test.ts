@@ -57,6 +57,7 @@ describe("pipeline stage executors", () => {
       config: {
         activeProfile: "default",
         defaults: { theme: "loom-dark" },
+        store: { topK: 3 },
         profiles: { default: { defaultBackend: "local" } },
         backends: {
           local: {

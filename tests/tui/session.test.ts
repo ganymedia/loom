@@ -8,6 +8,7 @@ import { runSessionSmoke, startSession } from "@loom/tui/session";
 const config: LoomConfig = {
   activeProfile: "default",
   defaults: { theme: "loom-dark" },
+  store: { topK: 3 },
   profiles: {
     default: { defaultBackend: "local" },
   },

@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-4
-current_task: t5-4-1
+current_task: t5-4-2
 phases:
   - id: phase-1
     name: Foundation
@@ -676,9 +676,10 @@ phases:
             description: Resolve backend and model from store embedding configuration
               through the same model-discovery seam; do not hardcode model
               names.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
+              - src/config/schema.ts
               - src/backends/embeddings.ts
               - tests/backends/embeddings.test.ts
             dependencies: []

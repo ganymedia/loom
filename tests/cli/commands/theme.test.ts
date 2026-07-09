@@ -18,6 +18,7 @@ function themeProgram(projectRoot: string, output: string[]): Command {
     {
       activeProfile: "default",
       defaults: { theme: "loom-dark" },
+      store: { topK: 3 },
       profiles: { default: {} },
       backends: {},
     },
