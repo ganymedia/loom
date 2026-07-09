@@ -163,3 +163,7 @@ Decision: re-verify `src/foundry/client.ts` against root `foundry-api.md` now th
 ## 2026-07-09 — Ink dependency installation
 
 Decision: satisfy `t5-3-1` by adding `ink` and `react` as runtime dependencies and `@types/react` as a development dependency through `bun add`, so `package.json` and `bun.lock` remain synchronized. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (157 passing tests). Next work is `t5-3-2`, promoting the flattened TUI theme reference into `src/tui/theme.ts`.
+
+## 2026-07-09 — TUI theme module promotion
+
+Decision: promote `support_docs/src_tui_theme.ts` into live code as `src/tui/theme.ts`, preserving the built-in theme definitions and semantic color helpers while formatting it to repository style. Added `tests/tui/theme.test.ts` to verify default theme resolution, fallback behavior, status/token color mapping, and deterministic agent tab colors. Verification passed with `bun test tests/tui/theme.test.ts`, `bun run typecheck`, `bun run lint`, and `bun test` (161 passing tests). Next work is `t5-3-3`, promoting the flattened Ink component reference into `src/tui/components.tsx`.

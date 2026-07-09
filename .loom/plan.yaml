@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-3
-current_task: t5-3-2
+current_task: t5-3-3
 phases:
   - id: phase-1
     name: Foundation
@@ -586,7 +586,7 @@ phases:
             name: Move src_tui_theme.ts to src/tui/theme.ts as the live module
             description: Promote the flattened theme reference into the live TUI module tree
               without treating the reference as executable code.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/tui/theme.ts
