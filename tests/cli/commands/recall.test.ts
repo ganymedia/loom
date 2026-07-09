@@ -17,7 +17,7 @@ function recallProgram(storePath: string, output: string[]): Command {
   return program;
 }
 
-function seedStore(path: string): void {
+async function seedStore(path: string): Promise<void> {
   const store = new PromptStore(new Database(path));
   try {
     store.createSession({
@@ -32,7 +32,7 @@ function seedStore(path: string): void {
       { id: "event-b", content: "beta", vector: [0, 1] },
       { id: "event-c", content: "gamma", vector: [0.8, 0.2] },
     ]) {
-      store.recordEvent({
+      await store.recordEvent({
         id: event.id,
         sessionId: "session-1",
         turnIndex: 0,
@@ -59,7 +59,7 @@ describe("recall command", () => {
   test("prints top cosine-similarity recall results", async () => {
     const projectRoot = await mkdtemp(join(tmpdir(), "loom-recall-command-"));
     const storePath = join(projectRoot, "prompt-store.sqlite");
-    seedStore(storePath);
+    await seedStore(storePath);
     const output: string[] = [];
     const program = recallProgram(storePath, output);
 

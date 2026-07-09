@@ -53,6 +53,20 @@ export interface PromptStoreRecallResult {
   score: number;
 }
 
+export interface PromptStoreEmbeddingResult {
+  provider: string;
+  model: string;
+  vector: readonly number[];
+}
+
+export type PromptStoreEmbeddingGenerator = (
+  event: PromptStoreEventInput,
+) => Promise<PromptStoreEmbeddingResult>;
+
+export interface PromptStoreOptions {
+  embeddingGenerator?: PromptStoreEmbeddingGenerator;
+}
+
 interface PromptEventRow {
   id: string;
   session_id: string;
@@ -73,12 +87,23 @@ interface EmbeddingRecallRow extends PromptEventRow {
 }
 
 export class PromptStore {
-  constructor(private readonly db: Database) {
+  private readonly embeddingGenerator:
+    | PromptStoreEmbeddingGenerator
+    | undefined;
+
+  constructor(
+    private readonly db: Database,
+    options: PromptStoreOptions = {},
+  ) {
+    this.embeddingGenerator = options.embeddingGenerator;
     initializePromptStoreSchema(db);
   }
 
-  static open(path = ".loom/prompt-store.sqlite"): PromptStore {
-    return new PromptStore(new Database(path));
+  static open(
+    path = ".loom/prompt-store.sqlite",
+    options: PromptStoreOptions = {},
+  ): PromptStore {
+    return new PromptStore(new Database(path), options);
   }
 
   close(): void {
@@ -109,7 +134,26 @@ export class PromptStore {
     }
   }
 
-  recordEvent(input: PromptStoreEventInput): void {
+  async recordEvent(input: PromptStoreEventInput): Promise<void> {
+    const embedding = await this.embeddingGenerator?.(input);
+    const insertEvent = this.db.transaction(() => {
+      this.insertEvent(input);
+      if (embedding !== undefined) {
+        this.storeEmbedding({
+          id: `embedding-${input.id}`,
+          eventId: input.id,
+          provider: embedding.provider,
+          model: embedding.model,
+          vector: embedding.vector,
+          createdAt: input.createdAt,
+        });
+      }
+    });
+
+    insertEvent();
+  }
+
+  private insertEvent(input: PromptStoreEventInput): void {
     this.db
       .query(
         "INSERT INTO prompt_events (id, session_id, turn_index, role, agent, backend, model, content, prompt_tokens, completion_tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

@@ -41,7 +41,7 @@ async function main(): Promise<void> {
     profileOverride === undefined ? {} : { profileOverride },
   );
   registerConfigCommand(program, config);
-  registerLogCommand(program);
+  registerLogCommand(program, { config });
   registerPlanCommand(program);
   registerRecallCommand(program);
   registerThemeCommand(program, config);

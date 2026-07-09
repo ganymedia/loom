@@ -100,7 +100,7 @@ bun src/index.ts log show --session <session-id>
 
 `recall` performs cosine-similarity recall from stored embeddings and currently requires an explicit numeric `--vector` because embedding generation is not implemented. `log session` creates a Prompt Store session, `log add` records a prompt event, and `log show` prints ordered events for a session. The Log command validates roles and non-negative numeric fields before writing.
 
-Embedding generation is available as a backend client for follow-on recall/store wiring. Runtime config supports `store.embeddingBackend` and optional `store.embeddingModel`; LOOM performs fresh `GET /v1/models` discovery for that backend, treats `embeddingModel` only as a preferred hint, and posts text to OpenAI-compatible `POST /v1/embeddings` with the resolved model.
+Embedding generation is wired into Prompt Store writes when `store.embeddingBackend` is configured. Runtime config also supports optional `store.embeddingModel`; LOOM performs fresh `GET /v1/models` discovery for that backend, treats `embeddingModel` only as a preferred hint, and posts text to OpenAI-compatible `POST /v1/embeddings` with the resolved model before storing the event and embedding together.
 
 ### Developer tool-call envelope
 

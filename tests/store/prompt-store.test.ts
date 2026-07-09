@@ -7,7 +7,7 @@ function memoryStore(): PromptStore {
 }
 
 describe("PromptStore", () => {
-  test("records a session and ordered prompt events", () => {
+  test("records a session and ordered prompt events", async () => {
     const store = memoryStore();
 
     store.createSession({
@@ -17,7 +17,7 @@ describe("PromptStore", () => {
       gitBranch: "main",
       startedAt: 1,
     });
-    store.recordEvent({
+    await store.recordEvent({
       id: "event-2",
       sessionId: "session-1",
       turnIndex: 1,
@@ -30,7 +30,7 @@ describe("PromptStore", () => {
       promptTokens: 5,
       completionTokens: 7,
     });
-    store.recordEvent({
+    await store.recordEvent({
       id: "event-1",
       sessionId: "session-1",
       turnIndex: 0,
@@ -84,7 +84,7 @@ describe("PromptStore", () => {
     );
   });
 
-  test("stores embeddings and recalls nearest events by cosine similarity", () => {
+  test("stores embeddings and recalls nearest events by cosine similarity", async () => {
     const store = memoryStore();
 
     store.createSession({
@@ -98,7 +98,7 @@ describe("PromptStore", () => {
       { id: "event-b", content: "beta", vector: [0, 1] },
       { id: "event-c", content: "gamma", vector: [0.8, 0.2] },
     ]) {
-      store.recordEvent({
+      await store.recordEvent({
         id: event.id,
         sessionId: "session-1",
         turnIndex: 0,
@@ -126,7 +126,67 @@ describe("PromptStore", () => {
     expect(results[1]?.score).toBeGreaterThan(0.9);
   });
 
-  test("rejects empty embeddings and empty recall queries", () => {
+  test("embeds prompt events automatically when an embedding generator is configured", async () => {
+    const store = new PromptStore(new Database(":memory:"), {
+      embeddingGenerator: async (event) => ({
+        provider: "local-embedder",
+        model: "embedding-model",
+        vector: event.content === "alpha" ? [1, 0] : [0, 1],
+      }),
+    });
+
+    store.createSession({
+      id: "session-1",
+      projectRoot: "/tmp/project",
+      activeAgent: "developer",
+      startedAt: 1,
+    });
+    await store.recordEvent({
+      id: "event-a",
+      sessionId: "session-1",
+      turnIndex: 0,
+      role: "user",
+      agent: "developer",
+      content: "alpha",
+      createdAt: 2,
+    });
+
+    const results = store.recallSimilar([1, 0], { topK: 1 });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.event.id).toBe("event-a");
+    expect(results[0]?.score).toBeCloseTo(1);
+  });
+
+  test("does not store an event when automatic embedding fails", async () => {
+    const store = new PromptStore(new Database(":memory:"), {
+      embeddingGenerator: async () => {
+        throw new Error("embedding backend unavailable");
+      },
+    });
+
+    store.createSession({
+      id: "session-1",
+      projectRoot: "/tmp/project",
+      activeAgent: "developer",
+      startedAt: 1,
+    });
+
+    await expect(
+      store.recordEvent({
+        id: "event-a",
+        sessionId: "session-1",
+        turnIndex: 0,
+        role: "user",
+        agent: "developer",
+        content: "alpha",
+        createdAt: 2,
+      }),
+    ).rejects.toThrow("embedding backend unavailable");
+    expect(store.listSessionEvents("session-1")).toEqual([]);
+  });
+
+  test("rejects empty embeddings and empty recall queries", async () => {
     const store = memoryStore();
 
     store.createSession({
@@ -135,7 +195,7 @@ describe("PromptStore", () => {
       activeAgent: "developer",
       startedAt: 1,
     });
-    store.recordEvent({
+    await store.recordEvent({
       id: "event-1",
       sessionId: "session-1",
       turnIndex: 0,

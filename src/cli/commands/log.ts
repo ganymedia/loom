@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import type { FetchLike } from "@loom/backends/discovery";
+import { generateEmbedding } from "@loom/backends/embeddings";
+import type { LoomConfig } from "@loom/config/schema";
 import { type PromptEventRole, PromptStore } from "@loom/store/prompt-store";
 import type { Command } from "commander";
 
@@ -9,6 +12,9 @@ export interface RegisterLogCommandOptions {
   storePath?: string;
   now?: () => number;
   idGenerator?: () => string;
+  config?: LoomConfig;
+  fetchImpl?: FetchLike;
+  env?: NodeJS.ProcessEnv;
 }
 
 interface SessionCommandOptions {
@@ -99,8 +105,30 @@ export function registerLogCommand(
     .option("--model <name>", "discovered model used for the event")
     .option("--prompt-tokens <count>", "prompt token count")
     .option("--completion-tokens <count>", "completion token count")
-    .action((commandOptions: AddCommandOptions) => {
-      const store = PromptStore.open(storePath(options));
+    .action(async (commandOptions: AddCommandOptions) => {
+      const store = PromptStore.open(
+        storePath(options),
+        options.config === undefined ||
+          options.config.store.embeddingBackend === undefined
+          ? {}
+          : {
+              embeddingGenerator: async (event) => {
+                const embedding = await generateEmbedding({
+                  config: options.config as LoomConfig,
+                  input: event.content,
+                  ...(options.fetchImpl === undefined
+                    ? {}
+                    : { fetchImpl: options.fetchImpl }),
+                  ...(options.env === undefined ? {} : { env: options.env }),
+                });
+                return {
+                  provider: embedding.backend.key,
+                  model: embedding.backend.model,
+                  vector: embedding.embedding,
+                };
+              },
+            },
+      );
       try {
         const event = {
           id: commandOptions.id ?? idGenerator(),
@@ -143,7 +171,7 @@ export function registerLogCommand(
               }),
         };
 
-        store.recordEvent(event);
+        await store.recordEvent(event);
         writeOut(`${JSON.stringify({ event }, null, 2)}\n`);
       } finally {
         store.close();
