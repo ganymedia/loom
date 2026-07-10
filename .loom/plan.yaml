@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-6
-current_task: t5-6-1
+current_task: t5-6-2
 phases:
   - id: phase-1
     name: Foundation
@@ -763,7 +763,7 @@ phases:
           - id: t5-6-1
             name: Run bun build --compile and produce a working dist/loom binary
             description: Build a standalone binary artifact with Bun compile.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - package.json
