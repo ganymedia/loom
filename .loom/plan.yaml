@@ -348,7 +348,7 @@ phases:
     description: Pipeline engine, sub-agent runtime, Foundry client, and recall/log commands
     exit_criterion: Pipeline engine, sub-agent runtime, Foundry client, recall
       command, and log command work
-    status: in_progress
+    status: completed
     token_estimate: xlarge
     milestones:
       - id: milestone-4-1
@@ -391,7 +391,7 @@ phases:
       - id: milestone-4-2
         name: Sub-agent Runtime
         description: Sub-agent spawning and lifecycle management
-        status: pending
+        status: completed
         token_estimate: large
         tasks:
           - id: task-4-2-1
@@ -406,7 +406,7 @@ phases:
       - id: milestone-4-3
         name: Foundry Client
         description: Foundry HTTP client for publish/install/search
-        status: pending
+        status: completed
         token_estimate: large
         tasks:
           - id: task-4-3-1
@@ -421,7 +421,7 @@ phases:
       - id: milestone-4-4
         name: Recall and Log Commands
         description: Prompt history recall and logging commands
-        status: pending
+        status: completed
         token_estimate: medium
         tasks:
           - id: task-4-4-1
@@ -451,14 +451,14 @@ phases:
       matching the loom-dark theme, performs real semantic recall end-to-end
       from a natural-language query, has a verified Foundry client against a
       confirmed API spec, and has zero uncommitted or unverified work.
-    status: in_progress
+    status: completed
     token_estimate: xlarge
     milestones:
       - id: m5-1
         name: Repository and claim audit
         description: Confirm every narrative claim about implemented and verified work
           against actual committed, tested code.
-        status: in_progress
+        status: completed
         token_estimate: medium
         tasks:
           - id: t5-1-1
@@ -513,7 +513,7 @@ phases:
         description: Ensure Foundry, config, and agent test reference specs exist at the
           repository root and re-verify Foundry against the now-present API
           reference.
-        status: pending
+        status: completed
         token_estimate: medium
         tasks:
           - id: t5-2-1
@@ -667,7 +667,7 @@ phases:
         description: Add real embedding generation so semantic recall works from
           natural-language queries and pipeline injection can use Context Bus
           state.
-        status: pending
+        status: completed
         token_estimate: large
         tasks:
           - id: t5-4-1
@@ -757,7 +757,7 @@ phases:
         name: Production binary packaging
         description: Compile and smoke-test a standalone LOOM binary after UI, recall,
           and session-continuity work is complete.
-        status: pending
+        status: completed
         token_estimate: large
         tasks:
           - id: t5-6-1
@@ -794,7 +794,7 @@ phases:
             description: Run bun run typecheck, bun run lint, bun test, plus one live
               end-to-end session covering agent switching, a pipeline run, a
               plan command, and a handoff.
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - .loom/narrative.md
