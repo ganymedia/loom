@@ -1,10 +1,10 @@
 name: LOOM
 version: 0.1.0
 created: 2026-07-07
-updated: 2026-07-09
-current_phase: phase-5
-current_milestone: m5-6
-current_task: t5-6-4
+updated: 2026-07-10
+current_phase: phase-6
+current_milestone: m6-1
+current_task: t6-1-1
 phases:
   - id: phase-1
     name: Foundation
@@ -800,3 +800,248 @@ phases:
               - .loom/narrative.md
             dependencies:
               - t5-6-2
+  - id: phase-6
+    name: CLI polish, pipeline command, and installer-style release
+    description: Close CLI UX, public pipeline command, config-reference, installer,
+      and user-testing gaps before external testing.
+    exit_criterion: A stranger with no repository access can download a released LOOM
+      binary, install it with a single documented command, configure it against their
+      own backend, and complete the full user testing guide without hitting an
+      undocumented failure.
+    status: in_progress
+    token_estimate: xlarge
+    milestones:
+      - id: m6-1
+        name: Fix --version and --help fallthrough
+        description: ./dist/loom --version prints a version string and exits 0;
+          ./dist/loom --help prints help and exits 0 with no wrapper error.
+        status: in_progress
+        token_estimate: medium
+        tasks:
+          - id: t6-1-1
+            name: Fix --version to print version and exit before session startup runs
+            description: Commander.js's built-in --version should short-circuit before
+              config loading or session bootstrap; confirm the entry point is not
+              intercepting that exit path.
+            status: pending
+            token_estimate: small
+            files:
+              - src/index.ts
+              - tests/cli
+            dependencies: []
+          - id: t6-1-2
+            name: Fix --help fatal wrapper error after help text prints
+            description: Help text currently prints correctly, then a fatal wrapper
+              message follows; fix the top-level error-handling boundary without
+              suppressing Commander's intentional exit.
+            status: pending
+            token_estimate: small
+            files:
+              - src/index.ts
+              - tests/cli
+            dependencies: []
+          - id: t6-1-3
+            name: Add a CLI smoke test asserting exit codes for --version and --help
+            description: Add a CLI smoke test asserting successful exit codes and no
+              fatal wrapper output for --version and --help.
+            status: pending
+            token_estimate: small
+            files:
+              - tests/cli
+            dependencies:
+              - t6-1-1
+              - t6-1-2
+      - id: m6-2
+        name: Register loom pipeline run as a public command
+        description: Expose loom pipeline run <file.loom> through the CLI using the
+          existing parser, DAG walker, stage executors, and branch-skipping behavior.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t6-2-1
+            name: Create src/cli/commands/pipeline.ts wrapping the existing pipeline engine module
+            description: Build a thin CLI wrapper only; do not reimplement the already
+              verified pipeline parser, DAG walker, or stage executors.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/cli/commands/pipeline.ts
+              - tests/cli/commands/pipeline.test.ts
+            dependencies: []
+          - id: t6-2-2
+            name: Register the pipeline command group in src/index.ts
+            description: Register the public pipeline command group in the thin CLI
+              entry point.
+            status: pending
+            token_estimate: small
+            files:
+              - src/index.ts
+            dependencies:
+              - t6-2-1
+          - id: t6-2-3
+            name: Support --var and --input flags for variable injection into the Context Bus
+            description: Allow users to inject variables into the pipeline Context Bus
+              through explicit --var and --input CLI flags.
+            status: pending
+            token_estimate: small
+            files:
+              - src/cli/commands/pipeline.ts
+              - tests/cli/commands/pipeline.test.ts
+            dependencies:
+              - t6-2-1
+          - id: t6-2-4
+            name: Add a CLI integration test running a real .loom pipeline file end-to-end through the new command
+            description: Run a real .loom pipeline file end-to-end through the public
+              pipeline command and verify DAG behavior from the CLI.
+            status: pending
+            token_estimate: medium
+            files:
+              - tests/cli/commands/pipeline.test.ts
+            dependencies:
+              - t6-2-2
+              - t6-2-3
+      - id: m6-3
+        name: Reconcile config reference docs with actual YAML runtime
+        description: Every reference document describing LOOM's config format shows
+          YAML matching src/config/schema.ts exactly; no user-facing TOML config
+          example remains.
+        status: pending
+        token_estimate: medium
+        tasks:
+          - id: t6-3-1
+            name: Replace loom-config.toml with loom-config.yaml as the canonical config reference
+            description: Confirm operator-provided loom-config.yaml is committed and
+              loom-config.toml is removed, not merely superseded in docs.
+            status: pending
+            token_estimate: small
+            files:
+              - loom-config.yaml
+              - loom-config.toml
+            dependencies: []
+          - id: t6-3-2
+            name: Update SPEC.md section 7 to reference loom-config.yaml instead of loom-config.toml
+            description: Update SPEC.md section 7 so the exact manifest references
+              loom-config.yaml rather than loom-config.toml.
+            status: pending
+            token_estimate: small
+            files:
+              - SPEC.md
+            dependencies:
+              - t6-3-1
+          - id: t6-3-3
+            name: Update README.md and any other doc showing a TOML config example
+            description: Update README.md and any other documentation that shows the
+              user-facing LOOM runtime config as TOML.
+            status: pending
+            token_estimate: small
+            files:
+              - README.md
+            dependencies:
+              - t6-3-1
+          - id: t6-3-4
+            name: Search the full repo for remaining .toml config references and fix or explicitly justify each one
+            description: Fix or justify remaining TOML references; prompt-intelligence.config.toml
+              and foundry-server.toml are legitimate TOML and are not part of the
+              user-facing runtime config cleanup.
+            status: pending
+            token_estimate: small
+            files:
+              - SPEC.md
+              - README.md
+            dependencies:
+              - t6-3-1
+      - id: m6-4
+        name: Produce a real installable release artifact
+        description: A person can run one documented command to install a working
+          loom binary onto PATH without cloning the repository or having Bun installed.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t6-4-1
+            name: Write install.sh that detects OS and arch, downloads the matching compiled binary, and installs it
+            description: Implement an installer following the get.loom.dev-style
+              deployment flow, using GitHub Releases URL patterns and a configurable
+              host override.
+            status: pending
+            token_estimate: medium
+            files:
+              - install.sh
+            dependencies:
+              - m6-1
+              - m6-2
+          - id: t6-4-2
+            name: Add a release build script that produces checksummed tarballs for all four platform targets
+            description: Reuse existing build:linux and build:mac scripts and package
+              each binary plus SHA256SUMS without inventing a new build mechanism.
+            status: pending
+            token_estimate: medium
+            files:
+              - package.json
+              - scripts
+            dependencies:
+              - t6-4-1
+          - id: t6-4-3
+            name: Document a GitHub Releases publish procedure
+            description: Document a manual GitHub Releases publish procedure for the
+              initial installer-style release; no CI/CD is required yet.
+            status: pending
+            token_estimate: small
+            files:
+              - README.md
+              - RELEASE.md
+            dependencies:
+              - t6-4-2
+          - id: t6-4-4
+            name: First-run wizard writes ~/.loom/config.yaml when missing
+            description: If no ~/.loom/config.yaml exists, prompt for a backend endpoint
+              and write a usable YAML config so new users do not hand-write config
+              before first run.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/config
+              - src/index.ts
+              - tests/config
+            dependencies:
+              - m6-1
+              - m6-2
+      - id: m6-5
+        name: User testing guide and operator dry run
+        description: USER_TESTING.md exists, matches the actual installed product, and
+          has been completed in a clean environment with no repository access.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t6-5-1
+            name: Write USER_TESTING.md as a standalone guide for a first-time tester
+            description: Verify every command in USER_TESTING.md against the actual
+              m6-4 installer output before trusting it.
+            status: pending
+            token_estimate: medium
+            files:
+              - USER_TESTING.md
+            dependencies:
+              - m6-1
+              - m6-2
+              - m6-3
+              - m6-4
+          - id: t6-5-2
+            name: Perform one full dry run of USER_TESTING.md without repository access
+            description: Run the guide using the installer from m6-4, not bun run build,
+              from a machine or directory with no repository clone.
+            status: pending
+            token_estimate: medium
+            files:
+              - USER_TESTING.md
+            dependencies:
+              - t6-5-1
+          - id: t6-5-3
+            name: Fix any USER_TESTING.md step that failed or was unclear during dry run
+            description: Correct any guide or product issue discovered during the clean
+              dry run before handing LOOM to an outside tester.
+            status: pending
+            token_estimate: medium
+            files:
+              - USER_TESTING.md
+            dependencies:
+              - t6-5-2
