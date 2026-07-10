@@ -266,4 +266,8 @@ Decision: update root `SPEC.md` section 7 to list `loom-config.yaml` and `~/.loo
 
 ## 2026-07-10 — User-facing config doc path update
 
-Decision: update the root `SPEC.md` deployment-tier text from `~/.loom/config.toml` to `~/.loom/config.yaml`. Root `README.md` and `BUILDING.md` do not contain the stale user-facing TOML config example, and support-doc files already have separate uncommitted operator changes, so broader support-doc cleanup is deferred to the explicit full-repo search/justify task `t6-3-4`. Verification passed with `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-4`.
+Decision: update the root `SPEC.md` deployment-tier text from the old TOML runtime config path to `~/.loom/config.yaml`. Root `README.md` and `BUILDING.md` do not contain the stale user-facing TOML config example, and support-doc files already have separate uncommitted operator changes, so broader support-doc cleanup is deferred to the explicit full-repo search/justify task `t6-3-4`. Verification passed with `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-4`.
+
+## 2026-07-10 — Full config TOML reference cleanup
+
+Decision: remove remaining user-facing runtime-config TOML examples across root and support docs, delete obsolete `support_docs/loom-config.toml`, and validate both `loom-config.yaml` references against `src/config/schema.ts`. `prompt-intelligence.config.toml` and `foundry-server.toml` remain justified because they are actually TOML files; remaining `loom-config.toml` mentions are migration/history notes in Phase 6 planning, KICKOFF, SPEC changelog text, and narrative history rather than active config examples. The grep search no longer reports `~/.loom/config.toml` or `.loom/config.toml` outside historical notes, and `m6-3` is complete. `.loom/plan.yaml` now advances to `t6-4-1`.

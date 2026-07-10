@@ -2,7 +2,7 @@
 # LOOM Prompt Intelligence Layer — Configuration Schema
 #
 # Three levels of configuration, each overriding the one above:
-#   1. Global defaults  → ~/.loom/config.toml under [prompt_intelligence]
+#   1. Global defaults  → ~/.loom/config.yaml under promptIntelligence
 #   2. Per-agent        → loom-agent.yaml under prompt_intelligence:
 #   3. Per-stage        → .loom pipeline file under stages[*].prompt_intelligence:
 #
@@ -13,7 +13,7 @@
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LEVEL 1 — Global defaults (~/.loom/config.toml)
+# LEVEL 1 — Global defaults (~/.loom/config.yaml)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 [prompt_intelligence]
@@ -54,7 +54,7 @@ strategy              = "summarize"   # summarize | drop | hybrid
 # drop:      remove old turns entirely (faster, some information loss)
 # hybrid:    summarize turns P5, drop turns > 2× old_turns_threshold
 
-summary_backend       = "vllm-26b"   # backend key from [backends.*] in config.toml
+summary_backend       = "vllm-26b"   # backend key from backends.* in config.yaml
 summary_model         = "gemma-4-26b"
 max_summary_tokens    = 400          # target length for a compressed turn block
 summary_prompt        = """Summarize the following conversation turns into a compact

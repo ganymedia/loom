@@ -180,13 +180,9 @@ provided or its absence is explicitly acknowledged as intentional.
 | `KICKOFF.md` | Session orientation | Repeatable session-start prompt, including handoff detection |
 | `foundry-api.md` | Foundry server | Full REST API — endpoints, auth model, package tarball structure |
 | `foundry-server.toml` | Foundry server | Self-hosting config for optional private Foundry server deployments |
-| `loom-config.toml` | Config reference | Example `~/.loom/config.toml`; reference only, real runtime schema lives in `src/config/schema.ts` |
+| `loom-config.yaml` | Config reference | Example `~/.loom/config.yaml`; reference only, real runtime schema lives in `src/config/schema.ts` |
 | `loom-tests.yaml` | Agent testing | Reference instance of the agent test suite format — behavioral, safety, unit, integration, and regression test types |
 | `PHASE-5-ADDENDUM.yaml` | Phase 5 planning | Authoritative Phase 5 task breakdown; append into `.loom/plan.yaml` after `phase-4` |
-
-All files in this table are expected to exist at the repository root. If one is
-missing, stop and reconcile the spec/filesystem mismatch before implementing
-the subsystem that depends on it.
 
 Deployment tiers (solo / small team / enterprise) are documented in this
 file, section 9 below — no separate file for that topic.
@@ -246,7 +242,7 @@ without operator confirmation — they exist for provenance, not as dead code.
 LOOM installs per-user exactly like OpenCode — single binary, no daemons.
 Complexity is strictly additive across three tiers:
 
-- **Solo developer:** LOOM CLI binary only. `~/.loom/config.toml` points at
+- **Solo developer:** LOOM CLI binary only. `~/.loom/config.yaml` points at
   the user's existing backend endpoints. No server of any kind required.
 - **Small team:** same per-user install for each developer, plus one
   optional self-hosted Foundry server (single container) if the team wants
@@ -282,7 +278,7 @@ completion audit, each with its own milestone in the addendum:
    confirmed against the actual repository state, most notably whether
    `foundry-api.md` existed when `src/foundry/` was built.
 2. **Missing reference specs** (`m5-2`) — `foundry-api.md`,
-   `foundry-server.toml`, `loom-config.toml`, and `loom-tests.yaml` are
+   `foundry-server.toml`, `loom-config.yaml`, and `loom-tests.yaml` are
    referenced throughout this document and the narrative but are not
    present in the repository.
 3. **Ink TUI never built** (`m5-3`) — agent tab switching was implemented
@@ -304,9 +300,63 @@ completion audit, each with its own milestone in the addendum:
 Do not consider LOOM feature-complete until every task in
 `PHASE-5-ADDENDUM.yaml` is done and its exit criterion is met.
 
+**Status as of 2026-07-10: Phase 5 is complete.** 61/61 tasks, verified live
+end-to-end (agent switching, real pipeline DAG execution with branch
+skipping, automatic handoff firing after crossing the token threshold in an
+isolated test project). See `.loom/narrative.md`, "Phase 5 full regression
+and completion." The completing session's own narrative flagged two
+remaining gaps, which became the seed for Phase 6 below.
+
 ---
 
+## 11. Phase 6 — CLI polish, pipeline command, and installer-style release
 
+Phase 5 proved LOOM *works*. Phase 6 makes it something a stranger can
+*install and use* without repository access — this is the last phase before
+handing LOOM to a first external tester.
+
+The authoritative task breakdown is `PHASE-6-ADDENDUM.yaml` in the
+repository root. Merge it into `.loom/plan.yaml`'s `phases:` list (append
+after `phase-5`) before work resumes.
+
+Phase 6 closes four gaps, two flagged by the Phase 5 completion narrative
+and two surfaced by a separate operator-requested capability audit:
+
+1. **CLI UX correctness** (`m6-1`) — `--version` falls through to session
+   startup instead of printing and exiting; `--help` prints correctly but
+   is followed by a fatal wrapper error. Both are the kind of thing a new
+   user hits in their first ten seconds.
+2. **No public pipeline command** (`m6-2`) — the pipeline engine (parser,
+   DAG walker, all five stage executors) is built and was verified through
+   the module entrypoint in Phase 5, but there is no `loom pipeline run`
+   CLI command exposing it to a user.
+3. **Config reference format drift** (`m6-3`) — `loom-config.toml` was
+   carried as the canonical config reference since early design, but the
+   actual runtime loader reads YAML. `loom-config.yaml` (repository root)
+   now supersedes it and reflects the real, verified schema shape. This
+   task cleans up every remaining doc reference to the old TOML example.
+   Note: `prompt-intelligence.config.toml` and `foundry-server.toml` are
+   correctly TOML and are NOT part of this cleanup — only the user-facing
+   `~/.loom/config` reference was ever meant to match the runtime loader.
+4. **No installable release artifact** (`m6-4`) — a working binary exists
+   locally after `bun run build`, but there is no install script, no
+   released/checksummed platform artifacts, and no first-run configuration
+   wizard. A stranger cannot get from "I heard about LOOM" to "LOOM is
+   running" without cloning the repository and having Bun installed today.
+
+Milestone `m6-5` (user testing guide + operator dry run) depends on all
+four and must be done last. `USER_TESTING.md` in the repository root is the
+starting draft — it must be verified against the real `m6-4` installer
+output, not assumed correct, before it is handed to an actual outside
+tester. A phase that compiles and passes tests is not the same as a phase
+a stranger can install and use — do not skip the dry run.
+
+Do not consider LOOM ready for external user testing until every task in
+`PHASE-6-ADDENDUM.yaml` is done and its exit criterion is met.
+
+---
+
+## Changelog
 - v0.1 — Initial consolidated spec.
 - v0.2 — Section 7 rewritten from a descriptive list to an exact filename
   manifest table, in response to a local agent reporting
@@ -318,7 +368,7 @@ Do not consider LOOM feature-complete until every task in
   (operator-provided screenshots, 2026-07-09): updated paths to match
   real renames (`agent-manifest-schema.yaml`, `plan-yaml-schema.yaml`,
   `agents/*.yaml`). Flagged `foundry-api.md`, `foundry-server.toml`,
-  `loom-config.toml`, and `loom-tests.yaml` as genuinely absent from the
+  `loom-config.yaml`, and `loom-tests.yaml` as genuinely absent from the
   repository — not a naming mismatch this time. The 2026-07-09 narrative
   entries describing an implemented Foundry HTTP client predate this
   correction and should be re-verified against whether `foundry-api.md`
@@ -331,3 +381,12 @@ Do not consider LOOM feature-complete until every task in
   embedding generation for recall, live Session Continuity verification,
   and production binary packaging. Authoritative task breakdown lives in
   `PHASE-5-ADDENDUM.yaml`.
+- v0.5 — Marked Phase 5 complete (61/61 tasks, verified live end-to-end
+  2026-07-10). Added section 11 documenting Phase 6 (CLI polish, public
+  pipeline command, config reference reconciliation, installer-style
+  release, user testing guide). Replaced the `loom-config.toml` reference
+  in section 7 with `loom-config.yaml`, correcting a format the runtime
+  loader never actually read — the app has always loaded YAML config, and
+  the reference doc was wrong, not the implementation. Restored this
+  Changelog section's header, which was accidentally dropped during a
+  prior edit and left its entries as an orphaned list.

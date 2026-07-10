@@ -19,7 +19,7 @@ export class UnknownBackendError extends Error {
   constructor(public readonly backendKey: string) {
     super(
       `Unknown backend: "${backendKey}". ` +
-        `Check your ~/.loom/config.toml or .loom/config.toml [backends] section.`,
+        `Check your ~/.loom/config.yaml or .loom/config.yaml backends section.`,
     )
     this.name = "UnknownBackendError"
   }

@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
-current_milestone: m6-3
-current_task: t6-3-4
+current_milestone: m6-4
+current_task: t6-4-1
 phases:
   - id: phase-1
     name: Foundation
@@ -535,12 +535,12 @@ phases:
               - foundry-server.toml
             dependencies: []
           - id: t5-2-3
-            name: Add loom-config.toml to repository root
+            name: Add loom-config.yaml to repository root
             description: Add the global LOOM config example reference at the root.
             status: completed
             token_estimate: small
             files:
-              - loom-config.toml
+              - loom-config.yaml
             dependencies: []
           - id: t5-2-4
             name: Add loom-tests.yaml to repository root
@@ -905,7 +905,7 @@ phases:
         description: Every reference document describing LOOM's config format shows
           YAML matching src/config/schema.ts exactly; no user-facing TOML config
           example remains.
-        status: in_progress
+        status: completed
         token_estimate: medium
         tasks:
           - id: t6-3-1
@@ -916,7 +916,6 @@ phases:
             token_estimate: small
             files:
               - loom-config.yaml
-              - loom-config.toml
             dependencies: []
           - id: t6-3-2
             name: Update SPEC.md section 7 to reference loom-config.yaml instead of loom-config.toml
@@ -943,7 +942,7 @@ phases:
             description: Fix or justify remaining TOML references; prompt-intelligence.config.toml
               and foundry-server.toml are legitimate TOML and are not part of the
               user-facing runtime config cleanup.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - SPEC.md
@@ -954,7 +953,7 @@ phases:
         name: Produce a real installable release artifact
         description: A person can run one documented command to install a working
           loom binary onto PATH without cloning the repository or having Bun installed.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t6-4-1

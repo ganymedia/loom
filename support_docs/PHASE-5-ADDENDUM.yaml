@@ -88,7 +88,7 @@
           token_estimate: small
 
         - id:             t5-2-3
-          name:           "Add loom-config.toml to repository root"
+          name:           "Add loom-config.yaml to repository root"
           status:         planned
           token_estimate: small
 

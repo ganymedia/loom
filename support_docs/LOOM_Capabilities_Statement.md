@@ -42,7 +42,7 @@ Pipelines support live streaming output to the terminal as responses arrive from
 
 ### Configuration and Profile System
 
-LOOM uses a three-tier layered configuration model. Global defaults and backend credentials are stored in `~/.loom/config.toml`. Project-level overrides live in `.loom/config.toml` within the working directory. Environment variables provide the final override layer and take precedence over both. Named profiles within the global config allow instant switching between complete backend sets — local-only inference, cloud-backed, or hybrid — without modifying any pipeline file. The active profile is loaded automatically on every LOOM invocation.
+LOOM uses a three-tier layered configuration model. Global defaults and backend credentials are stored in `~/.loom/config.yaml`. Project-level overrides live in `.loom/config.yaml` within the working directory. Environment variables provide the final override layer and take precedence over both. Named profiles within the global config allow instant switching between complete backend sets — local-only inference, cloud-backed, or hybrid — without modifying any pipeline file. The active profile is loaded automatically on every LOOM invocation.
 
 ---
 

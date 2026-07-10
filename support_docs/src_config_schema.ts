@@ -93,7 +93,7 @@ export const PromptIntelligenceConfigSchema = z.object({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Root config — ~/.loom/config.toml
+// Root config — ~/.loom/config.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const LoomConfigSchema = z.object({

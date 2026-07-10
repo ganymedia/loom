@@ -12,8 +12,8 @@ Lint: Biome · Type check: tsc --noEmit
 Files: `src/config/schema.ts` (done) · `src/config/loader.ts` · `src/config/profiles.ts`
 
 `loader.ts` merges three layers in order:
-  1. Global: `~/.loom/config.toml`
-  2. Project: `.loom/config.toml` (if cwd or any parent has one)
+  1. Global: `~/.loom/config.yaml`
+  2. Project: `.loom/config.yaml` (if cwd or any parent has one)
   3. Env: `LOOM_*` variables override any file value
 
 `profiles.ts` reads/writes the `defaults.activeProfile` key.

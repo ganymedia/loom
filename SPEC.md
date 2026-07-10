@@ -282,7 +282,7 @@ completion audit, each with its own milestone in the addendum:
    confirmed against the actual repository state, most notably whether
    `foundry-api.md` existed when `src/foundry/` was built.
 2. **Missing reference specs** (`m5-2`) — `foundry-api.md`,
-   `foundry-server.toml`, `loom-config.toml`, and `loom-tests.yaml` are
+   `foundry-server.toml`, `loom-config.yaml`, and `loom-tests.yaml` are
    referenced throughout this document and the narrative but are not
    present in the repository.
 3. **Ink TUI never built** (`m5-3`) — agent tab switching was implemented
@@ -318,7 +318,7 @@ Do not consider LOOM feature-complete until every task in
   (operator-provided screenshots, 2026-07-09): updated paths to match
   real renames (`agent-manifest-schema.yaml`, `plan-yaml-schema.yaml`,
   `agents/*.yaml`). Flagged `foundry-api.md`, `foundry-server.toml`,
-  `loom-config.toml`, and `loom-tests.yaml` as genuinely absent from the
+  `loom-config.yaml`, and `loom-tests.yaml` as genuinely absent from the
   repository — not a naming mismatch this time. The 2026-07-09 narrative
   entries describing an implemented Foundry HTTP client predate this
   correction and should be re-verified against whether `foundry-api.md`

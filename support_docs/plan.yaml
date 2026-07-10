@@ -30,7 +30,7 @@ project:
   description:    "JWT authentication and authorization layer for the Express API"
   stack:          [Node.js, Express, PostgreSQL, Redis]
   started:        "2025-06-14"
-  active_profile: dev                  # links to [profiles.dev] in ~/.loom/config.toml
+  active_profile: dev                  # links to profiles.dev in ~/.loom/config.yaml
 
 # ── SESSION INTEGRATION ───────────────────────────────────────────────────────
 session:
