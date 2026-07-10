@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-3
-current_task: t6-3-2
+current_task: t6-3-3
 phases:
   - id: phase-1
     name: Foundation
@@ -922,7 +922,7 @@ phases:
             name: Update SPEC.md section 7 to reference loom-config.yaml instead of loom-config.toml
             description: Update SPEC.md section 7 so the exact manifest references
               loom-config.yaml rather than loom-config.toml.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - SPEC.md

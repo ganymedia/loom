@@ -259,3 +259,7 @@ Decision: satisfy `t6-2-4` with a subprocess test that runs the real `src/index.
 ## 2026-07-10 — Config reference file replacement
 
 Decision: replace root `loom-config.toml` with root `loom-config.yaml` copied from the operator-provided `support_docs/loom-config.yaml`, because Phase 6 requires the canonical user-facing config reference to match the runtime loader's YAML format. The support-doc copy still contains schema drift to be cleaned in later config reconciliation tasks, but the root path replacement itself is complete: root `loom-config.yaml` exists and root `loom-config.toml` is deleted. Verification passed with `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-2`.
+
+## 2026-07-10 — SPEC section 7 config path update
+
+Decision: update root `SPEC.md` section 7 to list `loom-config.yaml` and `~/.loom/config.yaml` instead of the deleted TOML reference, then re-check every exact path listed in the section 7 table exists at the repository root. This closes the session-start blocker that initially reported `loom-config.yaml` missing from root. Verification passed with the path check plus `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-3`.

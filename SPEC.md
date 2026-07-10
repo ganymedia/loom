@@ -180,7 +180,7 @@ provided or its absence is explicitly acknowledged as intentional.
 | `KICKOFF.md` | Session orientation | Repeatable session-start prompt, including handoff detection |
 | `foundry-api.md` | Foundry server | Full REST API — endpoints, auth model, package tarball structure |
 | `foundry-server.toml` | Foundry server | Self-hosting config for optional private Foundry server deployments |
-| `loom-config.toml` | Config reference | Example `~/.loom/config.toml`; reference only, real runtime schema lives in `src/config/schema.ts` |
+| `loom-config.yaml` | Config reference | Example `~/.loom/config.yaml`; reference only, real runtime schema lives in `src/config/schema.ts` |
 | `loom-tests.yaml` | Agent testing | Reference instance of the agent test suite format — behavioral, safety, unit, integration, and regression test types |
 | `PHASE-5-ADDENDUM.yaml` | Phase 5 planning | Authoritative Phase 5 task breakdown; append into `.loom/plan.yaml` after `phase-4` |
 
