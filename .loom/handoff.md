@@ -1,7 +1,7 @@
 # LOOM Session Handoff
 
-- **Goal & status** — Phase 5 is active; current task is `t5-6-3`, adding or verifying Linux/macOS build targets.
-- **Completed work** — Completed, verified, committed, and pushed `t5-5-1`, `t5-5-2`, `t5-6-1`, and `t5-6-2`; README was updated for session handoff and production binary usage; latest verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (177 pass). `.loom/plan.yaml` still has pending tasks, and `PHASE-5-ADDENDUM.yaml` has been merged but not fully completed.
-- **Failed attempts** — Initial `bun build --compile ./src/index.ts --outfile ./dist/loom` failed because Ink's optional `react-devtools-core` peer was not installed; adding `react-devtools-core` fixed compilation. Adjacent unresolved CLI issue: `./dist/loom --version` falls through to session startup and `./dist/loom --help` prints help plus a fatal wrapper message.
+- **Goal & status** — Phase 6 is active at `m6-4`; next task is installer work (`t6-4-1`).
+- **Completed work** — Phase 6 is merged into `.loom/plan.yaml`; completed and verified `m6-1`, `m6-2`, and `m6-3` with `bun run typecheck`, `bun run lint`, and `bun test` passing at 183 tests; Phase 6 has 7 tasks remaining.
+- **Failed attempts** — One test assertion for skipped pipeline stages was too strict because skipped results include `durationMs`; it was fixed by checking the skipped flag on the matching stage. One commit staging attempt included deleted untracked `tree.txt` and failed; retrying without that path succeeded.
 - **Branch name** — main
-- **Next action** — Start `t5-6-3` by inspecting `package.json` build scripts and adding or verifying explicit Linux/macOS Bun compile targets without committing the ignored `dist/loom` artifact.
+- **Next action** — Start `t6-4-1` by reading the release/install requirements in `.loom/plan.yaml` and drafting `install.sh` to detect OS/arch, use a configurable GitHub Releases host, and install a matching compiled binary outside any repository clone.

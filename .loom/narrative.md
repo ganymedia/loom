@@ -271,3 +271,7 @@ Decision: update the root `SPEC.md` deployment-tier text from the old TOML runti
 ## 2026-07-10 — Full config TOML reference cleanup
 
 Decision: remove remaining user-facing runtime-config TOML examples across root and support docs, delete obsolete `support_docs/loom-config.toml`, and validate both `loom-config.yaml` references against `src/config/schema.ts`. `prompt-intelligence.config.toml` and `foundry-server.toml` remain justified because they are actually TOML files; remaining `loom-config.toml` mentions are migration/history notes in Phase 6 planning, KICKOFF, SPEC changelog text, and narrative history rather than active config examples. The grep search no longer reports `~/.loom/config.toml` or `.loom/config.toml` outside historical notes, and `m6-3` is complete. `.loom/plan.yaml` now advances to `t6-4-1`.
+
+## 2026-07-10 — Session handoff summary
+
+Phase 6 is merged into `.loom/plan.yaml` and active. This session completed and committed Phase 6 activation, CLI help/version fixes (`m6-1`), public pipeline command exposure (`m6-2`), and YAML config reference reconciliation (`m6-3`). Latest full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (183 passing tests). Phase 6 has 7 tasks remaining: `t6-4-1` through `t6-4-4` and `t6-5-1` through `t6-5-3`. Next action is `t6-4-1`, the installer script; do not start new work after this handoff entry.
