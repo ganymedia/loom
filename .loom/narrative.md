@@ -251,3 +251,7 @@ Decision: register the pipeline command group in `src/index.ts` by importing the
 ## 2026-07-10 — Pipeline Context Bus variable injection
 
 Decision: implement `loom pipeline run --input <file>` as a project-root-safe YAML/JSON object loader and `--var key=value` as a dotted Context Bus key with a YAML-parsed value. Duplicate keys fail loudly instead of letting later inputs silently override earlier context, because pipeline runs must be auditable and deterministic. Verification covers input-file values, CLI variables, branch skipping, and duplicate-key failure; `.loom/plan.yaml` now advances to `t6-2-4`.
+
+## 2026-07-10 — Pipeline command end-to-end entrypoint smoke
+
+Decision: satisfy `t6-2-4` with a subprocess test that runs the real `src/index.ts` entrypoint from a temporary project root, not just a Commander instance in memory. The smoke writes a project-local `.loom/entry.loom`, invokes `loom pipeline run` with `--var`, and verifies the JSON `PipelineRunResult` succeeds with the expected final output. Full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (182 passing tests). `m6-2` is complete; `.loom/plan.yaml` now advances to `t6-3-1`.

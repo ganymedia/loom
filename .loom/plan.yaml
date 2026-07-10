@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
-current_milestone: m6-2
-current_task: t6-2-4
+current_milestone: m6-3
+current_task: t6-3-1
 phases:
   - id: phase-1
     name: Foundation
@@ -855,7 +855,7 @@ phases:
         name: Register loom pipeline run as a public command
         description: Expose loom pipeline run <file.loom> through the CLI using the
           existing parser, DAG walker, stage executors, and branch-skipping behavior.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t6-2-1
@@ -893,7 +893,7 @@ phases:
             name: Add a CLI integration test running a real .loom pipeline file end-to-end through the new command
             description: Run a real .loom pipeline file end-to-end through the public
               pipeline command and verify DAG behavior from the CLI.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - tests/cli/commands/pipeline.test.ts
@@ -905,7 +905,7 @@ phases:
         description: Every reference document describing LOOM's config format shows
           YAML matching src/config/schema.ts exactly; no user-facing TOML config
           example remains.
-        status: pending
+        status: in_progress
         token_estimate: medium
         tasks:
           - id: t6-3-1
