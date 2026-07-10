@@ -275,3 +275,7 @@ Decision: remove remaining user-facing runtime-config TOML examples across root 
 ## 2026-07-10 — Session handoff summary
 
 Phase 6 is merged into `.loom/plan.yaml` and active. This session completed and committed Phase 6 activation, CLI help/version fixes (`m6-1`), public pipeline command exposure (`m6-2`), and YAML config reference reconciliation (`m6-3`). Latest full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (183 passing tests). Phase 6 has 7 tasks remaining: `t6-4-1` through `t6-4-4` and `t6-5-1` through `t6-5-3`. Next action is `t6-4-1`, the installer script; do not start new work after this handoff entry.
+
+## 2026-07-10 — Installer script
+
+Decision: implement `install.sh` as a POSIX shell installer that detects Linux/macOS and x64/arm64, downloads the matching `loom-<os>-<arch>` binary from GitHub Releases by default, and installs it as `loom` under `~/.local/bin` or an explicit `LOOM_INSTALL_DIR`. `LOOM_INSTALL_BASE_URL` and `LOOM_INSTALL_VERSION` make the release host/version configurable for tests, mirrors, and air-gapped staging without editing the script. Verification covers a local `file://` release host and executable installed binary; `.loom/plan.yaml` now advances to `t6-4-2`.

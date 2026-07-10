@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-4
-current_task: t6-4-1
+current_task: t6-4-2
 phases:
   - id: phase-1
     name: Foundation
@@ -961,7 +961,7 @@ phases:
             description: Implement an installer following the get.loom.dev-style
               deployment flow, using GitHub Releases URL patterns and a configurable
               host override.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - install.sh
