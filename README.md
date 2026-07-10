@@ -62,6 +62,10 @@ This path resolves the active backend, discovers the current model through `/v1/
 
 The one-turn Developer agent is stateless across process runs. It does not yet provide follow-up turns or streaming output. It proves the Phase 1 backend request path without hardcoding model names.
 
+## Session handoff
+
+During a live session, LOOM writes `.loom/handoff.md` automatically when recorded token usage reaches 80% of the configured context limit. A later session reads that handoff and injects it as system context before the first agent turn, preserving continuity without committing local handoff state to Git.
+
 ## Project planner commands
 
 LOOM reads `.loom/plan.yaml` through the Project Planner schema and parser:
