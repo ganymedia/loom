@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
-current_milestone: m6-1
-current_task: t6-1-1
+current_milestone: m6-2
+current_task: t6-2-1
 phases:
   - id: phase-1
     name: Foundation
@@ -815,7 +815,7 @@ phases:
         name: Fix --version and --help fallthrough
         description: ./dist/loom --version prints a version string and exits 0;
           ./dist/loom --help prints help and exits 0 with no wrapper error.
-        status: in_progress
+        status: completed
         token_estimate: medium
         tasks:
           - id: t6-1-1
@@ -823,7 +823,7 @@ phases:
             description: Commander.js's built-in --version should short-circuit before
               config loading or session bootstrap; confirm the entry point is not
               intercepting that exit path.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/index.ts
@@ -834,7 +834,7 @@ phases:
             description: Help text currently prints correctly, then a fatal wrapper
               message follows; fix the top-level error-handling boundary without
               suppressing Commander's intentional exit.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/index.ts
@@ -844,7 +844,7 @@ phases:
             name: Add a CLI smoke test asserting exit codes for --version and --help
             description: Add a CLI smoke test asserting successful exit codes and no
               fatal wrapper output for --version and --help.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - tests/cli
@@ -855,7 +855,7 @@ phases:
         name: Register loom pipeline run as a public command
         description: Expose loom pipeline run <file.loom> through the CLI using the
           existing parser, DAG walker, stage executors, and branch-skipping behavior.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t6-2-1

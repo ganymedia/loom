@@ -26,7 +26,6 @@ program
   .option("--prompt <text>", "run one Developer-agent prompt and exit");
 
 async function main(): Promise<void> {
-  program.exitOverride();
   program.configureOutput({
     writeErr: (message) => process.stderr.write(message),
     writeOut: (message) => process.stdout.write(message),
@@ -50,7 +49,13 @@ async function main(): Promise<void> {
     args.includes(command.name()),
   );
 
-  if (!hasSubcommand && !args.includes("--help") && !args.includes("-h")) {
+  if (
+    !hasSubcommand &&
+    !args.includes("--help") &&
+    !args.includes("-h") &&
+    !args.includes("--version") &&
+    !args.includes("-V")
+  ) {
     const { startSession } = await import("@loom/tui/session");
     await startSession(config, {
       ...(backendOverride === undefined ? {} : { backendOverride }),

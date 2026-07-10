@@ -235,3 +235,7 @@ Decision: satisfy `t5-6-4` as a verification task rather than adding new feature
 ## 2026-07-10 — Phase 6 plan activation
 
 Decision: trust the chronological narrative over stale `.loom/handoff.md` because the handoff still named `t5-6-3` while later narrative entries record `t5-6-3`, `t5-6-4`, and Phase 5 completion. `.loom/plan.yaml` did not contain `phase-6`, so `support_docs/PHASE-6-ADDENDUM.yaml` was merged before new implementation work. The addendum was translated into the existing planner schema rather than pasted verbatim because the live schema accepts `pending/in_progress/completed/blocked`, `description`, and `dependencies`, while the addendum uses `active/planned`, `notes`, and `depends_on`. Phase 6 is now active at `m6-1` / `t6-1-1`.
+
+## 2026-07-10 — CLI help and version fallthrough fix
+
+Decision: remove Commander's `exitOverride()` from the production entrypoint and explicitly exclude `--version` / `-V` from session startup. The previous entrypoint treated Commander's intentional help/version exits as fatal wrapper errors and did not recognize version flags as terminal CLI actions, causing `--version` to enter session startup. A real entrypoint smoke test now executes `bun src/index.ts --version` and `bun src/index.ts --help`, asserting exit code 0 and no fatal wrapper output. Verification passed with `bun test tests/cli/index.test.ts`; `m6-1` is complete and `.loom/plan.yaml` now advances to `t6-2-1`.
