@@ -255,3 +255,7 @@ Decision: implement `loom pipeline run --input <file>` as a project-root-safe YA
 ## 2026-07-10 — Pipeline command end-to-end entrypoint smoke
 
 Decision: satisfy `t6-2-4` with a subprocess test that runs the real `src/index.ts` entrypoint from a temporary project root, not just a Commander instance in memory. The smoke writes a project-local `.loom/entry.loom`, invokes `loom pipeline run` with `--var`, and verifies the JSON `PipelineRunResult` succeeds with the expected final output. Full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (182 passing tests). `m6-2` is complete; `.loom/plan.yaml` now advances to `t6-3-1`.
+
+## 2026-07-10 — Config reference file replacement
+
+Decision: replace root `loom-config.toml` with root `loom-config.yaml` copied from the operator-provided `support_docs/loom-config.yaml`, because Phase 6 requires the canonical user-facing config reference to match the runtime loader's YAML format. The support-doc copy still contains schema drift to be cleaned in later config reconciliation tasks, but the root path replacement itself is complete: root `loom-config.yaml` exists and root `loom-config.toml` is deleted. Verification passed with `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-2`.

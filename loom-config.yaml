@@ -1,0 +1,54 @@
+# ~/.loom/config.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# LOOM global configuration — REFERENCE FORMAT
+#
+# Supersedes loom-config.toml. The runtime config loader reads YAML, not TOML.
+# This file documents the actual shape LOOM's config loader expects, verified
+# against src/config/schema.ts and confirmed working in a real user-style
+# smoke test on 2026-07-10 (see .loom/narrative.md, "Push and handoff
+# preparation" and later entries).
+#
+# Project-level overrides: .loom/config.yaml in your project root
+# Environment variable overrides take precedence over both files.
+# ─────────────────────────────────────────────────────────────────────────────
+
+defaults:
+  profile: default
+  theme: loom-dark
+
+profiles:
+  default:
+    defaultBackend: local
+
+backends:
+  local:
+    type: openai-compatible
+    baseUrl: http://127.0.0.1:8000
+
+# Additional backends follow the same pattern:
+#
+# backends:
+#   anthropic:
+#     type: anthropic
+#     apiKey: ${ANTHROPIC_API_KEY}
+#
+#   remote-lab:
+#     type: openai-compatible
+#     baseUrl: https://inference.internal.corp/v1
+#     apiKey: ${CORP_API_KEY}
+
+# ── Store / embeddings ────────────────────────────────────────────────────────
+# Optional. If omitted, loom recall requires an explicit --vector.
+#
+# store:
+#   embeddingBackend: local
+#   embeddingModel: nomic-embed-text     # hint only — resolved via model discovery
+#   topK: 3
+
+# ── Session continuity ────────────────────────────────────────────────────────
+# Optional. Defaults shown.
+#
+# session:
+#   handoffThreshold: 0.8
+#   narrativePath: .loom/narrative.md
+#   handoffPath: .loom/handoff.md
