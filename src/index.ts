@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { registerConfigCommand } from "@loom/cli/commands/config";
 import { registerLogCommand } from "@loom/cli/commands/log";
+import { registerPipelineCommand } from "@loom/cli/commands/pipeline";
 import { registerPlanCommand } from "@loom/cli/commands/plan";
 import { registerRecallCommand } from "@loom/cli/commands/recall";
 import { registerThemeCommand } from "@loom/cli/commands/theme";
@@ -41,6 +42,7 @@ async function main(): Promise<void> {
   );
   registerConfigCommand(program, config);
   registerLogCommand(program, { config });
+  registerPipelineCommand(program, { config });
   registerPlanCommand(program);
   registerRecallCommand(program, { config });
   registerThemeCommand(program, config);

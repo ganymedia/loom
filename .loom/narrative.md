@@ -243,3 +243,7 @@ Decision: remove Commander's `exitOverride()` from the production entrypoint and
 ## 2026-07-10 — Pipeline command wrapper
 
 Decision: add `src/cli/commands/pipeline.ts` as a thin CLI wrapper over the existing parser, executor registry, and DAG walker instead of reimplementing pipeline execution in command code. The wrapper emits the existing `PipelineRunResult` as JSON and marks failed pipeline runs with exit code 1. The default inject-stage callback fails loudly unless recall behavior is injected, because returning fake recall data would make inject pipelines appear to work while skipping Prompt Store semantics. Verification passed with `bun test tests/cli/commands/pipeline.test.ts`, `bun run typecheck`, and `bun run lint`; `.loom/plan.yaml` now advances to `t6-2-2`.
+
+## 2026-07-10 — Public pipeline command registration
+
+Decision: register the pipeline command group in `src/index.ts` by importing the existing wrapper and passing loaded runtime config, preserving `index.ts` as composition-only command wiring. The entrypoint help smoke now asserts `pipeline` appears in public help output, proving the command is visible to users. Verification passed with targeted CLI tests; `.loom/plan.yaml` now advances to `t6-2-3`.

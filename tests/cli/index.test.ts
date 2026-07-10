@@ -33,6 +33,7 @@ describe("CLI entrypoint", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Usage: loom [options] [command]");
+    expect(result.stdout).toContain("pipeline");
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 });

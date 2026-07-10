@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-2
-current_task: t6-2-2
+current_task: t6-2-3
 phases:
   - id: phase-1
     name: Foundation
@@ -872,7 +872,7 @@ phases:
             name: Register the pipeline command group in src/index.ts
             description: Register the public pipeline command group in the thin CLI
               entry point.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/index.ts
