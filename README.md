@@ -1,6 +1,6 @@
 # LOOM
 
-LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is in Phase 4 platform work; `SPEC.md` remains the source of truth for architecture and build order.
+LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is in Phase 5 production-readiness work; `SPEC.md` remains the source of truth for architecture and build order.
 
 ## Development commands
 
@@ -10,6 +10,16 @@ bun run typecheck
 bun run lint
 bun test
 ```
+
+## Production binary
+
+Build the standalone local binary with Bun compile:
+
+```bash
+bun build --compile ./src/index.ts --outfile ./dist/loom
+```
+
+`dist/` is treated as generated build output and is ignored by Git. Verify the artifact directly, for example with `./dist/loom plan status`, before using it for standalone smoke tests.
 
 ## Configuration and backend routing
 
