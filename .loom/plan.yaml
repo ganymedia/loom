@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-5
-current_task: t5-5-1
+current_task: t5-5-2
 phases:
   - id: phase-1
     name: Foundation
@@ -735,7 +735,7 @@ phases:
             description: Run a real session loop past the threshold and assert
               .loom/handoff.md is written automatically, not just that Session
               Manager and handoff utilities pass unit tests independently.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/tui/session.ts

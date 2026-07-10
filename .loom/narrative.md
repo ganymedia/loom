@@ -203,3 +203,7 @@ Decision: update `InjectStageExecutor` so inject-stage `query` values are render
 ## 2026-07-09 — Session wrap-up before handoff
 
 Phase 5 progressed from Ink StatusBar wiring through the end of embedding generation milestone `m5-4`. Completed and pushed commits: `a38f66e` (StatusBar), `5d16f34` (embeddings backend client), `92742e0` (Prompt Store automatic embeddings), `3ea32db` (natural-language recall), and `181af85` (Context Bus recall injection). Latest full verification was green with `bun run typecheck`, `bun run lint`, and `bun test` (175 passing tests). `.loom/plan.yaml` is advanced to `t5-5-1`; Phase 5 still has pending Session Continuity and production packaging tasks.
+
+## 2026-07-10 — Automatic handoff live-loop verification
+
+Decision: wire automatic handoff generation in `src/tui/session.ts` immediately after live-session token accounting, rather than moving file I/O into `SessionManager`. `SessionManager` remains pure accounting and decision logic; the TUI session loop owns user-visible side effects and writes `.loom/handoff.md` once when `currentDecision().required` becomes true. Branch detection reuses the existing read-only `git-ops` tool and falls back to an explicit unknown marker if Git metadata is unavailable, so handoff creation is not lost in temporary or non-Git test projects. Verification passed with `bun test tests/tui/session.test.ts`, `bun run typecheck`, `bun run lint`, and `bun test` (176 passing tests). `t5-5-1` is complete; next work is `t5-5-2`, confirming handoff ingestion reaches the first agent turn context.

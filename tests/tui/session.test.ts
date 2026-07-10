@@ -136,6 +136,38 @@ describe("startSession", () => {
     expect(output).toContain("Developer: Hello from Developer");
   });
 
+  test("writes automatic handoff when token usage crosses threshold", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      contextLimit: 10,
+      initialPrompt: "Trigger handoff",
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+        return jsonResponse({
+          choices: [{ message: { content: "Large turn" } }],
+          usage: { prompt_tokens: 6, completion_tokens: 2 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    const handoff = await readFile(
+      join(projectRoot, ".loom/handoff.md"),
+      "utf8",
+    );
+    expect(output).toContain("Automatic handoff written");
+    expect(handoff).toContain("# LOOM Session Handoff");
+    expect(handoff).toContain("reached 80% of the context limit");
+    expect(handoff).toContain("- **Next action** — Resume the LOOM session");
+  });
+
   test("runs follow-up turns with history and visible tool-call results", async () => {
     const projectRoot = await tempProject();
     await writeFile(join(projectRoot, "note.txt"), "tool output", "utf8");

@@ -11,9 +11,11 @@ import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
+import { writeHandoff } from "@loom/session/handoff";
 import { SessionManager } from "@loom/session/manager";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
+import { gitOpsTool } from "@loom/tools/git-ops";
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import {
   type BuiltInAgentName,
@@ -174,6 +176,41 @@ function renderSessionStatus({
   );
 }
 
+async function resolveBranchName(projectRoot: string): Promise<string> {
+  const result = await gitOpsTool.execute({
+    projectRoot,
+    command: "rev-parse",
+    args: ["--abbrev-ref", "HEAD"],
+  });
+  const branchName = result.output.trim();
+  return result.success && branchName.length > 0
+    ? branchName
+    : "unknown (git rev-parse unavailable)";
+}
+
+async function writeAutomaticHandoff({
+  projectRoot,
+  sessionManager,
+}: {
+  projectRoot: string;
+  sessionManager: SessionManager;
+}): Promise<boolean> {
+  const decision = sessionManager.currentDecision();
+  if (!decision.required) return false;
+
+  await writeHandoff(projectRoot, {
+    goalStatus: `Automatic session handoff is active; session ${decision.sessionId} reached ${Math.round(decision.usageRatio * 100)}% of the context limit.`,
+    completedWork:
+      "The live session loop recorded token usage and crossed the configured handoff threshold.",
+    failedAttempts:
+      "No failed attempts were captured by the automatic handoff writer.",
+    branchName: await resolveBranchName(projectRoot),
+    nextAction:
+      "Resume the LOOM session from this handoff and continue with the next pending plan task.",
+  });
+  return true;
+}
+
 function createBuiltInAgent(
   agentName: BuiltInAgentName,
   config: LoomConfig,
@@ -268,6 +305,7 @@ export async function startSession(
       sessionId: context.sessionId,
       contextLimit: options.contextLimit ?? DEFAULT_SESSION_CONTEXT_LIMIT,
     });
+    let automaticHandoffWritten = false;
     const writeSessionStatus = (): void => {
       writeOutput(
         `Status:\n${renderSessionStatus({
@@ -298,6 +336,15 @@ export async function startSession(
           promptTokens: turn.promptTokens,
           completionTokens: turn.completionTokens,
         });
+        if (!automaticHandoffWritten) {
+          automaticHandoffWritten = await writeAutomaticHandoff({
+            projectRoot: context.projectRoot,
+            sessionManager,
+          });
+          if (automaticHandoffWritten) {
+            writeOutput("Automatic handoff written to .loom/handoff.md\n");
+          }
+        }
         writeSessionStatus();
       }
 
@@ -354,6 +401,15 @@ export async function startSession(
             promptTokens: turn.promptTokens,
             completionTokens: turn.completionTokens,
           });
+          if (!automaticHandoffWritten) {
+            automaticHandoffWritten = await writeAutomaticHandoff({
+              projectRoot: context.projectRoot,
+              sessionManager,
+            });
+            if (automaticHandoffWritten) {
+              writeOutput("Automatic handoff written to .loom/handoff.md\n");
+            }
+          }
           writeSessionStatus();
         }
       }
