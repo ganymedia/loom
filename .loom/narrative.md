@@ -239,3 +239,7 @@ Decision: trust the chronological narrative over stale `.loom/handoff.md` becaus
 ## 2026-07-10 — CLI help and version fallthrough fix
 
 Decision: remove Commander's `exitOverride()` from the production entrypoint and explicitly exclude `--version` / `-V` from session startup. The previous entrypoint treated Commander's intentional help/version exits as fatal wrapper errors and did not recognize version flags as terminal CLI actions, causing `--version` to enter session startup. A real entrypoint smoke test now executes `bun src/index.ts --version` and `bun src/index.ts --help`, asserting exit code 0 and no fatal wrapper output. Verification passed with `bun test tests/cli/index.test.ts`; `m6-1` is complete and `.loom/plan.yaml` now advances to `t6-2-1`.
+
+## 2026-07-10 — Pipeline command wrapper
+
+Decision: add `src/cli/commands/pipeline.ts` as a thin CLI wrapper over the existing parser, executor registry, and DAG walker instead of reimplementing pipeline execution in command code. The wrapper emits the existing `PipelineRunResult` as JSON and marks failed pipeline runs with exit code 1. The default inject-stage callback fails loudly unless recall behavior is injected, because returning fake recall data would make inject pipelines appear to work while skipping Prompt Store semantics. Verification passed with `bun test tests/cli/commands/pipeline.test.ts`, `bun run typecheck`, and `bun run lint`; `.loom/plan.yaml` now advances to `t6-2-2`.

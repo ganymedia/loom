@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-2
-current_task: t6-2-1
+current_task: t6-2-2
 phases:
   - id: phase-1
     name: Foundation
@@ -862,7 +862,7 @@ phases:
             name: Create src/cli/commands/pipeline.ts wrapping the existing pipeline engine module
             description: Build a thin CLI wrapper only; do not reimplement the already
               verified pipeline parser, DAG walker, or stage executors.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/cli/commands/pipeline.ts
