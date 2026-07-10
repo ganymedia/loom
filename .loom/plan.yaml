@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
-current_milestone: m5-5
-current_task: t5-5-2
+current_milestone: m5-6
+current_task: t5-6-1
 phases:
   - id: phase-1
     name: Foundation
@@ -726,7 +726,7 @@ phases:
         name: Confirm automatic handoff triggering in the live session loop
         description: Prove Session Manager and handoff document management are actually
           wired into the live session loop.
-        status: pending
+        status: completed
         token_estimate: medium
         tasks:
           - id: t5-5-1
@@ -746,7 +746,7 @@ phases:
               context
             description: Verify handoff ingestion affects the first agent turn's context
               rather than only reading the file.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/tui/session.ts

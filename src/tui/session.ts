@@ -11,7 +11,11 @@ import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
-import { writeHandoff } from "@loom/session/handoff";
+import {
+  type HandoffDocument,
+  readHandoff,
+  writeHandoff,
+} from "@loom/session/handoff";
 import { SessionManager } from "@loom/session/manager";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
@@ -263,6 +267,32 @@ async function runAgentPrompt(
   return turn;
 }
 
+function formatHandoffContext(document: HandoffDocument): string {
+  return [
+    "Prior LOOM session handoff:",
+    `Goal & status: ${document.goalStatus}`,
+    `Completed work: ${document.completedWork}`,
+    `Failed attempts: ${document.failedAttempts}`,
+    `Branch name: ${document.branchName}`,
+    `Next action: ${document.nextAction}`,
+  ].join("\n");
+}
+
+async function loadHandoffContext(
+  projectRoot: string,
+): Promise<AgentMessage[]> {
+  const handoff = await readHandoff(projectRoot);
+  if (handoff === undefined) return [];
+
+  return [
+    {
+      role: "system",
+      content: formatHandoffContext(handoff),
+      timestamp: Date.now(),
+    },
+  ];
+}
+
 export async function startSession(
   config: LoomConfig,
   options: StartSessionOptions = {},
@@ -299,7 +329,9 @@ export async function startSession(
     const context = {
       sessionId: crypto.randomUUID(),
       projectRoot: options.projectRoot ?? process.cwd(),
-      conversationHistory: [] as AgentMessage[],
+      conversationHistory: await loadHandoffContext(
+        options.projectRoot ?? process.cwd(),
+      ),
     };
     const sessionManager = new SessionManager({
       sessionId: context.sessionId,

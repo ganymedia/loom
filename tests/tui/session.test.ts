@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LoomConfig } from "@loom/config/schema";
+import { writeHandoff } from "@loom/session/handoff";
 import { runSessionSmoke, startSession } from "@loom/tui/session";
 
 const config: LoomConfig = {
@@ -166,6 +167,52 @@ describe("startSession", () => {
     expect(handoff).toContain("# LOOM Session Handoff");
     expect(handoff).toContain("reached 80% of the context limit");
     expect(handoff).toContain("- **Next action** — Resume the LOOM session");
+  });
+
+  test("injects an existing handoff into the first agent turn context", async () => {
+    const projectRoot = await tempProject();
+    await writeHandoff(projectRoot, {
+      goalStatus: "Resume Phase 5 Session Continuity verification.",
+      completedWork: "Automatic handoff writing is verified.",
+      failedAttempts: "No unresolved failed attempts.",
+      branchName: "main",
+      nextAction: "Prove handoff context reaches the first model request.",
+    });
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      contextLimit: 100,
+      initialPrompt: "Continue from handoff",
+      fetchImpl: async (input, init) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+
+        const requestBody = JSON.parse(String(init?.body)) as {
+          messages: Array<{ role: string; content: string }>;
+        };
+        expect(requestBody.messages).toEqual([
+          expect.objectContaining({ role: "system" }),
+          expect.objectContaining({
+            role: "system",
+            content: expect.stringContaining(
+              "Prior LOOM session handoff:\nGoal & status: Resume Phase 5 Session Continuity verification.",
+            ),
+          }),
+          { role: "user", content: "Continue from handoff" },
+        ]);
+        return jsonResponse({
+          choices: [{ message: { content: "Continuing from handoff" } }],
+          usage: { prompt_tokens: 5, completion_tokens: 3 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).toContain("Developer: Continuing from handoff");
   });
 
   test("runs follow-up turns with history and visible tool-call results", async () => {
