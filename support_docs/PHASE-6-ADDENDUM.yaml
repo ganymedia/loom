@@ -1,0 +1,234 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PHASE 6 ADDENDUM — append this phase block into the existing `phases:` list
+# in .loom/plan.yaml, after phase-5.
+#
+# Context: Phase 5 completed at 61/61 tasks on 2026-07-10 with verified live
+# end-to-end behavior (agent switching, pipeline DAG execution, automatic
+# handoff). The completing session's own narrative entry flagged two
+# remaining gaps, and a separate operator-requested capability audit
+# (2026-07-10) surfaced two more. Phase 6 closes all four and produces an
+# actual installable release artifact plus a real user testing guide.
+#
+# This is the last phase before LOOM is handed to a first external tester.
+# Do not skip m6-5 (user testing guide + dry run) — a phase that compiles
+# and passes tests is not the same as a phase a stranger can install and use.
+# ─────────────────────────────────────────────────────────────────────────────
+
+- id:        phase-6
+  name:      "CLI polish, pipeline command, and installer-style release"
+  status:    active
+  depends_on: [phase-5]
+  exit_criterion: >
+    A stranger with no repository access can download a released LOOM
+    binary, install it with a single documented command, configure it
+    against their own backend, and complete the full user testing guide
+    without hitting an undocumented failure.
+
+  milestones:
+
+    # ── M6-1 — CLI UX correctness ───────────────────────────────────────────
+    - id:     m6-1
+      name:   "Fix --version and --help fallthrough"
+      status: planned
+      agent:  developer
+      exit_criterion: >
+        ./dist/loom --version prints a version string and exits 0.
+        ./dist/loom --help prints help and exits 0, with no additional
+        wrapper error printed afterward.
+      tasks:
+        - id:             t6-1-1
+          name:           "Fix --version to print version and exit before session startup runs"
+          status:         planned
+          token_estimate: small
+          notes: >
+            Commander.js's built-in --version should short-circuit before
+            any config loading or session bootstrap. Confirm the current
+            entry point isn't intercepting or wrapping that exit path.
+
+        - id:             t6-1-2
+          name:           "Fix --help fatal wrapper error after help text prints"
+          status:         planned
+          token_estimate: small
+          notes: >
+            Narrative 2026-07-10 confirms help text prints correctly, then
+            a fatal wrapper message follows. Likely the top-level error
+            handler is catching Commander's intentional process.exit() from
+            --help and treating it as an unhandled failure. Fix at the
+            error-handling boundary in src/index.ts, not by suppressing
+            the exit.
+
+        - id:             t6-1-3
+          name:           "Add a CLI smoke test asserting exit codes for --version and --help"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-1-1, t6-1-2]
+
+    # ── M6-2 — Public pipeline command ──────────────────────────────────────
+    - id:     m6-2
+      name:   "Register loom pipeline run as a public command"
+      status: planned
+      agent:  developer
+      exit_criterion: >
+        loom pipeline run <file.loom> executes a real .loom pipeline file
+        from the CLI, with the same DAG-walker and branch-skipping behavior
+        already verified through the module entrypoint in Phase 5.
+      tasks:
+        - id:             t6-2-1
+          name:           "Create src/cli/commands/pipeline.ts wrapping the existing pipeline engine module"
+          status:         planned
+          token_estimate: medium
+          notes: >
+            This is a thin CLI wrapper only. The pipeline engine itself
+            (parser, DAG walker, all five stage executors) is already
+            built and verified — do not reimplement any of it here.
+
+        - id:             t6-2-2
+          name:           "Register the pipeline command group in src/index.ts"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-2-1]
+
+        - id:             t6-2-3
+          name:           "Support --var and --input flags for variable injection into the Context Bus"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-2-1]
+
+        - id:             t6-2-4
+          name:           "Add a CLI integration test running a real .loom pipeline file end-to-end through the new command"
+          status:         planned
+          token_estimate: medium
+          depends_on:     [t6-2-2, t6-2-3]
+
+    # ── M6-3 — Config reference reconciliation ─────────────────────────────
+    - id:     m6-3
+      name:   "Reconcile config reference docs with actual YAML runtime"
+      status: planned
+      agent:  architect
+      exit_criterion: >
+        Every reference document describing LOOM's config format shows YAML
+        matching src/config/schema.ts exactly. No TOML config example
+        remains anywhere in the repository or documentation.
+      tasks:
+        - id:             t6-3-1
+          name:           "Replace loom-config.toml with loom-config.yaml as the canonical config reference"
+          status:         completed
+          token_estimate: small
+          notes: >
+            Provided by operator/design session on 2026-07-10 as
+            loom-config.yaml, matching the verified runtime shape
+            (defaults.profile, defaults.theme, profiles.*.defaultBackend,
+            backends.*.type/baseUrl). Confirm it is committed and
+            loom-config.toml is removed, not just superseded in docs.
+
+        - id:             t6-3-2
+          name:           "Update SPEC.md section 7 to reference loom-config.yaml instead of loom-config.toml"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-3-1]
+
+        - id:             t6-3-3
+          name:           "Update README.md and any other doc showing a TOML config example"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-3-1]
+
+        - id:             t6-3-4
+          name:           "Search the full repo for remaining .toml config references and fix or explicitly justify each one"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-3-1]
+          notes: >
+            prompt-intelligence.config.toml and foundry-server.toml are
+            NOT part of this cleanup — those are legitimately TOML
+            (Prompt Intelligence override schema and Foundry server
+            self-hosting config, respectively, neither of which the CLI
+            runtime loader reads). Only the user-facing ~/.loom/config
+            reference is affected by this task.
+
+    # ── M6-4 — Installer-style release packaging ───────────────────────────
+    - id:     m6-4
+      name:   "Produce a real installable release artifact"
+      status: planned
+      agent:  developer
+      depends_on: [m6-1, m6-2]
+      exit_criterion: >
+        A person can run one documented command to install a working
+        `loom` binary onto their PATH without cloning the repository or
+        having Bun installed.
+      tasks:
+        - id:             t6-4-1
+          name:           "Write install.sh: detects OS/arch, downloads the matching compiled binary, installs to ~/.local/bin or /usr/local/bin"
+          status:         planned
+          token_estimate: medium
+          notes: >
+            Mirror the install experience specced in SPEC.md's deployment
+            section: `curl -fsSL https://get.loom.dev | sh` equivalent.
+            Since there is no public release host yet, target a GitHub
+            Releases URL pattern initially
+            (github.com/ganymedia/loom/releases) and make the host
+            configurable via an env var for later.
+
+        - id:             t6-4-2
+          name:           "Add a release build script that produces checksummed tarballs for all four platform targets"
+          status:         planned
+          token_estimate: medium
+          depends_on:     [t6-4-1]
+          notes: >
+            Reuse the existing build:linux / build:mac scripts from
+            package.json (t5-6-3). Package each binary plus a SHA256SUMS
+            file. Do not invent a new build mechanism — wrap the existing
+            compile targets.
+
+        - id:             t6-4-3
+          name:           "Document a GitHub Releases publish procedure (manual is fine for v1 — no CI/CD required yet)"
+          status:         planned
+          token_estimate: small
+          depends_on:     [t6-4-2]
+
+        - id:             t6-4-4
+          name:           "First-run wizard: if no ~/.loom/config.yaml exists, prompt for a backend endpoint and write one"
+          status:         planned
+          token_estimate: medium
+          notes: >
+            This was originally scoped in early design conversation as the
+            first-run experience but never tracked as a task. A stranger
+            installing LOOM should not need to hand-write YAML before
+            their first successful run.
+
+    # ── M6-5 — User testing guide and dry run (do this LAST) ────────────────
+    - id:     m6-5
+      name:   "User testing guide and operator dry run"
+      status: planned
+      agent:  tester
+      depends_on: [m6-1, m6-2, m6-3, m6-4]
+      exit_criterion: >
+        USER_TESTING.md exists, is accurate against the actual installed
+        product (not the repository), and the operator has personally
+        completed every step in it at least once, in a clean environment,
+        with no repository access.
+      tasks:
+        - id:             t6-5-1
+          name:           "Write USER_TESTING.md as a standalone guide for a non-technical or first-time tester"
+          status:         planned
+          token_estimate: medium
+          notes: >
+            Provided as a starting draft alongside this addendum
+            (USER_TESTING.md at repo root). Verify every command in it
+            against the actual m6-4 installer output before trusting it.
+
+        - id:             t6-5-2
+          name:           "Perform one full dry run of USER_TESTING.md from a machine/directory with no repository clone"
+          status:         planned
+          token_estimate: medium
+          depends_on:     [t6-5-1]
+          notes: >
+            This must use the installer from m6-4, not `bun run build`
+            directly — the point is testing what an actual stranger
+            would experience.
+
+        - id:             t6-5-3
+          name:           "Fix any step in USER_TESTING.md that failed or was unclear during the dry run"
+          status:         planned
+          token_estimate: medium
+          depends_on:     [t6-5-2]
