@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-2
-current_task: t6-2-3
+current_task: t6-2-4
 phases:
   - id: phase-1
     name: Foundation
@@ -882,7 +882,7 @@ phases:
             name: Support --var and --input flags for variable injection into the Context Bus
             description: Allow users to inject variables into the pipeline Context Bus
               through explicit --var and --input CLI flags.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/cli/commands/pipeline.ts

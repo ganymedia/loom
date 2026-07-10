@@ -31,6 +31,31 @@ stages:
 `,
     "utf8",
   );
+  await writeFile(
+    join(projectRoot, ".loom", "vars.loom"),
+    `name: cli-vars
+version: "1"
+stages:
+  - id: choose
+    type: branch
+    condition: input.enabled
+    ifTrue: keep
+    ifFalse: drop
+  - id: keep
+    type: transform
+    expression: runtime.label
+  - id: drop
+    type: transform
+    expression: input.missing
+`,
+    "utf8",
+  );
+  await writeFile(
+    join(projectRoot, ".loom", "input.yaml"),
+    `input.enabled: true
+`,
+    "utf8",
+  );
   return projectRoot;
 }
 
@@ -70,5 +95,55 @@ describe("pipeline command", () => {
     expect(
       result.stageResults.find((stage) => stage.stageId === "drop")?.skipped,
     ).toBe(true);
+  });
+
+  test("seeds Context Bus values from --input and --var", async () => {
+    const projectRoot = await projectWithPipeline();
+    const output: string[] = [];
+    const program = pipelineProgram(projectRoot, output);
+
+    await program.parseAsync([
+      "node",
+      "loom",
+      "pipeline",
+      "run",
+      ".loom/vars.loom",
+      "--input",
+      ".loom/input.yaml",
+      "--var",
+      "runtime.label=from var",
+    ]);
+
+    const result = JSON.parse(output.join("")) as {
+      success: boolean;
+      finalOutput: string;
+      stageResults: Array<{ stageId: string; skipped: boolean }>;
+    };
+    expect(result.success).toBe(true);
+    expect(result.finalOutput).toBe("from var");
+    expect(
+      result.stageResults.find((stage) => stage.stageId === "drop")?.skipped,
+    ).toBe(true);
+  });
+
+  test("fails loudly for duplicate injected Context Bus keys", async () => {
+    const projectRoot = await projectWithPipeline();
+    const program = pipelineProgram(projectRoot, []);
+
+    await expect(
+      program.parseAsync([
+        "node",
+        "loom",
+        "pipeline",
+        "run",
+        ".loom/vars.loom",
+        "--var",
+        "runtime.label=one",
+        "--var",
+        "runtime.label=two",
+      ]),
+    ).rejects.toThrow(
+      'pipeline context key "runtime.label" was provided more than once',
+    );
   });
 });

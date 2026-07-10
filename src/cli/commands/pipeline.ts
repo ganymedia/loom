@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import type { FetchLike } from "@loom/backends/discovery";
 import type { LoomConfig } from "@loom/config/schema";
 import { runPipeline } from "@loom/pipeline/dag-walker";
@@ -8,8 +9,11 @@ import type { StageExecutorRegistry } from "@loom/pipeline/executors/parallel";
 import { PromptStageExecutor } from "@loom/pipeline/executors/prompt";
 import { TransformStageExecutor } from "@loom/pipeline/executors/transform";
 import { parsePipeline } from "@loom/pipeline/parser";
+import { ContextBus } from "@loom/pipeline/types";
 import type { RunPromptOptions } from "@loom/prompt/run-prompt";
+import { resolveReadablePath } from "@loom/tools/path-safety";
 import type { Command } from "commander";
+import YAML from "yaml";
 
 export interface RegisterPipelineCommandOptions {
   config: LoomConfig;
@@ -28,6 +32,11 @@ interface PromptStageExecutorOptions {
   }>;
 }
 
+interface PipelineRunCommandOptions {
+  var?: string[];
+  input?: string[];
+}
+
 export function registerPipelineCommand(
   program: Command,
   options: RegisterPipelineCommandOptions,
@@ -43,13 +52,27 @@ export function registerPipelineCommand(
     .command("run")
     .argument("<file>", "project-relative .loom pipeline file")
     .description("execute a .loom pipeline file")
-    .action(async (file: string) => {
+    .option(
+      "--var <key=value>",
+      "seed a Context Bus key with a YAML-parsed value",
+      collectOption,
+      [],
+    )
+    .option(
+      "--input <file>",
+      "seed Context Bus keys from a project-relative YAML/JSON object file",
+      collectOption,
+      [],
+    )
+    .action(async (file: string, commandOptions: PipelineRunCommandOptions) => {
+      const projectRoot = options.projectRoot ?? process.cwd();
       const definition = await parsePipeline({
-        projectRoot: options.projectRoot ?? process.cwd(),
+        projectRoot,
         pipelinePath: file,
       });
       const result = await runPipeline(definition, {
         executors: createPipelineExecutors(options),
+        bus: await buildContextBus(projectRoot, commandOptions),
       });
 
       writeOut(`${JSON.stringify(result, null, 2)}\n`);
@@ -57,6 +80,68 @@ export function registerPipelineCommand(
         process.exitCode = 1;
       }
     });
+}
+
+function collectOption(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
+
+async function buildContextBus(
+  projectRoot: string,
+  options: PipelineRunCommandOptions,
+): Promise<ContextBus> {
+  const bus = new ContextBus();
+
+  for (const inputPath of options.input ?? []) {
+    const input = await readInputObject(projectRoot, inputPath);
+    for (const [key, value] of Object.entries(input)) {
+      setBusValue(bus, key, value);
+    }
+  }
+
+  for (const variable of options.var ?? []) {
+    const [key, value] = parseVariable(variable);
+    setBusValue(bus, key, value);
+  }
+
+  return bus;
+}
+
+async function readInputObject(
+  projectRoot: string,
+  inputPath: string,
+): Promise<Record<string, unknown>> {
+  const filePath = await resolveReadablePath(projectRoot, inputPath);
+  const parsed = YAML.parse(await readFile(filePath, "utf8")) as unknown;
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`pipeline --input "${inputPath}" must contain an object`);
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function parseVariable(variable: string): [string, unknown] {
+  const separator = variable.indexOf("=");
+  if (separator <= 0) {
+    throw new Error('pipeline --var must use the form "key=value"');
+  }
+  const key = variable.slice(0, separator).trim();
+  const rawValue = variable.slice(separator + 1);
+  if (key.length === 0) {
+    throw new Error("pipeline --var key must not be empty");
+  }
+  return [key, YAML.parse(rawValue) as unknown];
+}
+
+function setBusValue(bus: ContextBus, key: string, value: unknown): void {
+  if (key.trim().length === 0) {
+    throw new Error("pipeline input keys must not be empty");
+  }
+  if (bus.has(key)) {
+    throw new Error(
+      `pipeline context key "${key}" was provided more than once`,
+    );
+  }
+  bus.set(key, value);
 }
 
 export function createPipelineExecutors(

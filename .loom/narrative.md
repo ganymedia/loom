@@ -247,3 +247,7 @@ Decision: add `src/cli/commands/pipeline.ts` as a thin CLI wrapper over the exis
 ## 2026-07-10 — Public pipeline command registration
 
 Decision: register the pipeline command group in `src/index.ts` by importing the existing wrapper and passing loaded runtime config, preserving `index.ts` as composition-only command wiring. The entrypoint help smoke now asserts `pipeline` appears in public help output, proving the command is visible to users. Verification passed with targeted CLI tests; `.loom/plan.yaml` now advances to `t6-2-3`.
+
+## 2026-07-10 — Pipeline Context Bus variable injection
+
+Decision: implement `loom pipeline run --input <file>` as a project-root-safe YAML/JSON object loader and `--var key=value` as a dotted Context Bus key with a YAML-parsed value. Duplicate keys fail loudly instead of letting later inputs silently override earlier context, because pipeline runs must be auditable and deterministic. Verification covers input-file values, CLI variables, branch skipping, and duplicate-key failure; `.loom/plan.yaml` now advances to `t6-2-4`.
