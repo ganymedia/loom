@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-3
-current_task: t6-3-3
+current_task: t6-3-4
 phases:
   - id: phase-1
     name: Foundation
@@ -932,7 +932,7 @@ phases:
             name: Update README.md and any other doc showing a TOML config example
             description: Update README.md and any other documentation that shows the
               user-facing LOOM runtime config as TOML.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - README.md

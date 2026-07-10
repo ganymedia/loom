@@ -246,7 +246,7 @@ without operator confirmation — they exist for provenance, not as dead code.
 LOOM installs per-user exactly like OpenCode — single binary, no daemons.
 Complexity is strictly additive across three tiers:
 
-- **Solo developer:** LOOM CLI binary only. `~/.loom/config.toml` points at
+- **Solo developer:** LOOM CLI binary only. `~/.loom/config.yaml` points at
   the user's existing backend endpoints. No server of any kind required.
 - **Small team:** same per-user install for each developer, plus one
   optional self-hosted Foundry server (single container) if the team wants

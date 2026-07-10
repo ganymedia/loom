@@ -263,3 +263,7 @@ Decision: replace root `loom-config.toml` with root `loom-config.yaml` copied fr
 ## 2026-07-10 — SPEC section 7 config path update
 
 Decision: update root `SPEC.md` section 7 to list `loom-config.yaml` and `~/.loom/config.yaml` instead of the deleted TOML reference, then re-check every exact path listed in the section 7 table exists at the repository root. This closes the session-start blocker that initially reported `loom-config.yaml` missing from root. Verification passed with the path check plus `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-3`.
+
+## 2026-07-10 — User-facing config doc path update
+
+Decision: update the root `SPEC.md` deployment-tier text from `~/.loom/config.toml` to `~/.loom/config.yaml`. Root `README.md` and `BUILDING.md` do not contain the stale user-facing TOML config example, and support-doc files already have separate uncommitted operator changes, so broader support-doc cleanup is deferred to the explicit full-repo search/justify task `t6-3-4`. Verification passed with `bun run typecheck` and `bun run lint`; `.loom/plan.yaml` now advances to `t6-3-4`.
