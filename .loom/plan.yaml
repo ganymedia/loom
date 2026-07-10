@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-6
-current_task: t5-6-2
+current_task: t5-6-3
 phases:
   - id: phase-1
     name: Foundation
@@ -774,7 +774,7 @@ phases:
               backend
             description: Execute the compiled binary directly rather than through bun run
               and confirm it works with a real configured backend.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - dist/loom
