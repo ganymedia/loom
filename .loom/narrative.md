@@ -199,3 +199,7 @@ Decision: add `loom recall --query` as the primary semantic recall path while pr
 ## 2026-07-09 — Context Bus recall injection
 
 Decision: update `InjectStageExecutor` so inject-stage `query` values are rendered through the existing Context Bus template renderer before recall is invoked. This lets pipeline stages use prior outputs such as `{{ stages.summary.output }}` as semantic recall queries while preserving the injected recall callback seam and avoiding direct storage/backend access inside the executor. Missing template references fail loudly through the shared `renderTemplate()` behavior. Verification passed with targeted pipeline executor tests, `bun run typecheck`, `bun run lint`, and `bun test` (175 passing tests). Phase 5 milestone `m5-4` is complete; next work is `t5-5-1`, integration testing automatic handoff past the 80 percent token threshold.
+
+## 2026-07-09 — Session wrap-up before handoff
+
+Phase 5 progressed from Ink StatusBar wiring through the end of embedding generation milestone `m5-4`. Completed and pushed commits: `a38f66e` (StatusBar), `5d16f34` (embeddings backend client), `92742e0` (Prompt Store automatic embeddings), `3ea32db` (natural-language recall), and `181af85` (Context Bus recall injection). Latest full verification was green with `bun run typecheck`, `bun run lint`, and `bun test` (175 passing tests). `.loom/plan.yaml` is advanced to `t5-5-1`; Phase 5 still has pending Session Continuity and production packaging tasks.
