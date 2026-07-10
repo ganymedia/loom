@@ -219,3 +219,7 @@ Decision: add `react-devtools-core` as an explicit runtime dependency because Bu
 ## 2026-07-10 — Compiled binary real-backend smoke
 
 Decision: satisfy `t5-6-2` with the compiled artifact directly (`./dist/loom --prompt "Say hello in one short sentence."`) rather than through `bun run`, because the task specifically requires standalone binary execution against a real configured backend. The binary discovered backend `jcdx-local`, selected model `gemma4`, verified session file read/write, and received a Developer response. The response reflected the local ignored `.loom/handoff.md`, which is expected after handoff ingestion but means future smoke prompts should clear or control local handoff state when deterministic output matters. `t5-6-2` is complete; `.loom/plan.yaml` now advances to `t5-6-3`, build target verification.
+
+## 2026-07-10 — Push and handoff preparation
+
+Session work through `t5-6-2` was pushed to `main` at `8cbe1ad`, then README production-binary documentation was added, verified with `bun run typecheck`, `bun run lint`, and `bun test` (177 passing tests), committed as `a74b2a1`, and pushed. The tracked working tree was clean before handoff preparation. Phase 5 remains active with pending task `t5-6-3`, build target verification for Linux/macOS.
