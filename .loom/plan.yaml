@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-09
 current_phase: phase-5
 current_milestone: m5-6
-current_task: t5-6-3
+current_task: t5-6-4
 phases:
   - id: phase-1
     name: Foundation
@@ -783,7 +783,7 @@ phases:
           - id: t5-6-3
             name: Add build:linux and build:mac targets verification
             description: Add or verify platform build targets for Linux and macOS.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - package.json

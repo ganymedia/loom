@@ -223,3 +223,7 @@ Decision: satisfy `t5-6-2` with the compiled artifact directly (`./dist/loom --p
 ## 2026-07-10 — Push and handoff preparation
 
 Session work through `t5-6-2` was pushed to `main` at `8cbe1ad`, then README production-binary documentation was added, verified with `bun run typecheck`, `bun run lint`, and `bun test` (177 passing tests), committed as `a74b2a1`, and pushed. The tracked working tree was clean before handoff preparation. Phase 5 remains active with pending task `t5-6-3`, build target verification for Linux/macOS.
+
+## 2026-07-10 — Linux and macOS build target verification
+
+Decision: add explicit Bun compile scripts for Linux and macOS across x64 and arm64 rather than a single architecture per OS, because `t5-6-3` requires platform target coverage and macOS/Linux deployments may differ by CPU architecture. Verified `bun run build:linux` and `bun run build:mac`, producing ignored `dist/loom-linux-x64`, `dist/loom-linux-arm64`, `dist/loom-darwin-x64`, and `dist/loom-darwin-arm64` artifacts. Static and regression verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (177 passing tests). Adjacent risk: cross-target compilation downloaded missing Bun runtime artifacts during verification, so air-gapped deployments need those compiler runtimes pre-seeded. `t5-6-3` is complete; `.loom/plan.yaml` now advances to `t5-6-4`, full regression and live end-to-end verification.
