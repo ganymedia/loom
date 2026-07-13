@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-13
 current_phase: phase-6
 current_milestone: m6-6
-current_task: t6-6-4
+current_task: t6-6-5
 phases:
   - id: phase-1
     name: Foundation
@@ -1093,7 +1093,7 @@ phases:
             name: Remove or rename the LOOM TUI placeholder startup banner
             description: Trace the startup banner source and remove or rename leftover
               placeholder text once the active renderer path is confirmed.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/tui/session.ts

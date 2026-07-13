@@ -175,7 +175,7 @@ describe("CLI entrypoint", () => {
 
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain("unknown command");
-    expect(result.stdout).not.toContain("LOOM TUI placeholder started.");
+    expect(result.stdout).not.toContain("LOOM session started.");
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 

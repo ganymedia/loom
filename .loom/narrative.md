@@ -307,3 +307,7 @@ Decision: cover the first-run bug with a compiled-binary regression instead of a
 ## 2026-07-13 — Strict top-level CLI input rejection
 
 Decision: classify valid session-only arguments before first-run prompting and let Commander parse every other top-level input, because the transcript showed mistyped flags and stray URL positionals silently starting a session. `src/index.ts` now runs first-run config before `loadConfig()` only for valid session invocations, preserving same-startup use of newly written `~/.loom/config.yaml`, while `--VERSION` and unexpected positionals fail loudly before session startup. Tests cover both rejected inputs and retain the compiled first-run pty regression. Verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (197 passing tests). `t6-6-3` is complete; `.loom/plan.yaml` now advances to `t6-6-4`.
+
+## 2026-07-13 — Startup banner cleanup
+
+Decision: rename the startup banner rather than remove all startup status, because the surrounding output still gives useful backend/file-tool smoke status and the Ink tab/status renderer is active immediately afterward. The traced source was the live `startSession()` banner, not documentation; `LOOM TUI placeholder started.` is now `LOOM session started.` and tests assert the product wording. Verification passed with targeted TUI and CLI tests. `t6-6-4` is complete; `.loom/plan.yaml` now advances to `t6-6-5`.

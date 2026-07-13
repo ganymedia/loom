@@ -301,7 +301,7 @@ export async function startSession(
     options.writeOutput ?? ((message: string) => process.stdout.write(message));
   const smoke = await runSessionSmoke(config, options);
 
-  writeOutput("LOOM TUI placeholder started.\n");
+  writeOutput("LOOM session started.\n");
   if (smoke.backend === undefined) {
     writeOutput(
       `Backend: unavailable (${smoke.backendError ?? "unknown error"})\n`,

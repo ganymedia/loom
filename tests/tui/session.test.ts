@@ -98,7 +98,7 @@ describe("startSession", () => {
       },
     });
 
-    expect(output).toContain("LOOM TUI placeholder started");
+    expect(output).toContain("LOOM session started");
     expect(output).toContain(
       "Backend: local using discovered model local-model",
     );
