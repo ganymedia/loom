@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-4
-current_task: t6-4-2
+current_task: t6-4-3
 phases:
   - id: phase-1
     name: Foundation
@@ -972,7 +972,7 @@ phases:
             name: Add a release build script that produces checksummed tarballs for all four platform targets
             description: Reuse existing build:linux and build:mac scripts and package
               each binary plus SHA256SUMS without inventing a new build mechanism.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - package.json

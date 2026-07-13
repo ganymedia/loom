@@ -14,6 +14,7 @@
     "build:mac": "bun run build:mac:x64 && bun run build:mac:arm64",
     "build:mac:x64": "bun build --compile --target=bun-darwin-x64 ./src/index.ts --outfile ./dist/loom-darwin-x64",
     "build:mac:arm64": "bun build --compile --target=bun-darwin-arm64 ./src/index.ts --outfile ./dist/loom-darwin-arm64",
+    "release": "sh scripts/release.sh",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "biome check ."
