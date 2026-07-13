@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-5
-current_task: t6-5-1
+current_task: t6-5-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1015,7 +1015,7 @@ phases:
             name: Write USER_TESTING.md as a standalone guide for a first-time tester
             description: Verify every command in USER_TESTING.md against the actual
               m6-4 installer output before trusting it.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - USER_TESTING.md
