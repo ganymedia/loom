@@ -10,25 +10,51 @@ export interface LoadConfigOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-function defaultGlobalConfigPath(env: NodeJS.ProcessEnv): string | undefined {
-  const configHome = env.XDG_CONFIG_HOME;
+export function defaultGlobalConfigPath(
+  env: NodeJS.ProcessEnv,
+): string | undefined {
   const home = env.HOME;
-
+  if (home !== undefined && home.length > 0) {
+    return join(home, ".loom", "config.yaml");
+  }
+  const configHome = env.XDG_CONFIG_HOME;
   if (configHome !== undefined && configHome.length > 0) {
     return join(configHome, "loom", "config.yaml");
   }
+  return undefined;
+}
+
+export function defaultGlobalConfigPaths(env: NodeJS.ProcessEnv): string[] {
+  const configHome = env.XDG_CONFIG_HOME;
+  const home = env.HOME;
+  const paths: string[] = [];
 
   if (home !== undefined && home.length > 0) {
-    return join(home, ".config", "loom", "config.yaml");
+    paths.push(join(home, ".config", "loom", "config.yaml"));
   }
 
-  return undefined;
+  if (configHome !== undefined && configHome.length > 0) {
+    paths.push(join(configHome, "loom", "config.yaml"));
+  }
+
+  if (home !== undefined && home.length > 0) {
+    paths.push(join(home, ".loom", "config.yaml"));
+  }
+
+  return paths;
 }
 
 async function readYamlIfPresent(path: string | undefined): Promise<unknown> {
   if (path === undefined || !existsSync(path)) return {};
   const content = await readFile(path, "utf8");
   return YAML.parse(content) ?? {};
+}
+
+async function readGlobalConfig(env: NodeJS.ProcessEnv): Promise<unknown> {
+  const configs = await Promise.all(
+    defaultGlobalConfigPaths(env).map((path) => readYamlIfPresent(path)),
+  );
+  return configs.reduce<unknown>(mergeConfig, {});
 }
 
 function mergeConfig(globalConfig: unknown, projectConfig: unknown): unknown {
@@ -79,7 +105,7 @@ export async function loadConfig(
 ): Promise<LoomConfig> {
   const env = options.env ?? process.env;
   const projectRoot = options.projectRoot ?? process.cwd();
-  const globalConfig = await readYamlIfPresent(defaultGlobalConfigPath(env));
+  const globalConfig = await readGlobalConfig(env);
   const projectConfig = await readYamlIfPresent(
     join(projectRoot, ".loom", "config.yaml"),
   );

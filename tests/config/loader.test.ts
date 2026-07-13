@@ -61,4 +61,34 @@ describe("loadConfig", () => {
     expect(config.defaults.theme).toBe("high-contrast");
     expect(config.backends.local?.baseUrl).toBe("http://127.0.0.1:8000");
   });
+
+  test("loads ~/.loom/config.yaml with precedence over compatibility paths", async () => {
+    const home = await tempProject();
+    const xdgHome = join(home, "xdg");
+    await mkdir(join(home, ".config", "loom"), { recursive: true });
+    await mkdir(join(xdgHome, "loom"), { recursive: true });
+    await mkdir(join(home, ".loom"), { recursive: true });
+    await writeFile(
+      join(home, ".config", "loom", "config.yaml"),
+      "defaults:\n  theme: legacy\n",
+      "utf8",
+    );
+    await writeFile(
+      join(xdgHome, "loom", "config.yaml"),
+      "defaults:\n  theme: xdg\n",
+      "utf8",
+    );
+    await writeFile(
+      join(home, ".loom", "config.yaml"),
+      "defaults:\n  theme: canonical\n",
+      "utf8",
+    );
+
+    const config = await loadConfig({
+      projectRoot: home,
+      env: { HOME: home, XDG_CONFIG_HOME: xdgHome },
+    });
+
+    expect(config.defaults.theme).toBe("canonical");
+  });
 });

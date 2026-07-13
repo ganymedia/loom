@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
-current_milestone: m6-4
-current_task: t6-4-4
+current_milestone: m6-5
+current_task: t6-5-1
 phases:
   - id: phase-1
     name: Foundation
@@ -953,7 +953,7 @@ phases:
         name: Produce a real installable release artifact
         description: A person can run one documented command to install a working
           loom binary onto PATH without cloning the repository or having Bun installed.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t6-4-1
@@ -995,7 +995,7 @@ phases:
             description: If no ~/.loom/config.yaml exists, prompt for a backend endpoint
               and write a usable YAML config so new users do not hand-write config
               before first run.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/config

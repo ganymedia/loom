@@ -5,6 +5,7 @@ import { registerPipelineCommand } from "@loom/cli/commands/pipeline";
 import { registerPlanCommand } from "@loom/cli/commands/plan";
 import { registerRecallCommand } from "@loom/cli/commands/recall";
 import { registerThemeCommand } from "@loom/cli/commands/theme";
+import { ensureFirstRunConfig } from "@loom/config/first-run";
 import { loadConfig } from "@loom/config/loader";
 import { Command } from "commander";
 
@@ -36,6 +37,17 @@ async function main(): Promise<void> {
   const profileOverride = optionValue(args, ["--profile", "-p"]);
   const backendOverride = optionValue(args, ["--backend"]);
   const initialPrompt = optionValue(args, ["--prompt"]);
+  const hasTerminalFlag =
+    args.includes("--help") ||
+    args.includes("-h") ||
+    args.includes("--version") ||
+    args.includes("-V");
+  const startsWithSubcommand =
+    args[0] !== undefined && !args[0].startsWith("-");
+
+  if (!hasTerminalFlag && !startsWithSubcommand) {
+    await ensureFirstRunConfig();
+  }
 
   const config = await loadConfig(
     profileOverride === undefined ? {} : { profileOverride },
@@ -51,13 +63,7 @@ async function main(): Promise<void> {
     args.includes(command.name()),
   );
 
-  if (
-    !hasSubcommand &&
-    !args.includes("--help") &&
-    !args.includes("-h") &&
-    !args.includes("--version") &&
-    !args.includes("-V")
-  ) {
+  if (!hasSubcommand && !hasTerminalFlag) {
     const { startSession } = await import("@loom/tui/session");
     await startSession(config, {
       ...(backendOverride === undefined ? {} : { backendOverride }),

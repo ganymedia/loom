@@ -43,7 +43,7 @@ For mirrors, staging, or air-gapped release hosts, set `LOOM_INSTALL_BASE_URL` b
 
 Configuration is loaded in layers:
 
-1. Global config: `$XDG_CONFIG_HOME/loom/config.yaml`, or `$HOME/.config/loom/config.yaml`.
+1. Global config: `$HOME/.loom/config.yaml` first, with `$XDG_CONFIG_HOME/loom/config.yaml` and `$HOME/.config/loom/config.yaml` still read for compatibility.
 2. Project config: `.loom/config.yaml` under the current project root.
 3. Runtime overrides: `LOOM_PROFILE`, `--profile`, and `--backend`.
 
@@ -74,7 +74,7 @@ LOOM does not start or expose an inference service. `baseUrl` must point at an a
 
 The backend router resolves the active profile's `defaultBackend` unless `--backend <key>` is provided. Model names are never hardcoded in code; each request resolves the currently available model list through `/v1/models` and uses a preferred model only when that model is actually present.
 
-If no config exists, LOOM creates an in-memory `default` profile with no default backend. Startup should therefore report a clear missing-default-backend status instead of crashing.
+If no config exists and LOOM starts an interactive session, the first-run wizard prompts for an OpenAI-compatible backend endpoint and writes `$HOME/.loom/config.yaml`. Non-interactive runs keep the in-memory `default` profile with no default backend and report a clear missing-default-backend status instead of hanging for input.
 
 ## One-turn Developer prompt
 
