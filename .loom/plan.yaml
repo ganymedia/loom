@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-13
 current_phase: phase-6
 current_milestone: m6-6
-current_task: t6-6-3
+current_task: t6-6-4
 phases:
   - id: phase-1
     name: Foundation
@@ -1084,7 +1084,7 @@ phases:
             description: Configure the top-level CLI to reject unexpected positional
               arguments and unknown options with a clear non-zero error instead of
               silently starting a session.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - src/index.ts

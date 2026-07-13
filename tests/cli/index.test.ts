@@ -161,6 +161,24 @@ describe("CLI entrypoint", () => {
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 
+  test("rejects unknown top-level options instead of starting a session", async () => {
+    const result = await runCli(["--VERSION"]);
+
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain("unknown option '--VERSION'");
+    expect(result.stdout).not.toContain("OpenAI-compatible backend URL:");
+    expect(result.stderr).not.toContain("loom: fatal error");
+  });
+
+  test("rejects unexpected top-level positional arguments", async () => {
+    const result = await runCli(["http://127.0.0.1:7000/v1"]);
+
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain("unknown command");
+    expect(result.stdout).not.toContain("LOOM TUI placeholder started.");
+    expect(result.stderr).not.toContain("loom: fatal error");
+  });
+
   test("runs a pipeline through the public entrypoint", async () => {
     const repoRoot = process.cwd();
     const projectRoot = await mkdtemp(join(tmpdir(), "loom-entrypoint-"));

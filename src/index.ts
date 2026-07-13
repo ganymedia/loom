@@ -19,10 +19,29 @@ function optionValue(
   return index >= 0 ? args[index + 1] : undefined;
 }
 
+function isSessionInvocation(args: string[]): boolean {
+  const optionsWithValues = new Set([
+    "--profile",
+    "-p",
+    "--backend",
+    "--prompt",
+  ]);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) return false;
+    if (!optionsWithValues.has(arg)) return false;
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("-")) return false;
+    index += 1;
+  }
+  return true;
+}
+
 program
   .name("loom")
   .description("AI workflow pipeline manager and intelligent terminal agent")
   .version("0.1.0")
+  .allowExcessArguments(false)
   .option("-p, --profile <name>", "override the active config profile")
   .option("--backend <key>", "override the default backend for this invocation")
   .option("--prompt <text>", "run one Developer-agent prompt and exit");
@@ -42,10 +61,9 @@ async function main(): Promise<void> {
     args.includes("-h") ||
     args.includes("--version") ||
     args.includes("-V");
-  const startsWithSubcommand =
-    args[0] !== undefined && !args[0].startsWith("-");
+  const shouldStartSession = !hasTerminalFlag && isSessionInvocation(args);
 
-  if (!hasTerminalFlag && !startsWithSubcommand) {
+  if (shouldStartSession) {
     await ensureFirstRunConfig();
   }
 
@@ -59,11 +77,7 @@ async function main(): Promise<void> {
   registerRecallCommand(program, { config });
   registerThemeCommand(program, config);
 
-  const hasSubcommand = program.commands.some((command) =>
-    args.includes(command.name()),
-  );
-
-  if (!hasSubcommand && !hasTerminalFlag) {
+  if (shouldStartSession) {
     const { startSession } = await import("@loom/tui/session");
     await startSession(config, {
       ...(backendOverride === undefined ? {} : { backendOverride }),
