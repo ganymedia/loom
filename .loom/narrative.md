@@ -315,3 +315,7 @@ Decision: rename the startup banner rather than remove all startup status, becau
 ## 2026-07-13 — Case-insensitive agent command matching
 
 Decision: resolve `/agent <name>` through canonical built-in agent IDs after lowercasing user input, rather than changing the stored agent IDs or display labels. This preserves lowercase internal names while accepting operator input such as `/agent Security` and `/agent Tester`. Targeted TUI tests cover the resolver and a mixed-case session command. `t6-6-5` is complete; `.loom/plan.yaml` now advances to `t6-6-6`, the full clean real-terminal dry run gate.
+
+## 2026-07-13 — Remediation session handoff summary
+
+Phase 6 remediation `m6-6` is merged into `.loom/plan.yaml`; 5 of 6 remediation tasks are complete and 1 remains (`t6-6-6`, the real human terminal dry run). Phase 7 is not merged. This session committed `d3d8a21` (compiled first-run prompt fix), `abbe59e` (compiled pty regression), `6e2899e` (strict top-level CLI input rejection), `347600e` (startup banner rename), and `847a540` (mixed-case agent commands). Latest full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (198 passing tests). Phase 6 overall still has 3 pending tasks: `t6-5-2`, `t6-5-3`, and `t6-6-6`; do not mark any dry-run task complete without a real human terminal session using an installed binary via `install.sh`. Working tree is not clean because pre-existing/operator files remain unstaged outside this session's commits.

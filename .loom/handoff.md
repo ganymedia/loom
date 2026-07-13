@@ -1,7 +1,5 @@
-# LOOM Session Handoff
-
-- **Goal & status** — Phase 6 is active at `m6-4`; next task is installer work (`t6-4-1`).
-- **Completed work** — Phase 6 is merged into `.loom/plan.yaml`; completed and verified `m6-1`, `m6-2`, and `m6-3` with `bun run typecheck`, `bun run lint`, and `bun test` passing at 183 tests; Phase 6 has 7 tasks remaining.
-- **Failed attempts** — One test assertion for skipped pipeline stages was too strict because skipped results include `durationMs`; it was fixed by checking the skipped flag on the matching stage. One commit staging attempt included deleted untracked `tree.txt` and failed; retrying without that path succeeded.
+- **Goal & status** — Phase 6 remediation is active at `m6-6` / `t6-6-6`; `m6-6` is merged with 1 task remaining, and Phase 7 is not merged.
+- **Completed work** — Completed and committed `t6-6-1` through `t6-6-5`: fixed compiled first-run stdin handling, added compiled pty regression, rejected unknown top-level CLI input, renamed the placeholder banner, and made `/agent` matching case-insensitive; latest full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (198 passing tests).
+- **Failed attempts** — A plain piped `script` check could not prove prompt input because data arrived before the prompt attached; an intermediate `t6-6-3` change loaded config before first-run creation and was caught by the compiled pty regression; git status is not clean due to pre-existing/operator files not staged by this session (`support_docs/KICKOFF.md`, `support_docs/SPEC.md`, `LOOM_test.txt`, release helper scripts, and support-doc addenda).
 - **Branch name** — main
-- **Next action** — Start `t6-4-1` by reading the release/install requirements in `.loom/plan.yaml` and drafting `install.sh` to detect OS/arch, use a configurable GitHub Releases host, and install a matching compiled binary outside any repository clone.
+- **Next action** — Start `t6-6-6` by having the operator run the full clean real-terminal `USER_TESTING.md` dry run from a no-repository directory using an installed binary via `install.sh`, not a scripted substitute.
