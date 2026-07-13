@@ -20,6 +20,13 @@ export function isBuiltInAgentName(value: string): value is BuiltInAgentName {
   return builtInAgentTabs.some((tab) => tab.name === value);
 }
 
+export function resolveBuiltInAgentName(
+  value: string,
+): BuiltInAgentName | undefined {
+  const normalized = value.toLowerCase();
+  return builtInAgentTabs.find((tab) => tab.name === normalized)?.name;
+}
+
 export function formatAgentTabStrip(activeAgentName: BuiltInAgentName): string {
   return builtInAgentTabs
     .map((tab) =>

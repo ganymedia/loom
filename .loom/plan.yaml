@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-13
 current_phase: phase-6
 current_milestone: m6-6
-current_task: t6-6-5
+current_task: t6-6-6
 phases:
   - id: phase-1
     name: Foundation
@@ -1102,7 +1102,7 @@ phases:
             name: Make /agent name matching case-insensitive
             description: Accept mixed-case agent names such as /agent Tester to remove
               a confusion point observed during real user testing.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - src/tui/session.ts

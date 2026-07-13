@@ -311,3 +311,7 @@ Decision: classify valid session-only arguments before first-run prompting and l
 ## 2026-07-13 — Startup banner cleanup
 
 Decision: rename the startup banner rather than remove all startup status, because the surrounding output still gives useful backend/file-tool smoke status and the Ink tab/status renderer is active immediately afterward. The traced source was the live `startSession()` banner, not documentation; `LOOM TUI placeholder started.` is now `LOOM session started.` and tests assert the product wording. Verification passed with targeted TUI and CLI tests. `t6-6-4` is complete; `.loom/plan.yaml` now advances to `t6-6-5`.
+
+## 2026-07-13 — Case-insensitive agent command matching
+
+Decision: resolve `/agent <name>` through canonical built-in agent IDs after lowercasing user input, rather than changing the stored agent IDs or display labels. This preserves lowercase internal names while accepting operator input such as `/agent Security` and `/agent Tester`. Targeted TUI tests cover the resolver and a mixed-case session command. `t6-6-5` is complete; `.loom/plan.yaml` now advances to `t6-6-6`, the full clean real-terminal dry run gate.

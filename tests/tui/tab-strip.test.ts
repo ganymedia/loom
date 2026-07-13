@@ -3,6 +3,7 @@ import {
   formatAgentTabStrip,
   isBuiltInAgentName,
   nextAgentName,
+  resolveBuiltInAgentName,
 } from "@loom/tui/tab-strip";
 
 describe("tab-strip", () => {
@@ -26,5 +27,11 @@ describe("tab-strip", () => {
     expect(isBuiltInAgentName("developer")).toBe(true);
     expect(isBuiltInAgentName("security")).toBe(true);
     expect(isBuiltInAgentName("unknown")).toBe(false);
+  });
+
+  test("resolves built-in agent names case-insensitively", () => {
+    expect(resolveBuiltInAgentName("Tester")).toBe("tester");
+    expect(resolveBuiltInAgentName("SECURITY")).toBe("security");
+    expect(resolveBuiltInAgentName("unknown")).toBeUndefined();
   });
 });

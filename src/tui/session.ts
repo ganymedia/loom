@@ -26,6 +26,7 @@ import {
   builtInAgentTabs,
   isBuiltInAgentName,
   nextAgentName,
+  resolveBuiltInAgentName,
 } from "@loom/tui/tab-strip";
 import { renderToString } from "ink";
 import { createElement } from "react";
@@ -411,11 +412,12 @@ export async function startSession(
           }
           if (prompt.startsWith("/agent ")) {
             const requestedAgent = prompt.slice("/agent ".length).trim();
-            if (!isBuiltInAgentName(requestedAgent)) {
+            const resolvedAgent = resolveBuiltInAgentName(requestedAgent);
+            if (resolvedAgent === undefined) {
               writeOutput(`Unknown agent: ${requestedAgent}\n`);
               continue;
             }
-            activeAgentName = requestedAgent;
+            activeAgentName = resolvedAgent;
             agent = createBuiltInAgent(activeAgentName, config, options);
             writeOutput(
               `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,

@@ -295,7 +295,7 @@ describe("startSession", () => {
       input: [
         "/tab",
         "Plan architecture",
-        "/agent security",
+        "/agent Security",
         "Review risk",
         "/exit",
       ],
