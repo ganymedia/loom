@@ -1,10 +1,10 @@
 name: LOOM
 version: 0.1.0
 created: 2026-07-07
-updated: 2026-07-10
+updated: 2026-07-13
 current_phase: phase-6
-current_milestone: m6-5
-current_task: t6-5-2
+current_milestone: m6-6
+current_task: t6-6-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1034,6 +1034,7 @@ phases:
               - USER_TESTING.md
             dependencies:
               - t6-5-1
+              - m6-6
           - id: t6-5-3
             name: Fix any USER_TESTING.md step that failed or was unclear during dry run
             description: Correct any guide or product issue discovered during the clean
@@ -1044,3 +1045,79 @@ phases:
               - USER_TESTING.md
             dependencies:
               - t6-5-2
+      - id: m6-6
+        name: Dry-run remediation first-run wizard, CLI input strictness, banner cleanup
+        description: Fix the real compiled-binary dry-run failures found in LOOM_test.txt
+          before claiming the no-repository USER_TESTING.md dry run is complete.
+        exit_criterion: A real interactive session, run from a real terminal against the
+          compiled binary, successfully types a backend URL at the first-run prompt and
+          has it accepted, persisted to ~/.loom/config.yaml, and used for the subsequent
+          session.
+        status: pending
+        token_estimate: xlarge
+        tasks:
+          - id: t6-6-1
+            name: Reproduce and fix first-run wizard stdin handling in the compiled binary
+            description: Root-cause and fix the difference between existing first-run
+              tests and real TTY behavior in a Bun-compiled binary; verify against the
+              actual compiled artifact, not only bun run src/index.ts.
+            status: completed
+            token_estimate: large
+            files:
+              - src/config/first-run.ts
+              - src/index.ts
+            dependencies:
+              - m6-4
+          - id: t6-6-2
+            name: Add a real-terminal regression test for the first-run wizard
+            description: Add a pty-backed or delayed subprocess regression test that
+              exercises the compiled binary the way a human would, not only a direct
+              function call with mocked stdin.
+            status: pending
+            token_estimate: medium
+            files:
+              - tests
+            dependencies:
+              - t6-6-1
+          - id: t6-6-3
+            name: Reject unrecognized positional arguments and unknown flags
+            description: Configure the top-level CLI to reject unexpected positional
+              arguments and unknown options with a clear non-zero error instead of
+              silently starting a session.
+            status: pending
+            token_estimate: medium
+            files:
+              - src/index.ts
+            dependencies: []
+          - id: t6-6-4
+            name: Remove or rename the LOOM TUI placeholder startup banner
+            description: Trace the startup banner source and remove or rename leftover
+              placeholder text once the active renderer path is confirmed.
+            status: pending
+            token_estimate: small
+            files:
+              - src/tui/session.ts
+            dependencies: []
+          - id: t6-6-5
+            name: Make /agent name matching case-insensitive
+            description: Accept mixed-case agent names such as /agent Tester to remove
+              a confusion point observed during real user testing.
+            status: pending
+            token_estimate: small
+            files:
+              - src/tui/session.ts
+            dependencies: []
+          - id: t6-6-6
+            name: Full clean re-run of USER_TESTING.md from a real terminal
+            description: Complete the mandatory clean dry run from a real terminal using
+              an installed binary via install.sh, not direct bun build output.
+            status: pending
+            token_estimate: large
+            files:
+              - USER_TESTING.md
+            dependencies:
+              - t6-6-1
+              - t6-6-2
+              - t6-6-3
+              - t6-6-4
+              - t6-6-5

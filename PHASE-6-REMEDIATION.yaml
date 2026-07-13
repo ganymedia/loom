@@ -1,0 +1,124 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PHASE 6 REMEDIATION — append this milestone into the existing `phase-6`
+# block in .loom/plan.yaml, as a new milestone `m6-6` alongside m6-1..m6-5.
+#
+# Context: `.loom/narrative.md` and `.loom/plan.yaml` mark `m6-4` (first-run
+# config wizard) complete based on test coverage (194 passing tests). A real
+# external-style dry run (operator transcript `LOOM_test.txt`, 2026-07-13)
+# found that the wizard does not actually work in a real compiled binary at
+# a real terminal: it prints its prompt and returns control to the shell
+# immediately, without waiting for input, at least three times across two
+# environments. Whatever `ensureFirstRunConfig()`'s tests exercise, they do
+# not reflect real TTY behavior in the compiled artifact.
+#
+# Do not treat `m6-4`'s "completed" status as evidence this works. Treat
+# `LOOM_test.txt` as ground truth over any prior test-based claim of
+# completion until this milestone's own tasks re-verify the behavior for
+# real.
+#
+# This milestone is the actual gate for m6-5 (t6-5-2, the mandatory dry
+# run). Do not mark t6-5-2 or t6-5-3 done until m6-6 is done.
+# ─────────────────────────────────────────────────────────────────────────────
+
+- id:     m6-6
+  name:   "Dry-run remediation: first-run wizard, CLI input strictness, banner cleanup"
+  status: active
+  agent:  developer
+  depends_on: [m6-4]
+  exit_criterion: >
+    A real interactive session, run from a real terminal (not a scripted
+    stdin pipe, not a programmatic function call) against the compiled
+    binary, successfully types a backend URL at the first-run prompt and
+    has it accepted, persisted to ~/.loom/config.yaml, and used for the
+    subsequent session — reproducing and closing the exact failure shown
+    in LOOM_test.txt.
+
+  tasks:
+    - id:             t6-6-1
+      name:           "Reproduce and fix first-run wizard stdin handling in the compiled binary"
+      status:         planned
+      token_estimate: large
+      notes: >
+        Root-cause the difference between however ensureFirstRunConfig()'s
+        194 tests feed input and how a real TTY behaves in a Bun-compiled
+        binary. Suspect areas: readline/stdin attached after the prompt is
+        printed rather than before; stdin being read in a way that doesn't
+        block when isTTY is true in the compiled binary specifically;
+        process exiting on an unhandled promise rejection from a stdin
+        read that silently fails. Do not consider this fixed until it is
+        verified against the actual compiled artifact (bun build --compile
+        output), not `bun run src/index.ts` — the two may behave
+        differently, and LOOM_test.txt tested the compiled artifact.
+      files:
+        - src/cli/first-run.ts
+        - src/index.ts
+
+    - id:             t6-6-2
+      name:           "Add a real-terminal regression test for the first-run wizard, not just a programmatic one"
+      status:         planned
+      token_estimate: medium
+      depends_on:     [t6-6-1]
+      notes: >
+        A unit test that calls ensureFirstRunConfig() directly with a mock
+        stdin is not sufficient — that is very likely what already existed
+        and passed while the real behavior was broken. Use a pty-backed
+        subprocess test (node-pty, or a spawned child process with a real
+        pipe and a delay before writing input) that exercises the actual
+        compiled binary the way a human would. If a pty dependency is
+        needed, add it as a devDependency only.
+
+    - id:             t6-6-3
+      name:           "Reject unrecognized positional arguments and unknown flags instead of silently starting a session"
+      status:         planned
+      token_estimate: medium
+      notes: >
+        LOOM_test.txt showed a stray positional argument (a backend URL
+        typed where none is accepted) and a mistyped flag (--VERSION)
+        both silently ignored, falling through to normal session start.
+        This violates SPEC.md section 8's "fail loudly over fail silently"
+        principle. Configure Commander to reject unknown options and
+        unexpected positional arguments at the top level with a clear
+        error and non-zero exit, rather than falling through to the
+        default action.
+      files:
+        - src/index.ts
+
+    - id:             t6-6-4
+      name:           "Remove or rename the \"LOOM TUI placeholder started.\" startup banner"
+      status:         planned
+      token_estimate: small
+      notes: >
+        Confirm first whether this is leftover Phase 1 scaffolding text
+        that was never updated after the Ink UI (m5-3) shipped, or
+        whether it indicates the Ink component tree is not actually the
+        active renderer in the compiled binary. The rendered tab strip
+        and status bar in LOOM_test.txt visually match the Ink component
+        spec, so the leftover-string explanation is more likely — but
+        verify by tracing what actually prints this line before just
+        deleting it.
+      files:
+        - src/tui/session.ts
+
+    - id:             t6-6-5
+      name:           "Make /agent name matching case-insensitive"
+      status:         planned
+      token_estimate: small
+      notes: >
+        Already documented as known behavior in USER_TESTING.md
+        (/agent Tester fails, /agent tester works). Cheap fix, directly
+        observed as a point of confusion in real testing — worth doing
+        now rather than deferring.
+      files:
+        - src/tui/session.ts
+
+    - id:             t6-6-6
+      name:           "Full clean re-run of USER_TESTING.md from a real terminal against a released or freshly compiled binary"
+      status:         planned
+      token_estimate: large
+      depends_on:     [t6-6-1, t6-6-2, t6-6-3, t6-6-4, t6-6-5]
+      notes: >
+        This satisfies t6-5-2's exit criterion. Must be a real terminal
+        session by the operator, not scripted, from a directory with no
+        repository clone, using an installed binary via install.sh — not
+        `bun run build` output used directly. If any step still fails or
+        is unclear, that is t6-5-3 work, not a reason to mark this done.

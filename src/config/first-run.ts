@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { createInterface } from "node:readline/promises";
 import {
   defaultGlobalConfigPath,
   defaultGlobalConfigPaths,
@@ -47,16 +46,49 @@ function normalizeBaseUrl(input: string): string {
   return parsed.toString().replace(/\/$/, "");
 }
 
-async function promptForBaseUrl(): Promise<string> {
-  const reader = createInterface({
-    input: process.stdin,
-    output: process.stdout,
+async function promptForBaseUrl(question: string): Promise<string> {
+  process.stdout.write(question);
+  process.stdin.setEncoding("utf8");
+
+  return new Promise<string>((resolve, reject) => {
+    let buffer = "";
+
+    const cleanup = (): void => {
+      process.stdin.off("data", onData);
+      process.stdin.off("end", onEnd);
+      process.stdin.off("error", onError);
+    };
+
+    const finish = (answer: string): void => {
+      cleanup();
+      resolve(answer);
+    };
+
+    const onData = (chunk: string | Buffer): void => {
+      buffer += chunk.toString();
+      const newlineIndex = buffer.search(/\r?\n/);
+      if (newlineIndex >= 0) {
+        finish(buffer.slice(0, newlineIndex));
+      }
+    };
+
+    const onEnd = (): void => {
+      cleanup();
+      reject(
+        new Error("backend endpoint prompt ended before input was received"),
+      );
+    };
+
+    const onError = (error: Error): void => {
+      cleanup();
+      reject(error);
+    };
+
+    process.stdin.on("data", onData);
+    process.stdin.once("end", onEnd);
+    process.stdin.once("error", onError);
+    process.stdin.resume();
   });
-  try {
-    return reader.question("OpenAI-compatible backend URL: ");
-  } finally {
-    reader.close();
-  }
 }
 
 export async function ensureFirstRunConfig(

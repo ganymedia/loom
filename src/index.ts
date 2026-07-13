@@ -75,10 +75,12 @@ async function main(): Promise<void> {
   await program.parseAsync(process.argv);
 }
 
-main().catch((error: unknown) => {
+try {
+  await main();
+} catch (error: unknown) {
   process.stderr.write("loom: fatal error\n");
   process.stderr.write(
     `${error instanceof Error ? error.message : String(error)}\n`,
   );
   process.exit(1);
-});
+}
