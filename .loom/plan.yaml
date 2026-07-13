@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-13
 current_phase: phase-6
 current_milestone: m6-6
-current_task: t6-6-2
+current_task: t6-6-3
 phases:
   - id: phase-1
     name: Foundation
@@ -1073,7 +1073,7 @@ phases:
             description: Add a pty-backed or delayed subprocess regression test that
               exercises the compiled binary the way a human would, not only a direct
               function call with mocked stdin.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - tests
