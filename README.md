@@ -21,6 +21,24 @@ bun build --compile ./src/index.ts --outfile ./dist/loom
 
 `dist/` is treated as generated build output and is ignored by Git. Verify the artifact directly, for example with `./dist/loom plan status`, before using it for standalone smoke tests.
 
+## Installer-style release
+
+Build release assets for all supported platforms with:
+
+```bash
+LOOM_RELEASE_VERSION=0.1.0 bun run release
+```
+
+The release output under `dist/releases/` includes installer-compatible `loom-<os>-<arch>` binaries, matching per-platform tarballs, and `SHA256SUMS`. The manual GitHub Releases publish procedure is documented in `RELEASE.md`.
+
+After a release is published, users install the matching binary with the installer script:
+
+```bash
+curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh | sh
+```
+
+For mirrors, staging, or air-gapped release hosts, set `LOOM_INSTALL_BASE_URL` before running `install.sh`.
+
 ## Configuration and backend routing
 
 Configuration is loaded in layers:

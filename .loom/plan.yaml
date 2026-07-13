@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-07-10
 current_phase: phase-6
 current_milestone: m6-4
-current_task: t6-4-3
+current_task: t6-4-4
 phases:
   - id: phase-1
     name: Foundation
@@ -983,7 +983,7 @@ phases:
             name: Document a GitHub Releases publish procedure
             description: Document a manual GitHub Releases publish procedure for the
               initial installer-style release; no CI/CD is required yet.
-            status: pending
+            status: completed
             token_estimate: small
             files:
               - README.md
