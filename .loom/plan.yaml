@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-03
 current_phase: phase-7
 current_milestone: m7-1
-current_task: t7-1-3
+current_task: t7-1-4
 phases:
   - id: phase-1
     name: Foundation
@@ -1157,7 +1157,7 @@ phases:
             name: Add a LICENSE file
             description: Confirm the license choice with the operator before adding a
               license; do not assume one.
-            status: pending
+            status: completed
             token_estimate: small
             dependencies: []
           - id: t7-1-4

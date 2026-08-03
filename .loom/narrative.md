@@ -339,3 +339,7 @@ Decision: make `0.1.0` LOOM's first public installer-style release, signaling ea
 ## 2026-08-03 — Initial user-facing changelog
 
 Decision: add `CHANGELOG.md` with an `Unreleased` 0.1.0 entry describing completed user-facing capabilities from Phases 1-6 without copying internal phase history or claiming pending Phase 7 gates are done. The changelog explicitly distinguishes the current minimized interactive UI from the richer full-screen TUI required before 1.0.0 and identifies public Foundry, additional package managers, CI/CD, and telemetry as out of scope for 0.1.0. Typecheck and lint passed. A documentation review incorrectly treated build/publish instructions as evidence of publication, but identified a valid stale Phase 5 statement in `README.md`; that remains scoped to `t7-1-4`. `t7-1-2` is complete and Phase 7 advances to `t7-1-3` with 13 tasks remaining.
+
+## 2026-08-03 — Apache-2.0 license
+
+Decision: adopt the operator-selected Apache License 2.0 for LOOM, add the canonical unmodified text as root `LICENSE`, and declare the `Apache-2.0` SPDX identifier in `package.json`. No copyright owner was invented because no approved legal entity name was provided; the standard appendix placeholder remains part of the canonical license text. Read-only review confirmed the license text is canonical and contains no sensitive content, and typecheck, lint, and package metadata verification passed. `t7-1-3` is complete and Phase 7 advances to `t7-1-4` with 12 tasks remaining.
