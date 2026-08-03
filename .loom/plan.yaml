@@ -1,7 +1,7 @@
 name: LOOM
 version: 0.1.0
 created: 2026-07-07
-updated: 2026-07-13
+updated: 2026-08-03
 current_phase: phase-6
 current_milestone: m6-6
 current_task: t6-6-6
@@ -808,7 +808,7 @@ phases:
       binary, install it with a single documented command, configure it against their
       own backend, and complete the full user testing guide without hitting an
       undocumented failure.
-    status: in_progress
+    status: completed
     token_estimate: xlarge
     milestones:
       - id: m6-1
@@ -1008,7 +1008,7 @@ phases:
         name: User testing guide and operator dry run
         description: USER_TESTING.md exists, matches the actual installed product, and
           has been completed in a clean environment with no repository access.
-        status: pending
+        status: completed
         token_estimate: large
         tasks:
           - id: t6-5-1
@@ -1028,7 +1028,7 @@ phases:
             name: Perform one full dry run of USER_TESTING.md without repository access
             description: Run the guide using the installer from m6-4, not bun run build,
               from a machine or directory with no repository clone.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - USER_TESTING.md
@@ -1039,7 +1039,7 @@ phases:
             name: Fix any USER_TESTING.md step that failed or was unclear during dry run
             description: Correct any guide or product issue discovered during the clean
               dry run before handing LOOM to an outside tester.
-            status: pending
+            status: completed
             token_estimate: medium
             files:
               - USER_TESTING.md
@@ -1053,7 +1053,7 @@ phases:
           compiled binary, successfully types a backend URL at the first-run prompt and
           has it accepted, persisted to ~/.loom/config.yaml, and used for the subsequent
           session.
-        status: pending
+        status: completed
         token_estimate: xlarge
         tasks:
           - id: t6-6-1
@@ -1111,7 +1111,7 @@ phases:
             name: Full clean re-run of USER_TESTING.md from a real terminal
             description: Complete the mandatory clean dry run from a real terminal using
               an installed binary via install.sh, not direct bun build output.
-            status: pending
+            status: completed
             token_estimate: large
             files:
               - USER_TESTING.md

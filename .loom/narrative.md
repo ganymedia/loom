@@ -323,3 +323,7 @@ Phase 6 remediation `m6-6` is merged into `.loom/plan.yaml`; 5 of 6 remediation 
 ## 2026-08-03 — Real-terminal guide preflight correction
 
 Decision: update the `USER_TESTING.md` agent-switch smoke to use `/agent Tester` and `/agent Security` and expect both to succeed, because the guide still described the pre-remediation case-sensitive behavior after `t6-6-5` made matching case-insensitive. A human dry run against that stale expectation would not verify the remediation accurately. Documentation review, `bun run typecheck`, and `bun run lint` passed. This correction does not complete `t6-6-6`; the required human-operated real-terminal run using a binary installed through `install.sh` remains pending.
+
+## 2026-08-03 — Phase 6 human dry run completed
+
+Decision: mark `t6-6-6` and `t6-5-2` complete from the operator's explicit confirmation that the full corrected `USER_TESTING.md` passed in a real terminal, outside the repository, using a binary installed through `install.sh`, including first-run URL entry, config persistence, and subsequent use. Mark `t6-5-3` complete with no further correction because the operator confirmed every guide section matched; the preference to test a richer full-screen TUI is retained as release feedback rather than treated as an unreported guide failure. `m6-5`, `m6-6`, and Phase 6 are complete. Phase 6 remediation `m6-6` is merged with 0 tasks remaining; Phase 7 is not yet merged.
