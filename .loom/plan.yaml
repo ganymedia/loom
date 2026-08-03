@@ -2,9 +2,9 @@ name: LOOM
 version: 0.1.0
 created: 2026-07-07
 updated: 2026-08-03
-current_phase: phase-6
-current_milestone: m6-6
-current_task: t6-6-6
+current_phase: phase-7
+current_milestone: m7-1
+current_task: t7-1-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1121,3 +1121,154 @@ phases:
               - t6-6-3
               - t6-6-4
               - t6-6-5
+  - id: phase-7
+    name: Production release readiness
+    description: Turn the installable, usable LOOM CLI into a versioned public release
+      that users can trust and find support for.
+    exit_criterion: LOOM v1 is tagged, published as a GitHub Release with working install
+      instructions verified by a stranger, has a changelog and license, and has a
+      defined process for receiving and triaging real user feedback.
+    status: in_progress
+    token_estimate: xlarge
+    milestones:
+      - id: m7-1
+        name: Versioning policy, changelog, and license
+        description: Ensure a person reading the repository root understands the version,
+          user-facing changes, license terms, and support path.
+        status: in_progress
+        token_estimate: medium
+        tasks:
+          - id: t7-1-1
+            name: Decide and document the versioning policy and what 1.0.0 means
+            description: Confirm with the operator whether the first public release is
+              v0.1.0, signaling early but usable, or v1.0.0, signaling production-stable;
+              document that decision and criteria for future SemVer bumps.
+            status: in_progress
+            token_estimate: small
+            dependencies: []
+          - id: t7-1-2
+            name: Write CHANGELOG.md summarizing Phases 1-7 in user-facing terms
+            description: Describe user-visible capabilities and changes rather than
+              copying internal implementation history from narrative.md.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t7-1-3
+            name: Add a LICENSE file
+            description: Confirm the license choice with the operator before adding a
+              license; do not assume one.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t7-1-4
+            name: Final README command and config verification
+            description: Confirm every documented command and config example matches the
+              actual released binary.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t7-1-1
+      - id: m7-2
+        name: Pre-release security and safety review
+        description: Explicitly review the expanded attack surface introduced by the
+          installer and first-run wizard rather than assuming earlier safety still holds.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t7-2-1
+            name: Re-audit path-safety, shell, and git-ops tool boundaries
+            description: Confirm later pipeline, sub-agent, and Foundry work did not
+              introduce a way to bypass project-root path safety.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t7-2-2
+            name: Audit output and records for secrets
+            description: Confirm API keys, backend URLs, and config secrets are never
+              logged, printed in errors, or written to narrative.md or handoff.md.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t7-2-3
+            name: Review installer supply-chain protections
+            description: Confirm install.sh enforces checksum verification before any
+              downloaded binary is executed.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t7-2-4
+            name: Confirm restrictive config file permissions
+            description: Confirm ~/.loom/config.yaml is written with restrictive file
+              permissions when it may contain an API key.
+            status: pending
+            token_estimate: small
+            dependencies: []
+      - id: m7-3
+        name: Publish the official v1 GitHub Release
+        description: Follow RELEASE.md end to end for a real immutable tagged release,
+          not a test or staging run.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t7-3-1
+            name: Follow RELEASE.md steps 1-6 for the chosen version
+            description: Build and publish the real version tag selected in t7-1-1 after
+              versioning and security milestones are complete.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - m7-1
+              - m7-2
+          - id: t7-3-2
+            name: Verify the published installer path without repository access
+            description: Follow RELEASE.md step 7 against the live GitHub Release URL;
+              Phase 6 local or staging artifact evidence is not a substitute.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t7-3-1
+          - id: t7-3-3
+            name: Complete post-release checks
+            description: Complete RELEASE.md step 8 against the published release.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - t7-3-2
+      - id: m7-4
+        name: Real user feedback loop
+        description: Define where users report problems and how incoming reports are
+          triaged before the first external report arrives.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t7-4-1
+            name: Add GitHub issue templates
+            description: Add separate bug report and feature request templates.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - m7-3
+          - id: t7-4-2
+            name: Document the external contribution policy
+            description: Write CONTRIBUTING.md if external contributions are in scope;
+              otherwise explicitly document that they are not yet accepted.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - m7-3
+          - id: t7-4-3
+            name: Recruit an independent external tester
+            description: Have at least one tester who is not the operator and lacks deep
+              project context run USER_TESTING.md independently.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - m7-3
+          - id: t7-4-4
+            name: Triage and address external-test findings
+            description: Resolve findings from the independent user test before considering
+              v1 stable.
+            status: pending
+            token_estimate: large
+            dependencies:
+              - t7-4-3

@@ -327,3 +327,7 @@ Decision: update the `USER_TESTING.md` agent-switch smoke to use `/agent Tester`
 ## 2026-08-03 — Phase 6 human dry run completed
 
 Decision: mark `t6-6-6` and `t6-5-2` complete from the operator's explicit confirmation that the full corrected `USER_TESTING.md` passed in a real terminal, outside the repository, using a binary installed through `install.sh`, including first-run URL entry, config persistence, and subsequent use. Mark `t6-5-3` complete with no further correction because the operator confirmed every guide section matched; the preference to test a richer full-screen TUI is retained as release feedback rather than treated as an unreported guide failure. `m6-5`, `m6-6`, and Phase 6 are complete. Phase 6 remediation `m6-6` is merged with 0 tasks remaining; Phase 7 is not yet merged.
+
+## 2026-08-03 — Phase 7 addendum merged
+
+Decision: add the operator-provided Phase 7 addendum at the root path required by SPEC section 13 and merge its four milestones into `.loom/plan.yaml` only after Phase 6, `m6-6`, and the clean human dry run completed. The root addendum is byte-identical to `support_docs/PHASE-7-ADDENDUM.yaml`; the merged plan normalizes `planned` to the plan schema's status vocabulary and maps addendum notes into required descriptions and dependencies. Phase 7 is active at `m7-1` / `t7-1-1` with 15 tasks remaining. The operator's preference for testing a richer full-screen TUI remains explicit release feedback to consider when deciding what version 1.0.0 promises.
