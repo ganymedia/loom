@@ -331,3 +331,7 @@ Decision: mark `t6-6-6` and `t6-5-2` complete from the operator's explicit confi
 ## 2026-08-03 — Phase 7 addendum merged
 
 Decision: add the operator-provided Phase 7 addendum at the root path required by SPEC section 13 and merge its four milestones into `.loom/plan.yaml` only after Phase 6, `m6-6`, and the clean human dry run completed. The root addendum is byte-identical to `support_docs/PHASE-7-ADDENDUM.yaml`; the merged plan normalizes `planned` to the plan schema's status vocabulary and maps addendum notes into required descriptions and dependencies. Phase 7 is active at `m7-1` / `t7-1-1` with 15 tasks remaining. The operator's preference for testing a richer full-screen TUI remains explicit release feedback to consider when deciding what version 1.0.0 promises.
+
+## 2026-08-03 — Release version policy
+
+Decision: make `0.1.0` LOOM's first public installer-style release, signaling early but usable, and reserve `1.0.0` for stable documented interfaces after the intended richer full-screen TUI is implemented and human-tested. `RELEASE.md` now documents pre-1.0 and post-1.0 SemVer bump rules, immutable published tags, and the security, live-release, and independent-feedback gates for 1.0. Documentation review confirmed the policy is SemVer-correct and aligned with the operator's decision; `t7-1-1` is complete and Phase 7 advances to `t7-1-2` with 14 tasks remaining.

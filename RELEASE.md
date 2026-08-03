@@ -2,6 +2,16 @@
 
 Manual procedure for the initial installer-style GitHub Release. Do not put API keys, backend URLs, or CUI in release notes, artifacts, logs, or screenshots.
 
+## Versioning policy
+
+LOOM uses [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). The first public installer-style release is `0.1.0`: it is early but usable, and its CLI, config, and interactive interfaces may still change before `1.0.0`.
+
+- Before `1.0.0`, increment `MINOR` for new capabilities or incompatible interface changes and `PATCH` for backward-compatible fixes.
+- Starting with `1.0.0`, increment `MAJOR` for incompatible public-interface changes, `MINOR` for backward-compatible capabilities, and `PATCH` for backward-compatible fixes.
+- Published versions and tags are immutable. If a release is wrong, publish a new version rather than moving or replacing its tag.
+
+`1.0.0` means LOOM's documented CLI, config, installer, and interactive interfaces are stable enough for production use. It also requires the intended richer full-screen TUI to be implemented and human-tested, plus completion of the pre-release security review, live-release verification, and independent external-user feedback gates. Passing the current minimized interactive-session guide is sufficient for `0.1.0`, not for `1.0.0`.
+
 ## Prerequisites
 
 - Clean working tree on the release branch.

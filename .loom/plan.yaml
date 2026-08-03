@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-03
 current_phase: phase-7
 current_milestone: m7-1
-current_task: t7-1-1
+current_task: t7-1-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1143,7 +1143,7 @@ phases:
             description: Confirm with the operator whether the first public release is
               v0.1.0, signaling early but usable, or v1.0.0, signaling production-stable;
               document that decision and criteria for future SemVer bumps.
-            status: in_progress
+            status: completed
             token_estimate: small
             dependencies: []
           - id: t7-1-2
