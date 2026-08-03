@@ -155,14 +155,14 @@ At the prompt, try these commands:
 ```text
 /agents
 /tab
-/agent tester
-/agent security
+/agent Tester
+/agent Security
 /exit
 ```
 
 Expected result: LOOM shows the built-in agents, changes the active agent for `/tab` and `/agent <name>`, and exits cleanly on `/exit`.
 
-Agent IDs are lowercase. `/agent tester` should work; `/agent Tester` currently reports `Unknown agent`.
+Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 
 ## 8. Recall and log commands
 
