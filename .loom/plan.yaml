@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-08-03
 current_phase: phase-7
-current_milestone: m7-1
-current_task: t7-1-4
+current_milestone: m7-2
+current_task: t7-2-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1135,7 +1135,7 @@ phases:
         name: Versioning policy, changelog, and license
         description: Ensure a person reading the repository root understands the version,
           user-facing changes, license terms, and support path.
-        status: in_progress
+        status: completed
         token_estimate: medium
         tasks:
           - id: t7-1-1
@@ -1164,7 +1164,7 @@ phases:
             name: Final README command and config verification
             description: Confirm every documented command and config example matches the
               actual released binary.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies:
               - t7-1-1
@@ -1172,14 +1172,14 @@ phases:
         name: Pre-release security and safety review
         description: Explicitly review the expanded attack surface introduced by the
           installer and first-run wizard rather than assuming earlier safety still holds.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t7-2-1
             name: Re-audit path-safety, shell, and git-ops tool boundaries
             description: Confirm later pipeline, sub-agent, and Foundry work did not
               introduce a way to bypass project-root path safety.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies: []
           - id: t7-2-2

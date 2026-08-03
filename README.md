@@ -1,6 +1,6 @@
 # LOOM
 
-LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is in Phase 5 production-readiness work; `SPEC.md` remains the source of truth for architecture and build order.
+LOOM is a TypeScript/Bun CLI for an interactive terminal coding agent. The project is preparing its first public `0.1.0` release; that version remains unreleased while Phase 7 release-readiness work is in progress. `SPEC.md` remains the source of truth for architecture and build order.
 
 ## Development commands
 
@@ -31,7 +31,7 @@ LOOM_RELEASE_VERSION=0.1.0 bun run release
 
 The release output under `dist/releases/` includes installer-compatible `loom-<os>-<arch>` binaries, matching per-platform tarballs, and `SHA256SUMS`. The manual GitHub Releases publish procedure is documented in `RELEASE.md`.
 
-After a release is published, users install the matching binary with the installer script:
+After `0.1.0` is published, users can install the matching binary with the installer script:
 
 ```bash
 curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh | sh
@@ -39,11 +39,13 @@ curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh
 
 For mirrors, staging, or air-gapped release hosts, set `LOOM_INSTALL_BASE_URL` before running `install.sh`.
 
+The user-facing examples below use the installed `loom` command. Before a published release is available, maintainers can substitute the locally compiled `./dist/loom` binary.
+
 ## Configuration and backend routing
 
 Configuration is loaded in layers:
 
-1. Global config: `$HOME/.loom/config.yaml` first, with `$XDG_CONFIG_HOME/loom/config.yaml` and `$HOME/.config/loom/config.yaml` still read for compatibility.
+1. Global config: compatibility paths `$XDG_CONFIG_HOME/loom/config.yaml` and `$HOME/.config/loom/config.yaml` are read first, then canonical `$HOME/.loom/config.yaml` overrides them.
 2. Project config: `.loom/config.yaml` under the current project root.
 3. Runtime overrides: `LOOM_PROFILE`, `--profile`, and `--backend`.
 
@@ -76,12 +78,20 @@ The backend router resolves the active profile's `defaultBackend` unless `--back
 
 If no config exists and LOOM starts an interactive session, the first-run wizard prompts for an OpenAI-compatible backend endpoint and writes `$HOME/.loom/config.yaml`. Non-interactive runs keep the in-memory `default` profile with no default backend and report a clear missing-default-backend status instead of hanging for input.
 
+Inspect the effective configuration with:
+
+```bash
+loom config
+```
+
+The command does not resolve or print API key values, but its JSON output can include configured backend URLs and environment-variable names. Treat that output as environment-sensitive and review it before sharing.
+
 ## One-turn Developer prompt
 
 Phase 1 includes a minimal non-interactive Developer-agent prompt path:
 
 ```bash
-bun src/index.ts --prompt "Summarize this project"
+loom --prompt "Summarize this project"
 ```
 
 `--prompt` takes a literal string, not a file path. When no subcommand is provided, LOOM starts the session path, runs the startup smoke checks, sends one Developer-agent request, prints the response, and exits. `--backend <key>` overrides the active profile's default backend for this invocation.
@@ -99,43 +109,54 @@ During a live session, LOOM writes `.loom/handoff.md` automatically when recorde
 LOOM reads `.loom/plan.yaml` through the Project Planner schema and parser:
 
 ```bash
-bun src/index.ts plan status
-bun src/index.ts plan done <task-id>
+loom plan status
+loom plan done <task-id>
 ```
 
 `plan status` prints a non-secret JSON summary of the current phase, milestone, task, and task counts. `plan done <task-id>` marks that task completed, advances to the next pending task, and writes the updated plan back to `.loom/plan.yaml`. `plan decompose <task-id>` is reserved for future decomposition logic and currently fails loudly instead of guessing.
+
+## Pipeline commands
+
+Run a project-relative `.loom` pipeline file through the public CLI:
+
+```bash
+loom pipeline run .loom/example.loom --var runtime.message="hello"
+loom pipeline run .loom/example.loom --input pipeline-input.yaml
+```
+
+`--var key=value` seeds a dotted Context Bus key with a YAML-parsed value. `--input <file>` seeds keys from a project-relative YAML or JSON object. Duplicate keys and paths outside the project root fail loudly. Transform, branch, prompt, and parallel stages run through the public command; `inject` stages currently fail with a clear error because Prompt Store recall is not yet wired into the public pipeline command.
 
 ## Theme management
 
 Theme commands manage the project TUI theme through `.loom/config.yaml`:
 
 ```bash
-bun src/index.ts theme list
-bun src/index.ts theme preview [theme-id]
-bun src/index.ts theme use <theme-id>
+loom theme list
+loom theme preview [theme-id]
+loom theme use <theme-id>
 ```
 
 `theme list` prints built-in themes and marks the active one. `theme preview` prints a theme description and color tokens without changing config. `theme use` writes `defaults.theme`; unknown IDs fall back to `loom-dark` through the theme resolver.
 
-The live session renders its agent tab strip with Ink's `AgentTabStrip` inside `ThemeProvider`, using `defaults.theme` (`loom-dark` by default). It also renders an Ink `StatusBar` showing the session id, token progress computed from `SessionManager` turn usage, and the active agent. `/agents`, `/tab`, and `/agent <name>` still control agent visibility and switching; conversation history and tool-call output behavior are unchanged.
+The current minimized interactive session uses a readline prompt and renders static Ink agent-tab and status-bar fragments, using `defaults.theme` (`loom-dark` by default). The status output shows the session id, token progress computed from `SessionManager` turn usage, and the active agent. `/agents`, `/tab`, and case-insensitive `/agent <name>` commands control agent visibility and switching. The intended richer full-screen TUI is pre-1.0 work and is not part of the current interface.
 
 ## Prompt Store commands
 
 Prompt Store CLI commands emit JSON and use the project-local `.loom/prompt-store.sqlite` database:
 
 ```bash
-bun src/index.ts recall --query "natural language search" --top-k 5
-bun src/index.ts recall --vector 1,0 --top-k 5
-bun src/index.ts log session --id <session-id> --agent <agent>
-bun src/index.ts log add --session <session-id> --turn <index> --role <system|user|assistant|tool> --agent <agent> --content <text>
-bun src/index.ts log show --session <session-id>
+loom recall --query "natural language search" --top-k 5
+loom recall --vector 1,0 --top-k 5
+loom log session --id <session-id> --agent <agent>
+loom log add --session <session-id> --turn <index> --role <system|user|assistant|tool> --agent <agent> --content <text>
+loom log show --session <session-id>
 ```
 
 `recall` performs cosine-similarity recall from stored embeddings. `--query` embeds natural-language text through the configured embedding backend; `--vector` remains available for explicit numeric vectors. `log session` creates a Prompt Store session, `log add` records a prompt event, and `log show` prints ordered events for a session. The Log command validates roles and non-negative numeric fields before writing.
 
 Embedding generation is wired into Prompt Store writes when `store.embeddingBackend` is configured. Runtime config also supports optional `store.embeddingModel`; LOOM performs fresh `GET /v1/models` discovery for that backend, treats `embeddingModel` only as a preferred hint, and posts text to OpenAI-compatible `POST /v1/embeddings` with the resolved model before storing the event and embedding together.
 
-Pipeline `inject` stages use their `query` field as a Context Bus template before invoking recall, so stage outputs can drive retrieval (for example `query: "{{ stages.summary.output }}"`). Missing template references fail loudly instead of producing an empty recall query.
+The pipeline engine's `inject` stages support templated recall queries when an embedding-backed recall callback is supplied programmatically. The public `loom pipeline run` command does not yet supply that callback and therefore rejects `inject` stages instead of pretending recall succeeded.
 
 ### Developer tool-call envelope
 
@@ -161,7 +182,7 @@ Verification against a configured local vLLM endpoint:
 bun run typecheck
 bun run lint
 bun test
-bun src/index.ts --prompt "Say hello"
+./dist/loom --prompt "Say hello"
 ```
 
 ## Tool constraints
