@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-03
 current_phase: phase-7
 current_milestone: m7-1
-current_task: t7-1-2
+current_task: t7-1-3
 phases:
   - id: phase-1
     name: Foundation
@@ -1150,7 +1150,7 @@ phases:
             name: Write CHANGELOG.md summarizing Phases 1-7 in user-facing terms
             description: Describe user-visible capabilities and changes rather than
               copying internal implementation history from narrative.md.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies: []
           - id: t7-1-3

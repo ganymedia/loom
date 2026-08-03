@@ -335,3 +335,7 @@ Decision: add the operator-provided Phase 7 addendum at the root path required b
 ## 2026-08-03 — Release version policy
 
 Decision: make `0.1.0` LOOM's first public installer-style release, signaling early but usable, and reserve `1.0.0` for stable documented interfaces after the intended richer full-screen TUI is implemented and human-tested. `RELEASE.md` now documents pre-1.0 and post-1.0 SemVer bump rules, immutable published tags, and the security, live-release, and independent-feedback gates for 1.0. Documentation review confirmed the policy is SemVer-correct and aligned with the operator's decision; `t7-1-1` is complete and Phase 7 advances to `t7-1-2` with 14 tasks remaining.
+
+## 2026-08-03 — Initial user-facing changelog
+
+Decision: add `CHANGELOG.md` with an `Unreleased` 0.1.0 entry describing completed user-facing capabilities from Phases 1-6 without copying internal phase history or claiming pending Phase 7 gates are done. The changelog explicitly distinguishes the current minimized interactive UI from the richer full-screen TUI required before 1.0.0 and identifies public Foundry, additional package managers, CI/CD, and telemetry as out of scope for 0.1.0. Typecheck and lint passed. A documentation review incorrectly treated build/publish instructions as evidence of publication, but identified a valid stale Phase 5 statement in `README.md`; that remains scoped to `t7-1-4`. `t7-1-2` is complete and Phase 7 advances to `t7-1-3` with 13 tasks remaining.
