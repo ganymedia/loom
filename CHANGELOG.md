@@ -23,9 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Agent Capabilities & Tools
 - Constrained, least-privilege project tools:
-  - `file-reader` and `file-writer` (scoped to project root).
-  - Read-only `shell` commands (`pwd`, `ls`, `cat`, `grep`, `find`, `wc`).
-  - Read-only `git-ops` commands (`status`, `diff`, `log`, `show`, `branch`, `rev-parse`, `ls-files`).
+  - `file-reader` and symlink-safe `file-writer` operations scoped to the project root.
+  - Read-only `shell` commands (`pwd`, `ls`, `cat`, `grep`, `wc`) with no native option passthrough.
+  - Read-only `git-ops` commands (`status`, `diff`, `log`, `show`, listing-only `branch`, `rev-parse`, `ls-files`) with command-specific option allowlists.
 - Project Planner for tracking milestones, phases, and tasks via `.loom/plan.yaml`.
 - Pipeline execution engine supporting variables, inputs, branching, and context recall injection.
 

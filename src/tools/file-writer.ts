@@ -1,6 +1,8 @@
-import { writeFile } from "node:fs/promises";
 import type { ToolDefinition, ToolResult } from "@loom/tools/base";
-import { resolveWritablePath } from "@loom/tools/path-safety";
+import {
+  resolveWritablePath,
+  writeUtf8FileNoFollow,
+} from "@loom/tools/path-safety";
 import { z } from "zod";
 
 export const fileWriterArgsSchema = z.object({
@@ -22,7 +24,7 @@ export const fileWriterTool: ToolDefinition<FileWriterArgs> = {
         parsed.projectRoot,
         parsed.path,
       );
-      await writeFile(targetPath, parsed.content, "utf8");
+      await writeUtf8FileNoFollow(targetPath, parsed.content);
 
       return {
         success: true,

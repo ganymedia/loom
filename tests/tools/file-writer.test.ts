@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileWriterTool } from "@loom/tools/file-writer";
@@ -64,5 +64,23 @@ describe("fileWriterTool", () => {
     expect(await readFile(join(projectRoot, "existing.txt"), "utf8")).toBe(
       "new",
     );
+  });
+
+  test("rejects an existing symlink target outside the project root", async () => {
+    const projectRoot = await tempProject();
+    const outsideRoot = await tempProject();
+    const outsidePath = join(outsideRoot, "outside.txt");
+    await writeFile(outsidePath, "unchanged", "utf8");
+    await symlink(outsidePath, join(projectRoot, "outside-link.txt"));
+
+    const result = await fileWriterTool.execute({
+      projectRoot,
+      path: "outside-link.txt",
+      content: "overwritten",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("must not be a symbolic link");
+    expect(await readFile(outsidePath, "utf8")).toBe("unchanged");
   });
 });

@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { isAbsolute } from "node:path";
 import type { ToolDefinition, ToolResult } from "@loom/tools/base";
+import { resolveReadablePath } from "@loom/tools/path-safety";
 import { z } from "zod";
 
-const ALLOWED_COMMANDS = new Set(["pwd", "ls", "cat", "grep", "find", "wc"]);
+const ALLOWED_COMMANDS = new Set(["pwd", "ls", "cat", "grep", "wc"]);
 const MAX_OUTPUT_SIZE = 1_000_000;
 const DEFAULT_TIMEOUT = 30_000;
 
@@ -33,18 +35,49 @@ function isCommandAllowed(command: string): boolean {
   return base !== undefined && ALLOWED_COMMANDS.has(base);
 }
 
-function isSafeArg(arg: string): boolean {
-  if (arg.includes("\0")) return false;
-  if (arg.startsWith("/")) return false;
-  if (arg.split("/").includes("..")) return false;
-  return true;
+async function resolvePathArgs(
+  projectRoot: string,
+  args: string[],
+): Promise<string[]> {
+  const resolved: string[] = [];
+  for (const arg of args) {
+    if (arg.includes("\0") || arg.startsWith("-") || isAbsolute(arg)) {
+      throw new ShellToolError(`Shell argument "${arg}" is not permitted`);
+    }
+    try {
+      resolved.push(await resolveReadablePath(projectRoot, arg));
+    } catch {
+      throw new ShellToolError(`Shell argument "${arg}" is not permitted`);
+    }
+  }
+  return resolved;
 }
 
-function validateArgs(args: string[]): string | undefined {
-  const unsafeArg = args.find((arg) => !isSafeArg(arg));
-  return unsafeArg === undefined
-    ? undefined
-    : `Shell argument "${unsafeArg}" is not permitted`;
+async function prepareCommandArgs(
+  command: string,
+  args: string[],
+  projectRoot: string,
+): Promise<string[]> {
+  if (command === "pwd") {
+    if (args.length !== 0) {
+      throw new ShellToolError("pwd does not accept arguments");
+    }
+    return [];
+  }
+
+  if (command === "grep") {
+    const [pattern, ...paths] = args;
+    if (pattern === undefined || pattern.includes("\0") || paths.length === 0) {
+      throw new ShellToolError("grep requires a pattern and at least one file");
+    }
+    return ["--", pattern, ...(await resolvePathArgs(projectRoot, paths))];
+  }
+
+  if (command === "cat" && args.length === 0) {
+    throw new ShellToolError("cat requires at least one file");
+  }
+
+  return ["--", ...(await resolvePathArgs(projectRoot, args))];
 }
 
 async function runCommand(
@@ -134,14 +167,15 @@ export const shellTool: ToolDefinition<ShellArgs> = {
         };
       }
 
-      const argsError = validateArgs(commandArgs);
-      if (argsError !== undefined) {
-        return { success: false, output: "", error: argsError };
-      }
+      const preparedArgs = await prepareCommandArgs(
+        command,
+        commandArgs,
+        parsed.projectRoot,
+      );
 
       return await runCommand(
         command,
-        commandArgs,
+        preparedArgs,
         parsed.projectRoot,
         timeout,
         maxOutput,

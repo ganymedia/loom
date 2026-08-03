@@ -1,7 +1,9 @@
-import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { PlanYaml } from "@loom/planner/schema";
-import { resolveWritablePath } from "@loom/tools/path-safety";
+import {
+  resolveWritablePath,
+  writeUtf8FileNoFollow,
+} from "@loom/tools/path-safety";
 import YAML from "yaml";
 
 export interface WritePlanYamlOptions {
@@ -37,7 +39,7 @@ export async function writePlanYaml(
   }
 
   try {
-    await writeFile(filePath, YAML.stringify(options.plan), "utf8");
+    await writeUtf8FileNoFollow(filePath, YAML.stringify(options.plan));
   } catch (error) {
     throw new PlanWriterError(`Failed to write plan file "${requestedPath}"`, {
       cause: error,

@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-03
 current_phase: phase-7
 current_milestone: m7-2
-current_task: t7-2-1
+current_task: t7-2-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1179,14 +1179,14 @@ phases:
             name: Re-audit path-safety, shell, and git-ops tool boundaries
             description: Confirm later pipeline, sub-agent, and Foundry work did not
               introduce a way to bypass project-root path safety.
-            status: in_progress
+            status: completed
             token_estimate: medium
             dependencies: []
           - id: t7-2-2
             name: Audit output and records for secrets
             description: Confirm API keys, backend URLs, and config secrets are never
               logged, printed in errors, or written to narrative.md or handoff.md.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies: []
           - id: t7-2-3

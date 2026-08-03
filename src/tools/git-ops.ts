@@ -43,8 +43,88 @@ function isSafeArg(arg: string): boolean {
   return true;
 }
 
-function validateArgs(args: string[]): string | undefined {
-  const unsafeArg = args.find((arg) => !isSafeArg(arg));
+const SAFE_GIT_OPTIONS: Record<string, readonly RegExp[]> = {
+  status: [
+    /^--short$/,
+    /^--porcelain(?:=v[12])?$/,
+    /^--branch$/,
+    /^--untracked-files=(?:no|normal|all)$/,
+    /^--ignored(?:=traditional|matching|no)?$/,
+  ],
+  diff: [
+    /^--stat$/,
+    /^--numstat$/,
+    /^--shortstat$/,
+    /^--name-only$/,
+    /^--name-status$/,
+    /^--cached$/,
+    /^--staged$/,
+    /^--no-color$/,
+    /^--color=never$/,
+    /^-U\d+$/,
+    /^--unified=\d+$/,
+  ],
+  log: [
+    /^--oneline$/,
+    /^--stat$/,
+    /^--name-only$/,
+    /^--name-status$/,
+    /^--no-color$/,
+    /^--decorate$/,
+    /^--graph$/,
+    /^--all$/,
+    /^-\d+$/,
+    /^--max-count=\d+$/,
+  ],
+  show: [
+    /^--oneline$/,
+    /^--stat$/,
+    /^--name-only$/,
+    /^--name-status$/,
+    /^--no-color$/,
+  ],
+  branch: [
+    /^--list$/,
+    /^--show-current$/,
+    /^--all$/,
+    /^--remotes$/,
+    /^--no-color$/,
+    /^-a$/,
+    /^-r$/,
+  ],
+  "rev-parse": [
+    /^--show-toplevel$/,
+    /^--show-prefix$/,
+    /^--show-cdup$/,
+    /^--is-inside-work-tree$/,
+    /^--is-bare-repository$/,
+    /^--verify$/,
+    /^--abbrev-ref$/,
+  ],
+  "ls-files": [
+    /^--cached$/,
+    /^--modified$/,
+    /^--deleted$/,
+    /^--others$/,
+    /^--ignored$/,
+    /^--exclude-standard$/,
+    /^--stage$/,
+    /^--unmerged$/,
+    /^--error-unmatch$/,
+  ],
+};
+
+function isOptionAllowed(command: string, arg: string): boolean {
+  if (arg === "--") return command !== "branch" && command !== "status";
+  return (SAFE_GIT_OPTIONS[command] ?? []).some((pattern) => pattern.test(arg));
+}
+
+function validateArgs(command: string, args: string[]): string | undefined {
+  const unsafeArg = args.find((arg) => {
+    if (!isSafeArg(arg)) return true;
+    if (arg.startsWith("-")) return !isOptionAllowed(command, arg);
+    return command === "branch" || command === "status";
+  });
   return unsafeArg === undefined
     ? undefined
     : `Git argument "${unsafeArg}" is not permitted`;
@@ -137,7 +217,7 @@ export const gitOpsTool: ToolDefinition<GitOpsArgs> = {
         };
       }
 
-      const argsError = validateArgs(commandArgs);
+      const argsError = validateArgs(parsed.command, commandArgs);
       if (argsError !== undefined) {
         return { success: false, output: "", error: argsError };
       }

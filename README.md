@@ -192,9 +192,9 @@ The Phase 1 tools are intentionally narrow:
 - `file-reader` reads UTF-8 files inside the resolved project root.
 - `file-writer` writes UTF-8 files inside the resolved project root.
 - Both tools reject path traversal outside the project root.
-- `file-writer` requires the target parent directory to already exist; it does not create directory trees implicitly.
-- `shell` executes argv-based read-only inspection commands only: `pwd`, `ls`, `cat`, `grep`, `find`, and `wc`.
-- `git-ops` executes argv-based read-only Git commands only: `status`, `diff`, `log`, `show`, `branch`, `rev-parse`, and `ls-files`.
+- `file-writer` requires the target parent directory to already exist and rejects a symbolic link as the final destination component; it does not create directory trees implicitly.
+- `shell` executes argv-based read-only inspection commands only: `pwd`, `ls`, `cat`, `grep`, and `wc`. It rejects native command options and canonicalizes every file operand inside the project root.
+- `git-ops` executes `status`, `diff`, `log`, `show`, listing-only `branch`, `rev-parse`, and `ls-files` through command-specific read-only option allowlists; branch mutation, diff output files, external diff helpers, and no-index reads are denied.
 - `shell` and `git-ops` reject absolute-path arguments, parent-directory traversal, NUL bytes, excessive output, and timeouts.
 - Runtime smoke state is written to `.loom/session-smoke.txt`, which is ignored by Git.
 
