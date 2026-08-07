@@ -1223,7 +1223,7 @@ phases:
             name: Verify the published installer path without repository access
             description: Follow RELEASE.md step 7 against the live GitHub Release URL;
               Phase 6 local or staging artifact evidence is not a substitute.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies:
               - t7-3-1
