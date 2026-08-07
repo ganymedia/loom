@@ -1,5 +1,5 @@
-- **Goal & status** — Phase 7 live-release verification is active at `m7-3` / `t7-3-2`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 6 tasks remaining.
-- **Completed work** — Completed `t7-3-1` and committed its state as `d3ec573`; synchronized `origin/main`, passed clean-source verification and release builds, pushed immutable tag `v0.1.0`, and published all ten required assets at https://github.com/ganymedia/loom/releases/tag/v0.1.0.
-- **Failed attempts** — The operator worktree failed the release clean-tree prerequisite and `main` was 40 commits ahead of origin; with explicit approval, main was pushed and release work moved to a clean detached worktree; the first dependency symlink appeared untracked, so it was replaced by an ignored dependency directory and clean-source verification was rerun; git status is not clean only because pre-existing operator files remain unstaged.
+- **Goal & status** — Phase 7 release verification is active at `m7-3` / `t7-3-3`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 5 tasks remaining.
+- **Completed work** — Completed `t7-3-2` and committed its state as `e424fa6`; after the operator made `ganymedia/loom` public, the unauthenticated live installer downloaded, verified checksums, installed outside the repository, and reported `0.1.0`.
+- **Failed attempts** — The first documented installer run returned HTTP 404 because the repository was private; global git status remains dirty only from pre-existing operator files that were not staged, modified, or removed by this session.
 - **Branch name** — main
-- **Next action** — From a fresh temporary directory outside the repository, follow `RELEASE.md` step 7 against the live `v0.1.0` GitHub assets and verify the installed binary reports `0.1.0` for `t7-3-2`.
+- **Next action** — Complete every `RELEASE.md` step 8 post-release check against the published `v0.1.0` release for `t7-3-3`.
