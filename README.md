@@ -18,11 +18,48 @@ Connect LOOM to an existing OpenAI-compatible backend, work interactively with b
 
 LOOM 0.1.0 provides standalone binaries for Linux and macOS on x64 and arm64. Bun is not required to run the installed binary.
 
+### Requirements
+
+- A supported Linux or macOS system
+- A POSIX-compatible `sh`
+- `curl` for the command below
+- `sha256sum` on Linux or `shasum` on macOS for binary verification
+
+### Install the latest release
+
 ```bash
 curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh | sh
 ```
 
-The installer selects the matching binary and verifies it against the release's published `SHA256SUMS` before installation. See [RELEASE.md](RELEASE.md) for manual and mirrored installation details.
+The installer selects the matching binary, verifies it against the release's published `SHA256SUMS`, and installs it as `$HOME/.local/bin/loom` by default. It prints the exact destination when it finishes.
+
+Verify the installation:
+
+```bash
+loom --version
+```
+
+If `loom` is not found, add the default install directory to `PATH` and persist the same setting in your shell profile:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+loom --version
+```
+
+### Pin a version or choose a directory
+
+Download the installer first when you want to inspect it, install a specific release, or choose the destination:
+
+```bash
+installer="$(mktemp)"
+curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh -o "$installer"
+LOOM_INSTALL_VERSION=v0.1.0 LOOM_INSTALL_DIR="$HOME/bin" sh "$installer"
+rm -f "$installer"
+```
+
+Add a custom install directory to `PATH` if needed. Rerun the installer to upgrade or replace the installed binary. To uninstall, remove the `loom` binary from the destination printed during installation; LOOM leaves global configuration and project `.loom` data in place.
+
+For mirrors, air-gapped release hosts, and manual release assets, see [RELEASE.md](RELEASE.md).
 
 ## Five-minute start
 

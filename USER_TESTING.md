@@ -130,7 +130,7 @@ In another shell, inspect only the non-secret config shape:
 ${LOOM_BIN:-loom} config
 ```
 
-Expected result: JSON showing `activeProfile: "default"`, a `defaultBackend` named `local`, and a backend `baseUrl`. Do not include secret values in feedback.
+Expected result: JSON showing `activeProfile: "default"`, a `defaultBackend` named `local`, and an `endpoint: "[configured]"` marker for the backend. It must not print the backend URL, header values, or a resolved API key. The configured `apiKeyEnv` variable name may appear; review all output before sharing it.
 
 ## 6. One-turn backend smoke
 

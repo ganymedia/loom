@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-08-07
 
 ### Added
 
@@ -42,6 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Limitations
 
 - **User Interface**: The current interactive UI is a minimized interface; the intended richer full-screen TUI must be implemented and human-tested before 1.0.0.
-- **Release readiness**: The Phase 7 security review, live GitHub publication, and independent external test are still pending; this changelog does not mark those gates complete.
+- **Release validation**: The security review and live GitHub publication are complete; independent external testing remains pending before 1.0.0.
 - **Ecosystem**: Public Foundry marketplace, package-manager distribution beyond `install.sh`, CI/CD release automation, and telemetry are out of scope for 0.1.0.
 - **Stability**: This is an early release; 1.0.0 stability guarantees are not yet in effect.
