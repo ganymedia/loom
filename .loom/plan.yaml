@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-07
 current_phase: phase-7
 current_milestone: m7-3
-current_task: t7-3-1
+current_task: t7-3-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1214,7 +1214,7 @@ phases:
             name: Follow RELEASE.md steps 1-6 for the chosen version
             description: Build and publish the real version tag selected in t7-1-1 after
               versioning and security milestones are complete.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies:
               - m7-1
