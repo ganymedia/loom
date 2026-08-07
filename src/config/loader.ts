@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type LoomConfig, loomConfigSchema } from "@loom/config/schema";
+import { readPrivateConfigFile } from "@loom/config/writer";
 import YAML from "yaml";
 
 export interface LoadConfigOptions {
@@ -46,7 +46,7 @@ export function defaultGlobalConfigPaths(env: NodeJS.ProcessEnv): string[] {
 
 async function readYamlIfPresent(path: string | undefined): Promise<unknown> {
   if (path === undefined || !existsSync(path)) return {};
-  const content = await readFile(path, "utf8");
+  const content = await readPrivateConfigFile(path);
   try {
     return YAML.parse(content) ?? {};
   } catch (error) {

@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { registerThemeCommand } from "@loom/cli/commands/theme";
@@ -63,6 +70,9 @@ describe("theme command", () => {
     );
     expect(config.defaults.theme).toBe("high-contrast");
     expect(content).toContain("theme: high-contrast");
+    expect(
+      (await stat(join(projectRoot, ".loom", "config.yaml"))).mode & 0o777,
+    ).toBe(0o600);
     expect(output.join("")).toContain("Theme set");
   });
 
@@ -79,6 +89,7 @@ describe("theme command", () => {
       ].join("\n"),
       "utf8",
     );
+    await chmod(join(projectRoot, ".loom", "config.yaml"), 0o644);
     const program = themeProgram(projectRoot, []);
 
     await program.parseAsync(["node", "loom", "theme", "use", "loom-light"]);
@@ -86,5 +97,8 @@ describe("theme command", () => {
     const config = await loadConfig({ projectRoot, env: {} });
     expect(config.defaults.theme).toBe("loom-light");
     expect(config.profiles.default?.defaultBackend).toBe("local");
+    expect(
+      (await stat(join(projectRoot, ".loom", "config.yaml"))).mode & 0o777,
+    ).toBe(0o600);
   });
 });

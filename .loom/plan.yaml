@@ -3,8 +3,8 @@ version: 0.1.0
 created: 2026-07-07
 updated: 2026-08-07
 current_phase: phase-7
-current_milestone: m7-2
-current_task: t7-2-4
+current_milestone: m7-3
+current_task: t7-3-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1172,7 +1172,7 @@ phases:
         name: Pre-release security and safety review
         description: Explicitly review the expanded attack surface introduced by the
           installer and first-run wizard rather than assuming earlier safety still holds.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t7-2-1
@@ -1200,14 +1200,14 @@ phases:
             name: Confirm restrictive config file permissions
             description: Confirm ~/.loom/config.yaml is written with restrictive file
               permissions when it may contain an API key.
-            status: pending
+            status: completed
             token_estimate: small
             dependencies: []
       - id: m7-3
         name: Publish the official v1 GitHub Release
         description: Follow RELEASE.md end to end for a real immutable tagged release,
           not a test or staging run.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t7-3-1

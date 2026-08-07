@@ -1,6 +1,10 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { LoomConfig } from "@loom/config/schema";
+import {
+  readPrivateConfigFile,
+  writePrivateConfigFile,
+} from "@loom/config/writer";
 import { builtinThemes, resolveTheme } from "@loom/tui/theme";
 import type { Command } from "commander";
 import YAML from "yaml";
@@ -80,7 +84,7 @@ async function writeProjectTheme(
   defaults.theme = themeId;
   existing.defaults = defaults;
 
-  await writeFile(configPath, YAML.stringify(existing), "utf8");
+  await writePrivateConfigFile(configPath, YAML.stringify(existing));
 }
 
 async function readExistingYaml(
@@ -88,7 +92,7 @@ async function readExistingYaml(
 ): Promise<Record<string, unknown>> {
   let content: string;
   try {
-    content = await readFile(configPath, "utf8");
+    content = await readPrivateConfigFile(configPath);
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return {};

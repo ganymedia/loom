@@ -51,6 +51,8 @@ Configuration is loaded in layers:
 2. Project config: `.loom/config.yaml` under the current project root.
 3. Runtime overrides: `LOOM_PROFILE`, `--profile`, and `--backend`.
 
+LOOM creates and maintains global and project config files with owner-only mode 0600 because backend headers may contain secrets; symlinked final config files are rejected.
+
 Minimal project config:
 
 ```yaml

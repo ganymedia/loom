@@ -1,10 +1,14 @@
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   defaultGlobalConfigPath,
   defaultGlobalConfigPaths,
 } from "@loom/config/loader";
+import {
+  enforcePrivateConfigPermissions,
+  writePrivateConfigFile,
+} from "@loom/config/writer";
 import YAML from "yaml";
 
 export interface FirstRunConfigOptions {
@@ -103,10 +107,16 @@ export async function ensureFirstRunConfig(
   const path = defaultGlobalConfigPath(env);
   if (path === undefined)
     return { created: false, skippedReason: "missing-home" };
-  const existingPath = defaultGlobalConfigPaths(env).find((configPath) =>
+  const existingPaths = defaultGlobalConfigPaths(env).filter((configPath) =>
     existsSync(configPath),
   );
+  const existingPath = existingPaths[0];
   if (existingPath !== undefined) {
+    await Promise.all(
+      existingPaths.map((configPath) =>
+        enforcePrivateConfigPermissions(configPath),
+      ),
+    );
     return {
       created: false,
       path: existingPath,
@@ -123,8 +133,8 @@ export async function ensureFirstRunConfig(
     "OpenAI-compatible backend URL: ",
   );
   const baseUrl = normalizeBaseUrl(answer);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, buildConfig(baseUrl), { encoding: "utf8", flag: "wx" });
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writePrivateConfigFile(path, buildConfig(baseUrl), { exclusive: true });
   options.stdout?.write(`Created LOOM config at ${path}\n`);
   return { created: true, path };
 }

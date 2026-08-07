@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureFirstRunConfig } from "@loom/config/first-run";
@@ -34,6 +41,9 @@ describe("ensureFirstRunConfig", () => {
     expect(written).toContain("activeProfile: default");
     expect(written).toContain("defaultBackend: local");
     expect(written).toContain("baseUrl: http://127.0.0.1:8000/v1");
+    expect((await stat(join(home, ".loom", "config.yaml"))).mode & 0o777).toBe(
+      0o600,
+    );
 
     const config = await loadConfig({ env: { HOME: home }, projectRoot: home });
     expect(config.profiles.default?.defaultBackend).toBe("local");
@@ -45,6 +55,7 @@ describe("ensureFirstRunConfig", () => {
     const path = join(home, ".loom", "config.yaml");
     await mkdir(join(home, ".loom"), { recursive: true });
     await writeFile(path, "activeProfile: existing\n", "utf8");
+    await chmod(path, 0o644);
 
     const result = await ensureFirstRunConfig({
       env: { HOME: home },
@@ -58,6 +69,7 @@ describe("ensureFirstRunConfig", () => {
       skippedReason: "existing-config",
     });
     expect(await readFile(path, "utf8")).toBe("activeProfile: existing\n");
+    expect((await stat(path)).mode & 0o777).toBe(0o600);
   });
 
   test("skips prompting when a compatibility global config exists", async () => {
@@ -66,6 +78,7 @@ describe("ensureFirstRunConfig", () => {
     const path = join(xdgHome, "loom", "config.yaml");
     await mkdir(join(xdgHome, "loom"), { recursive: true });
     await writeFile(path, "activeProfile: xdg\n", "utf8");
+    await chmod(path, 0o644);
 
     const result = await ensureFirstRunConfig({
       env: { HOME: home, XDG_CONFIG_HOME: xdgHome },
@@ -80,6 +93,7 @@ describe("ensureFirstRunConfig", () => {
       path,
       skippedReason: "existing-config",
     });
+    expect((await stat(path)).mode & 0o777).toBe(0o600);
   });
 
   test("skips prompting in non-interactive mode", async () => {

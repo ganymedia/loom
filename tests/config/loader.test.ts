@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "@loom/config/loader";
@@ -83,6 +83,12 @@ describe("loadConfig", () => {
       "defaults:\n  theme: canonical\n",
       "utf8",
     );
+    const configPaths = [
+      join(home, ".config", "loom", "config.yaml"),
+      join(xdgHome, "loom", "config.yaml"),
+      join(home, ".loom", "config.yaml"),
+    ];
+    await Promise.all(configPaths.map((path) => chmod(path, 0o644)));
 
     const config = await loadConfig({
       projectRoot: home,
@@ -90,6 +96,9 @@ describe("loadConfig", () => {
     });
 
     expect(config.defaults.theme).toBe("canonical");
+    for (const path of configPaths) {
+      expect((await stat(path)).mode & 0o777).toBe(0o600);
+    }
   });
 
   test("does not reproduce malformed config content in parse errors", async () => {
