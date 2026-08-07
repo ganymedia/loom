@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose an improvement to LOOM
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. GitHub issues are public.
+
+        Describe the use case without API keys, credentials, backend URLs, configuration files, logs, prompts, model output, CUI, proprietary workflows, or other sensitive data.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+      description: What user problem should LOOM solve? Describe the outcome without sensitive project details.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or workflow you would like.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product area
+      options:
+        - CLI and interactive session
+        - Pipelines and planning
+        - Agents and tools
+        - Installation and configuration
+        - Security and safety
+        - Documentation and support
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe safe workarounds or alternatives you considered.
+    validations:
+      required: false
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional sanitized context
+      description: Add only non-sensitive details. Do not upload unreviewed attachments.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues for a similar request.
+          required: true
+        - label: I removed secrets, backend URLs, CUI, proprietary details, and other sensitive data from this request and its attachments.
+          required: true

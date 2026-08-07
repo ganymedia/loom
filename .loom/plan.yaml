@@ -1238,13 +1238,13 @@ phases:
         name: Real user feedback loop
         description: Define where users report problems and how incoming reports are
           triaged before the first external report arrives.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t7-4-1
             name: Add GitHub issue templates
             description: Add separate bug report and feature request templates.
-            status: pending
+            status: completed
             token_estimate: small
             dependencies:
               - m7-3

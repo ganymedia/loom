@@ -1,0 +1,86 @@
+name: Bug report
+description: Report a reproducible problem with LOOM
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. GitHub issues are public.
+
+        Do not include API keys, tokens, credentials, backend URLs, configuration files, raw logs, prompts, model output, CUI, or other sensitive data. Provide only sanitized excerpts needed to reproduce the problem.
+  - type: input
+    id: version
+    attributes:
+      label: LOOM version
+      description: Run `loom --version` and provide only the version number.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation method
+      options:
+        - GitHub installer command
+        - Downloaded release asset
+        - Mirror or air-gapped release host
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and architecture
+      description: Provide the OS version and architecture without hostnames or organization details.
+      placeholder: RHEL 9, x86_64
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem description
+      description: Describe what failed and its impact. Use sanitized values only.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: List the smallest safe sequence that reproduces the problem. Replace project data and endpoint details with placeholders.
+      placeholder: |
+        1. Run ...
+        2. Enter a non-sensitive placeholder ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead? Do not paste raw logs or model output; include only a sanitized error excerpt if necessary.
+    validations:
+      required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional sanitized context
+      description: Add only non-sensitive details that materially help investigation. Do not upload unreviewed attachments.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed secrets, backend URLs, CUI, and other sensitive data from this report and its attachments.
+          required: true
