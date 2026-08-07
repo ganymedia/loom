@@ -1,5 +1,5 @@
-- **Goal & status** — Phase 7 feedback-loop work is active at `m7-4` / `t7-4-1`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 4 tasks remaining.
-- **Completed work** — Completed `t7-3-3` and `m7-3`, committed as `617ebb5`; the public release has the exact ten required assets, all eight published checksum entries verified from fresh unauthenticated downloads, and README points to the intended live installer host.
+- **Goal & status** — Phase 7 feedback-loop work is active at `m7-4` / `t7-4-2`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 3 tasks remaining.
+- **Completed work** — Completed `t7-4-1` and committed it as `fe33fda`; separate structured bug-report and feature-request forms now require actionable triage fields and sanitization confirmation, while blank issues are disabled.
 - **Failed attempts** — None in this session; global git status remains dirty only from pre-existing operator files that were not staged, modified, or removed by this session.
 - **Branch name** — main
-- **Next action** — Check for an existing `.github/ISSUE_TEMPLATE` structure and read any existing templates before creating the separate bug-report and feature-request templates required by `t7-4-1`.
+- **Next action** — Ask the operator whether external contributions are currently accepted before writing the contribution policy required by `t7-4-2`.
