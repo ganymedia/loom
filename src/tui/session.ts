@@ -10,6 +10,7 @@ import { SecurityAgent } from "@loom/agents/security";
 import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
+import { createConfigRedactor } from "@loom/config/redaction";
 import type { LoomConfig } from "@loom/config/schema";
 import {
   type HandoffDocument,
@@ -298,8 +299,10 @@ export async function startSession(
   config: LoomConfig,
   options: StartSessionOptions = {},
 ): Promise<void> {
-  const writeOutput =
+  const outputSink =
     options.writeOutput ?? ((message: string) => process.stdout.write(message));
+  const redact = createConfigRedactor(config);
+  const writeOutput = (message: string): void => outputSink(redact(message));
   const smoke = await runSessionSmoke(config, options);
 
   writeOutput("LOOM session started.\n");

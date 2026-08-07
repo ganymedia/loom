@@ -84,7 +84,7 @@ Inspect the effective configuration with:
 loom config
 ```
 
-The command does not resolve or print API key values, but its JSON output can include configured backend URLs and environment-variable names. Treat that output as environment-sensitive and review it before sharing.
+The command omits backend URLs and header values and never resolves API keys. Its JSON output includes an `endpoint: "[configured]"` marker for each backend and may include the configured `apiKeyEnv` name. Treat that output as environment-sensitive and review it before sharing.
 
 ## One-turn Developer prompt
 

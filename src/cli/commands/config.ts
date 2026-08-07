@@ -4,6 +4,8 @@ import type { Command } from "commander";
 export function registerConfigCommand(
   program: Command,
   config: LoomConfig,
+  writeOut: (message: string) => void = (message) =>
+    process.stdout.write(message),
 ): void {
   program
     .command("config")
@@ -17,12 +19,12 @@ export function registerConfigCommand(
             key,
             {
               type: backend.type,
-              baseUrl: backend.baseUrl,
+              endpoint: "[configured]",
               apiKeyEnv: backend.apiKeyEnv,
             },
           ]),
         ),
       };
-      process.stdout.write(`${JSON.stringify(safeConfig, null, 2)}\n`);
+      writeOut(`${JSON.stringify(safeConfig, null, 2)}\n`);
     });
 }

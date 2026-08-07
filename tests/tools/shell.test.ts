@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { shellTool } from "@loom/tools/shell";
@@ -46,6 +46,26 @@ describe("shellTool", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(result.error).toContain("not permitted");
+  });
+
+  test("rejects shell reads of project config secrets", async () => {
+    const projectRoot = await tempProject();
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "config.yaml"),
+      "Authorization: synthetic-secret-marker\n",
+      "utf8",
+    );
+
+    const result = await shellTool.execute({
+      projectRoot,
+      command: "cat",
+      args: [".loom/config.yaml"],
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.output).not.toContain("synthetic-secret-marker");
     expect(result.error).toContain("not permitted");
   });
 

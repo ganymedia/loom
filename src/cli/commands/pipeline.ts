@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { FetchLike } from "@loom/backends/discovery";
+import { createConfigRedactor } from "@loom/config/redaction";
 import type { LoomConfig } from "@loom/config/schema";
 import { runPipeline } from "@loom/pipeline/dag-walker";
 import { BranchStageExecutor } from "@loom/pipeline/executors/branch";
@@ -41,8 +42,10 @@ export function registerPipelineCommand(
   program: Command,
   options: RegisterPipelineCommandOptions,
 ): void {
-  const writeOut =
+  const outputSink =
     options.writeOut ?? ((message: string) => process.stdout.write(message));
+  const redact = createConfigRedactor(options.config, options.env);
+  const writeOut = (message: string): void => outputSink(redact(message));
 
   const pipeline = program
     .command("pipeline")
@@ -112,7 +115,12 @@ async function readInputObject(
   inputPath: string,
 ): Promise<Record<string, unknown>> {
   const filePath = await resolveReadablePath(projectRoot, inputPath);
-  const parsed = YAML.parse(await readFile(filePath, "utf8")) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = YAML.parse(await readFile(filePath, "utf8")) as unknown;
+  } catch (error) {
+    throw new Error("Unable to parse pipeline input YAML", { cause: error });
+  }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error(`pipeline --input "${inputPath}" must contain an object`);
   }
@@ -129,7 +137,11 @@ function parseVariable(variable: string): [string, unknown] {
   if (key.length === 0) {
     throw new Error("pipeline --var key must not be empty");
   }
-  return [key, YAML.parse(rawValue) as unknown];
+  try {
+    return [key, YAML.parse(rawValue) as unknown];
+  } catch (error) {
+    throw new Error("Unable to parse pipeline --var value", { cause: error });
+  }
 }
 
 function setBusValue(bus: ContextBus, key: string, value: unknown): void {

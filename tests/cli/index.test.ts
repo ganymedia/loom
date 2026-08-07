@@ -233,9 +233,8 @@ stages:
 
     expect(result.exitCode).toBe(0);
     expect(result.output).toContain("OpenAI-compatible backend URL:");
-    expect(result.output).toContain(
-      `Unable to reach backend model endpoint at ${backendUrl}/models`,
-    );
+    expect(result.output).toContain("Unable to reach backend model endpoint");
+    expect(result.output).not.toContain(`${backendUrl}/models`);
     expect(result.output).not.toContain(
       'Active profile "default" does not define a default backend',
     );

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import type { FetchLike } from "@loom/backends/discovery";
 import { generateEmbedding } from "@loom/backends/embeddings";
+import { createConfigRedactor } from "@loom/config/redaction";
 import type { LoomConfig } from "@loom/config/schema";
 import { type PromptEventRole, PromptStore } from "@loom/store/prompt-store";
 import type { Command } from "commander";
@@ -47,8 +48,13 @@ export function registerLogCommand(
   program: Command,
   options: RegisterLogCommandOptions = {},
 ): void {
-  const writeOut =
+  const outputSink =
     options.writeOut ?? ((message: string) => process.stdout.write(message));
+  const redact =
+    options.config === undefined
+      ? (message: string): string => message
+      : createConfigRedactor(options.config, options.env);
+  const writeOut = (message: string): void => outputSink(redact(message));
   const now = options.now ?? Date.now;
   const idGenerator = options.idGenerator ?? randomUUID;
 
@@ -139,7 +145,7 @@ export function registerLogCommand(
           ),
           role: parseRole(requiredString(commandOptions.role, "--role")),
           agent: requiredString(commandOptions.agent, "--agent"),
-          content: requiredString(commandOptions.content, "--content"),
+          content: redact(requiredString(commandOptions.content, "--content")),
           createdAt:
             commandOptions.createdAt === undefined
               ? now()

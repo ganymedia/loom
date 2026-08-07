@@ -126,6 +126,43 @@ describe("pipeline command", () => {
     ).toBe(true);
   });
 
+  test("redacts config secrets from pipeline results", async () => {
+    const projectRoot = await projectWithPipeline();
+    const output: string[] = [];
+    const program = new Command();
+    program.exitOverride();
+    registerPipelineCommand(program, {
+      config: loomConfigSchema.parse({
+        backends: {
+          local: {
+            type: "openai-compatible",
+            baseUrl: "https://backend.example.invalid",
+            headers: { Authorization: "synthetic-header-secret" },
+          },
+        },
+      }),
+      projectRoot,
+      writeOut: (message) => output.push(message),
+      recall: () => ({
+        enabled: true,
+        label: "https://backend.example.invalid synthetic-header-secret",
+      }),
+    });
+
+    await program.parseAsync([
+      "node",
+      "loom",
+      "pipeline",
+      "run",
+      ".loom/sample.loom",
+    ]);
+
+    const rendered = output.join("");
+    expect(rendered).not.toContain("backend.example.invalid");
+    expect(rendered).not.toContain("synthetic-header-secret");
+    expect(rendered).toContain("[REDACTED]");
+  });
+
   test("fails loudly for duplicate injected Context Bus keys", async () => {
     const projectRoot = await projectWithPipeline();
     const program = pipelineProgram(projectRoot, []);

@@ -38,10 +38,9 @@ export async function discoverModels(
       backend.headers === undefined ? {} : { headers: backend.headers };
     response = await fetchImpl(modelsUrl(backend.baseUrl), requestInit);
   } catch (error) {
-    throw new BackendDiscoveryError(
-      `Unable to reach backend model endpoint at ${modelsUrl(backend.baseUrl)}`,
-      { cause: error },
-    );
+    throw new BackendDiscoveryError("Unable to reach backend model endpoint", {
+      cause: error,
+    });
   }
 
   if (!response.ok) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileWriterTool } from "@loom/tools/file-writer";
@@ -35,6 +35,22 @@ describe("fileWriterTool", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("escapes project root");
+  });
+
+  test("denies model-controlled narrative and handoff writes", async () => {
+    const projectRoot = await tempProject();
+    await mkdir(join(projectRoot, ".loom"));
+
+    for (const path of [".loom/narrative.md", ".loom/handoff.md"]) {
+      const result = await fileWriterTool.execute({
+        projectRoot,
+        path,
+        content: "synthetic-secret-marker",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Model tools cannot access sensitive files");
+    }
   });
 
   test("requires the parent directory to already exist", async () => {

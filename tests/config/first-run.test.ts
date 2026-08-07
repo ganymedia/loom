@@ -111,4 +111,23 @@ describe("ensureFirstRunConfig", () => {
       }),
     ).rejects.toThrow("backend endpoint must use http:// or https://");
   });
+
+  test("does not reproduce invalid URL input in errors", async () => {
+    const home = await tempHome();
+    const marker = "synthetic-secret-marker";
+
+    let message = "";
+    try {
+      await ensureFirstRunConfig({
+        env: { HOME: home },
+        isInteractive: true,
+        ask: async () => `not a url ${marker}`,
+      });
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(message).toBe("backend endpoint must be a valid URL");
+    expect(message).not.toContain(marker);
+  });
 });

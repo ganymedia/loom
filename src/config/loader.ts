@@ -47,7 +47,11 @@ export function defaultGlobalConfigPaths(env: NodeJS.ProcessEnv): string[] {
 async function readYamlIfPresent(path: string | undefined): Promise<unknown> {
   if (path === undefined || !existsSync(path)) return {};
   const content = await readFile(path, "utf8");
-  return YAML.parse(content) ?? {};
+  try {
+    return YAML.parse(content) ?? {};
+  } catch (error) {
+    throw new Error("Unable to parse LOOM config YAML", { cause: error });
+  }
 }
 
 async function readGlobalConfig(env: NodeJS.ProcessEnv): Promise<unknown> {
@@ -111,7 +115,12 @@ export async function loadConfig(
   );
   const merged = mergeConfig(globalConfig, projectConfig);
 
-  const parsed = loomConfigSchema.parse(merged);
+  let parsed: LoomConfig;
+  try {
+    parsed = loomConfigSchema.parse(merged);
+  } catch (error) {
+    throw new Error("LOOM config validation failed", { cause: error });
+  }
   const activeProfile =
     options.profileOverride ?? env.LOOM_PROFILE ?? parsed.activeProfile;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileReaderTool } from "@loom/tools/file-reader";
@@ -34,6 +34,25 @@ describe("fileReaderTool", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("escapes project root");
+  });
+
+  test("denies project config containing secret values", async () => {
+    const projectRoot = await tempProject();
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "config.yaml"),
+      "headers:\n  Authorization: synthetic-secret-marker\n",
+      "utf8",
+    );
+
+    const result = await fileReaderTool.execute({
+      projectRoot,
+      path: ".loom/config.yaml",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.output).not.toContain("synthetic-secret-marker");
+    expect(result.error).toBe("Model tools cannot access sensitive files");
   });
 
   test("refuses files larger than maxBytes", async () => {

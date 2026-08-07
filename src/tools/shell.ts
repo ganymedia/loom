@@ -2,7 +2,10 @@ import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { isAbsolute } from "node:path";
 import type { ToolDefinition, ToolResult } from "@loom/tools/base";
-import { resolveReadablePath } from "@loom/tools/path-safety";
+import {
+  assertModelToolPathAllowed,
+  resolveReadablePath,
+} from "@loom/tools/path-safety";
 import { z } from "zod";
 
 const ALLOWED_COMMANDS = new Set(["pwd", "ls", "cat", "grep", "wc"]);
@@ -45,7 +48,9 @@ async function resolvePathArgs(
       throw new ShellToolError(`Shell argument "${arg}" is not permitted`);
     }
     try {
-      resolved.push(await resolveReadablePath(projectRoot, arg));
+      const targetPath = await resolveReadablePath(projectRoot, arg);
+      await assertModelToolPathAllowed(projectRoot, targetPath);
+      resolved.push(targetPath);
     } catch {
       throw new ShellToolError(`Shell argument "${arg}" is not permitted`);
     }

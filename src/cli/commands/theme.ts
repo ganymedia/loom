@@ -96,7 +96,12 @@ async function readExistingYaml(
     throw error;
   }
 
-  const parsed = YAML.parse(content) ?? {};
+  let parsed: unknown;
+  try {
+    parsed = YAML.parse(content) ?? {};
+  } catch (error) {
+    throw new Error("Unable to parse project config YAML", { cause: error });
+  }
   return recordValue(parsed, "config root");
 }
 

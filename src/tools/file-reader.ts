@@ -1,6 +1,9 @@
 import { readFile, stat } from "node:fs/promises";
 import type { ToolDefinition, ToolResult } from "@loom/tools/base";
-import { resolveReadablePath } from "@loom/tools/path-safety";
+import {
+  assertModelToolPathAllowed,
+  resolveReadablePath,
+} from "@loom/tools/path-safety";
 import { z } from "zod";
 
 export const fileReaderArgsSchema = z.object({
@@ -22,6 +25,7 @@ export const fileReaderTool: ToolDefinition<FileReaderArgs> = {
         parsed.projectRoot,
         parsed.path,
       );
+      await assertModelToolPathAllowed(parsed.projectRoot, targetPath);
       const fileStat = await stat(targetPath);
 
       if (!fileStat.isFile()) {

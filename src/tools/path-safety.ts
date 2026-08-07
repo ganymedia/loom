@@ -17,6 +17,42 @@ function isWithinRoot(projectRoot: string, targetPath: string): boolean {
   );
 }
 
+const SENSITIVE_LOOM_FILES = new Set([
+  "config.yaml",
+  "handoff.md",
+  "narrative.md",
+  "prompt-store.sqlite",
+]);
+const SENSITIVE_CREDENTIAL_FILES = new Set([
+  ".git-credentials",
+  ".netrc",
+  ".npmrc",
+  ".pypirc",
+  "id_ed25519",
+  "id_rsa",
+]);
+
+export async function assertModelToolPathAllowed(
+  projectRoot: string,
+  targetPath: string,
+): Promise<void> {
+  const root = await realpath(projectRoot);
+  const relativePath = relative(root, targetPath);
+  const segments = relativePath.split(/[\\/]/);
+  const fileName = segments.at(-1) ?? "";
+  const isEnvironmentFile = fileName === ".env" || fileName.startsWith(".env.");
+  const isLoomSecret =
+    segments[0] === ".loom" && SENSITIVE_LOOM_FILES.has(fileName);
+
+  if (
+    isEnvironmentFile ||
+    isLoomSecret ||
+    SENSITIVE_CREDENTIAL_FILES.has(fileName)
+  ) {
+    throw new PathSafetyError("Model tools cannot access sensitive files");
+  }
+}
+
 export async function resolveReadablePath(
   projectRoot: string,
   requestedPath: string,

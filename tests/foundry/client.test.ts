@@ -48,7 +48,7 @@ describe("FoundryClient", () => {
       fetchImpl: async (_input, init) => {
         authHeaders.push(new Headers(init?.headers).get("Authorization"));
         return jsonResponse(
-          { error: "forbidden", message: "insufficient scope" },
+          { error: "forbidden", message: "echoed loom_test_secret" },
           403,
         );
       },
@@ -64,6 +64,7 @@ describe("FoundryClient", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(FoundryClientError);
       expect(String(error)).not.toContain("loom_test_secret");
+      expect(String(error)).toContain("POST returned 403");
     }
   });
 

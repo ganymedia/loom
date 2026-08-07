@@ -186,7 +186,13 @@ export class FoundryClient {
         status: 0,
       });
     }
-    this.baseUrl = new URL(ensureTrailingSlash(options.baseUrl));
+    try {
+      this.baseUrl = new URL(ensureTrailingSlash(options.baseUrl));
+    } catch (error) {
+      throw new FoundryClientError("Foundry base URL is invalid", {
+        status: 0,
+      });
+    }
     this.apiKey = options.apiKey;
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
@@ -377,7 +383,14 @@ export class FoundryClient {
       options.json !== undefined ? JSON.stringify(options.json) : options.body;
     if (body !== undefined) requestInit.body = body;
 
-    const response = await this.fetchImpl(url, requestInit);
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, requestInit);
+    } catch (error) {
+      throw new FoundryClientError("Foundry request failed before a response", {
+        status: 0,
+      });
+    }
 
     if (!response.ok) {
       throw await buildFoundryError(response, options.method ?? "GET", path);
@@ -418,40 +431,10 @@ function encodePathPart(value: string): string {
 async function buildFoundryError(
   response: Response,
   method: string,
-  path: string,
+  _path: string,
 ): Promise<FoundryClientError> {
-  const body = await readErrorBody(response);
-  if (body !== undefined) {
-    const errorOptions: { status: number; code?: string; docs?: string } = {
-      status: response.status,
-      code: body.error,
-    };
-    if (body.docs !== undefined) errorOptions.docs = body.docs;
-    return new FoundryClientError(body.message, errorOptions);
-  }
-
   return new FoundryClientError(
-    `Foundry request failed: ${method} /${path} returned ${response.status}`,
+    `Foundry request failed: ${method} returned ${response.status}`,
     { status: response.status },
   );
-}
-
-async function readErrorBody(
-  response: Response,
-): Promise<FoundryErrorBody | undefined> {
-  try {
-    const body = (await response.json()) as Partial<FoundryErrorBody>;
-    if (typeof body.error === "string" && typeof body.message === "string") {
-      const errorBody: FoundryErrorBody = {
-        error: body.error,
-        message: body.message,
-      };
-      if (typeof body.docs === "string") errorBody.docs = body.docs;
-      return errorBody;
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
 }

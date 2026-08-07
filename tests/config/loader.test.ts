@@ -91,4 +91,24 @@ describe("loadConfig", () => {
 
     expect(config.defaults.theme).toBe("canonical");
   });
+
+  test("does not reproduce malformed config content in parse errors", async () => {
+    const projectRoot = await tempProject();
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "config.yaml"),
+      "headers: [synthetic-secret-marker\n",
+      "utf8",
+    );
+
+    let message = "";
+    try {
+      await loadConfig({ projectRoot, env: {} });
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(message).toBe("Unable to parse LOOM config YAML");
+    expect(message).not.toContain("synthetic-secret-marker");
+  });
 });

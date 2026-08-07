@@ -3,6 +3,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { registerLogCommand } from "@loom/cli/commands/log";
+import { loomConfigSchema } from "@loom/config/schema";
 import { Command } from "commander";
 
 function logProgram(storePath: string, output: string[]): Command {
@@ -152,5 +153,65 @@ describe("log command", () => {
         "hello",
       ]),
     ).rejects.toThrow("--turn must be a non-negative integer");
+  });
+
+  test("redacts config secrets before storing or printing events", async () => {
+    const storePath = await tempStorePath();
+    const output: string[] = [];
+    const program = new Command();
+    program.exitOverride();
+    registerLogCommand(program, {
+      storePath,
+      writeOut: (message) => output.push(message),
+      config: loomConfigSchema.parse({
+        backends: {
+          local: {
+            type: "openai-compatible",
+            baseUrl: "https://backend.example.invalid",
+            headers: { Authorization: "synthetic-header-secret" },
+          },
+        },
+      }),
+    });
+
+    await program.parseAsync([
+      "node",
+      "loom",
+      "log",
+      "session",
+      "--id",
+      "session-1",
+      "--agent",
+      "developer",
+    ]);
+    await program.parseAsync([
+      "node",
+      "loom",
+      "log",
+      "add",
+      "--session",
+      "session-1",
+      "--turn",
+      "0",
+      "--role",
+      "assistant",
+      "--agent",
+      "developer",
+      "--content",
+      "https://backend.example.invalid synthetic-header-secret",
+    ]);
+    await program.parseAsync([
+      "node",
+      "loom",
+      "log",
+      "show",
+      "--session",
+      "session-1",
+    ]);
+
+    const rendered = output.join("");
+    expect(rendered).not.toContain("backend.example.invalid");
+    expect(rendered).not.toContain("synthetic-header-secret");
+    expect(rendered).toContain("[REDACTED]");
   });
 });

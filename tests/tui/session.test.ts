@@ -137,6 +137,48 @@ describe("startSession", () => {
     expect(output).toContain("Developer: Hello from Developer");
   });
 
+  test("redacts config secrets echoed by a backend", async () => {
+    const projectRoot = await tempProject();
+    const secretConfig: LoomConfig = {
+      ...config,
+      backends: {
+        local: {
+          type: "openai-compatible",
+          baseUrl: "http://127.0.0.1:8000",
+          headers: { Authorization: "synthetic-header-secret" },
+        },
+      },
+    };
+    let output = "";
+
+    await startSession(secretConfig, {
+      projectRoot,
+      initialPrompt: "Do not echo credentials",
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content: "http://127.0.0.1:8000 synthetic-header-secret",
+              },
+            },
+          ],
+          usage: { prompt_tokens: 5, completion_tokens: 3 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).not.toContain("127.0.0.1:8000");
+    expect(output).not.toContain("synthetic-header-secret");
+    expect(output).toContain("[REDACTED]");
+  });
+
   test("writes automatic handoff when token usage crosses threshold", async () => {
     const projectRoot = await tempProject();
     let output = "";

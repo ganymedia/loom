@@ -39,7 +39,12 @@ function normalizeBaseUrl(input: string): string {
   if (value.length === 0) {
     throw new Error("backend endpoint is required to create config");
   }
-  const parsed = new URL(value);
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch (error) {
+    throw new Error("backend endpoint must be a valid URL", { cause: error });
+  }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("backend endpoint must use http:// or https://");
   }

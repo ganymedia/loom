@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { FetchLike } from "@loom/backends/discovery";
 import { generateEmbedding } from "@loom/backends/embeddings";
+import { createConfigRedactor } from "@loom/config/redaction";
 import type { LoomConfig } from "@loom/config/schema";
 import { PromptStore } from "@loom/store/prompt-store";
 import type { Command } from "commander";
@@ -24,8 +25,13 @@ export function registerRecallCommand(
   program: Command,
   options: RegisterRecallCommandOptions = {},
 ): void {
-  const writeOut =
+  const outputSink =
     options.writeOut ?? ((message: string) => process.stdout.write(message));
+  const redact =
+    options.config === undefined
+      ? (message: string): string => message
+      : createConfigRedactor(options.config, options.env);
+  const writeOut = (message: string): void => outputSink(redact(message));
 
   program
     .command("recall")

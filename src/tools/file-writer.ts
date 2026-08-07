@@ -1,5 +1,6 @@
 import type { ToolDefinition, ToolResult } from "@loom/tools/base";
 import {
+  assertModelToolPathAllowed,
   resolveWritablePath,
   writeUtf8FileNoFollow,
 } from "@loom/tools/path-safety";
@@ -24,6 +25,7 @@ export const fileWriterTool: ToolDefinition<FileWriterArgs> = {
         parsed.projectRoot,
         parsed.path,
       );
+      await assertModelToolPathAllowed(parsed.projectRoot, targetPath);
       await writeUtf8FileNoFollow(targetPath, parsed.content);
 
       return {
