@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-07
 current_phase: phase-7
 current_milestone: m7-2
-current_task: t7-2-3
+current_task: t7-2-4
 phases:
   - id: phase-1
     name: Foundation
@@ -1193,7 +1193,7 @@ phases:
             name: Review installer supply-chain protections
             description: Confirm install.sh enforces checksum verification before any
               downloaded binary is executed.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies: []
           - id: t7-2-4

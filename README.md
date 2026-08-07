@@ -39,6 +39,8 @@ curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh
 
 For mirrors, staging, or air-gapped release hosts, set `LOOM_INSTALL_BASE_URL` before running `install.sh`.
 
+The release host must provide `SHA256SUMS`; the installer refuses to install a binary unless its checksum matches the manifest.
+
 The user-facing examples below use the installed `loom` command. Before a published release is available, maintainers can substitute the locally compiled `./dist/loom` binary.
 
 ## Configuration and backend routing

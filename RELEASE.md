@@ -69,6 +69,7 @@ tmp_install_dir="$(mktemp -d)"
 tmp_release_host="$(mktemp -d)"
 mkdir -p "$tmp_release_host/latest/download"
 cp dist/releases/loom-* "$tmp_release_host/latest/download/"
+cp dist/releases/SHA256SUMS "$tmp_release_host/latest/download/"
 LOOM_INSTALL_BASE_URL="file://$tmp_release_host" \
 LOOM_INSTALL_DIR="$tmp_install_dir" \
 sh install.sh
@@ -76,7 +77,7 @@ sh install.sh
 rm -rf "$tmp_install_dir" "$tmp_release_host"
 ```
 
-The installed binary must print the LOOM version and exit 0.
+The installer must verify the detected binary against `SHA256SUMS` before installation, and the installed binary must print the LOOM version and exit 0. Missing, malformed, duplicate, or mismatched checksum data must fail without replacing an existing binary.
 
 ## 5. Create and push the tag
 
