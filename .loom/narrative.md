@@ -395,3 +395,7 @@ Decision: fail the first `t7-3-2` attempt when the documented unauthenticated `r
 ## 2026-08-07 — Live installer handoff summary
 
 Phase 6 remediation `m6-6` is merged and complete with 0 tasks remaining. Phase 7 is merged with 5 tasks remaining and is active at `m7-3` / `t7-3-3`. This session completed and committed `t7-3-2` as `e424fa6`; unauthenticated `RELEASE.md` step 7 verification passed only after the operator made the repository public. The next action is to complete every `RELEASE.md` step 8 post-release check against `v0.1.0`. No session changes remain uncommitted before this handoff update; only pre-existing operator support documents, transcript, and release-helper files remain unstaged.
+
+## 2026-08-07 — v0.1.0 post-release checks completed
+
+Decision: verify the published release from fresh unauthenticated downloads rather than relying only on authenticated GitHub metadata or local build artifacts. GitHub listed exactly `install.sh` plus the nine files required by `RELEASE.md` step 2. All ten versioned public assets downloaded outside the repository, and `sha256sum -c SHA256SUMS` reported `OK` for all four platform binaries and four tarballs. The README installer command points to the same public GitHub `latest/download/install.sh` host proven by `t7-3-2`, and the completed release is recorded here. `t7-3-3` and `m7-3` are complete; Phase 7 advances to `m7-4` / `t7-4-1` with 4 tasks remaining. Phase 6 remediation `m6-6` remains merged and complete with 0 tasks remaining.

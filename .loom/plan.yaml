@@ -1207,7 +1207,7 @@ phases:
         name: Publish the official v1 GitHub Release
         description: Follow RELEASE.md end to end for a real immutable tagged release,
           not a test or staging run.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t7-3-1
@@ -1230,7 +1230,7 @@ phases:
           - id: t7-3-3
             name: Complete post-release checks
             description: Complete RELEASE.md step 8 against the published release.
-            status: pending
+            status: completed
             token_estimate: small
             dependencies:
               - t7-3-2
