@@ -1,5 +1,5 @@
-- **Goal & status** — Phase 7 release verification is active at `m7-3` / `t7-3-3`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 5 tasks remaining.
-- **Completed work** — Completed `t7-3-2` and committed its state as `e424fa6`; after the operator made `ganymedia/loom` public, the unauthenticated live installer downloaded, verified checksums, installed outside the repository, and reported `0.1.0`.
-- **Failed attempts** — The first documented installer run returned HTTP 404 because the repository was private; global git status remains dirty only from pre-existing operator files that were not staged, modified, or removed by this session.
+- **Goal & status** — Phase 7 feedback-loop work is active at `m7-4` / `t7-4-1`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 4 tasks remaining.
+- **Completed work** — Completed `t7-3-3` and `m7-3`, committed as `617ebb5`; the public release has the exact ten required assets, all eight published checksum entries verified from fresh unauthenticated downloads, and README points to the intended live installer host.
+- **Failed attempts** — None in this session; global git status remains dirty only from pre-existing operator files that were not staged, modified, or removed by this session.
 - **Branch name** — main
-- **Next action** — Complete every `RELEASE.md` step 8 post-release check against the published `v0.1.0` release for `t7-3-3`.
+- **Next action** — Check for an existing `.github/ISSUE_TEMPLATE` structure and read any existing templates before creating the separate bug-report and feature-request templates required by `t7-4-1`.
