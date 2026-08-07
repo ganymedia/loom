@@ -1,5 +1,5 @@
 - **Goal & status** — Phase 7 feedback-loop work is active at `m7-4` / `t7-4-2`; `m6-6` is merged with 0 tasks remaining, and Phase 7 is merged with 3 tasks remaining.
-- **Completed work** — Completed `t7-4-1` and committed it as `fe33fda`; separate structured bug-report and feature-request forms now require actionable triage fields and sanitization confirmation, while blank issues are disabled.
-- **Failed attempts** — None in this session; global git status remains dirty only from pre-existing operator files that were not staged, modified, or removed by this session.
+- **Completed work** — Refactored the README into a product-facing landing page and committed it as `b938d4d`; the runnable clean-directory pipeline example, typecheck, lint, and focused documentation review passed without advancing `t7-4-2`.
+- **Failed attempts** — None; adjacent stale docs remain outside the README-only change: `CHANGELOG.md` labels 0.1.0 unreleased, `USER_TESTING.md` expects an exposed backend URL from `loom config`, and global git status remains dirty only from pre-existing operator files.
 - **Branch name** — main
 - **Next action** — Ask the operator whether external contributions are currently accepted before writing the contribution policy required by `t7-4-2`.
