@@ -22,6 +22,7 @@ import { fileReaderTool } from "@loom/tools/file-reader";
 import { fileWriterTool } from "@loom/tools/file-writer";
 import { gitOpsTool } from "@loom/tools/git-ops";
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
+import { SessionApp, SessionViewStore } from "@loom/tui/session-app";
 import {
   type BuiltInAgentName,
   builtInAgentTabs,
@@ -29,7 +30,7 @@ import {
   nextAgentName,
   resolveBuiltInAgentName,
 } from "@loom/tui/tab-strip";
-import { renderToString } from "ink";
+import { render, renderToString } from "ink";
 import { createElement } from "react";
 
 export interface StartSessionOptions {
@@ -119,6 +120,32 @@ async function* readStdinLines(): AsyncIterable<string> {
     }
   } finally {
     reader.close();
+  }
+}
+
+class SessionInputQueue implements AsyncIterable<string> {
+  readonly #lines: string[] = [];
+  readonly #waiters: Array<(result: IteratorResult<string>) => void> = [];
+
+  push(line: string): void {
+    const waiter = this.#waiters.shift();
+    if (waiter === undefined) {
+      this.#lines.push(line);
+    } else {
+      waiter({ value: line, done: false });
+    }
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<string> {
+    return {
+      next: async (): Promise<IteratorResult<string>> => {
+        const line = this.#lines.shift();
+        if (line !== undefined) return { value: line, done: false };
+        return await new Promise<IteratorResult<string>>((resolve) => {
+          this.#waiters.push(resolve);
+        });
+      },
+    };
   }
 }
 
@@ -299,10 +326,48 @@ export async function startSession(
   config: LoomConfig,
   options: StartSessionOptions = {},
 ): Promise<void> {
+  const interactive =
+    options.interactive ??
+    (options.initialPrompt === undefined && process.stdin.isTTY === true);
+  const usePersistentInk =
+    interactive &&
+    options.input === undefined &&
+    options.writeOutput === undefined &&
+    process.stdin.isTTY === true &&
+    process.stdout.isTTY === true;
+  const sessionId = crypto.randomUUID();
+  const initialAgentName = options.initialAgent ?? "developer";
+  const viewStore = usePersistentInk
+    ? new SessionViewStore({
+        activeAgentName: initialAgentName,
+        output: [],
+        sessionId,
+        tokenPercent: 0,
+      })
+    : undefined;
+  const inkInput = usePersistentInk ? new SessionInputQueue() : undefined;
+  const ink =
+    viewStore === undefined
+      ? undefined
+      : render(
+          createElement(SessionApp, {
+            onSubmit: (line: string) => inkInput?.push(line),
+            store: viewStore,
+            themeId: config.defaults.theme,
+          }),
+          { alternateScreen: true },
+        );
   const outputSink =
     options.writeOutput ?? ((message: string) => process.stdout.write(message));
   const redact = createConfigRedactor(config);
-  const writeOutput = (message: string): void => outputSink(redact(message));
+  const writeOutput = (message: string): void => {
+    const safeMessage = redact(message);
+    if (viewStore === undefined) {
+      outputSink(safeMessage);
+    } else {
+      viewStore.appendOutput(safeMessage);
+    }
+  };
   const smoke = await runSessionSmoke(config, options);
 
   writeOutput("LOOM session started.\n");
@@ -328,10 +393,10 @@ export async function startSession(
       (options.initialPrompt === undefined && process.stdin.isTTY === true));
 
   if (shouldRunAgent) {
-    let activeAgentName = options.initialAgent ?? "developer";
+    let activeAgentName = initialAgentName;
     let agent = createBuiltInAgent(activeAgentName, config, options);
     const context = {
-      sessionId: crypto.randomUUID(),
+      sessionId,
       projectRoot: options.projectRoot ?? process.cwd(),
       conversationHistory: await loadHandoffContext(
         options.projectRoot ?? process.cwd(),
@@ -343,10 +408,15 @@ export async function startSession(
     });
     let automaticHandoffWritten = false;
     const writeSessionStatus = (): void => {
+      const tokenPercent = sessionManager.currentDecision().usageRatio;
+      if (viewStore !== undefined) {
+        viewStore.updateStatus(activeAgentName, tokenPercent);
+        return;
+      }
       writeOutput(
         `Status:\n${renderSessionStatus({
           sessionId: context.sessionId,
-          tokenPercent: sessionManager.currentDecision().usageRatio,
+          tokenPercent,
           activeAgentName,
           themeId: config.defaults.theme,
         })}\n`,
@@ -354,9 +424,11 @@ export async function startSession(
     };
 
     try {
-      writeOutput(
-        `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
-      );
+      if (viewStore === undefined) {
+        writeOutput(
+          `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+        );
+      }
       writeSessionStatus();
       if (
         options.initialPrompt !== undefined &&
@@ -384,11 +456,10 @@ export async function startSession(
         writeSessionStatus();
       }
 
-      const interactive =
-        options.interactive ??
-        (options.initialPrompt === undefined && process.stdin.isTTY === true);
       const input =
-        options.input ?? (interactive ? readStdinLines() : undefined);
+        options.input ??
+        inkInput ??
+        (interactive ? readStdinLines() : undefined);
       if (input !== undefined) {
         writeOutput(
           "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.\n",
@@ -398,18 +469,22 @@ export async function startSession(
           if (prompt.length === 0) continue;
           if (prompt === "/exit" || prompt === "/quit") break;
           if (prompt === "/agents") {
-            writeOutput(
-              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
-            );
+            if (viewStore === undefined) {
+              writeOutput(
+                `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+              );
+            }
             writeSessionStatus();
             continue;
           }
           if (prompt === "/tab") {
             activeAgentName = nextAgentName(activeAgentName);
             agent = createBuiltInAgent(activeAgentName, config, options);
-            writeOutput(
-              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
-            );
+            if (viewStore === undefined) {
+              writeOutput(
+                `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+              );
+            }
             writeSessionStatus();
             continue;
           }
@@ -422,9 +497,11 @@ export async function startSession(
             }
             activeAgentName = resolvedAgent;
             agent = createBuiltInAgent(activeAgentName, config, options);
-            writeOutput(
-              `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
-            );
+            if (viewStore === undefined) {
+              writeOutput(
+                `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+              );
+            }
             writeSessionStatus();
             continue;
           }
@@ -455,5 +532,11 @@ export async function startSession(
         `${agent.displayName} agent error: ${error instanceof Error ? error.message : String(error)}\n`,
       );
     }
+  }
+
+  if (ink !== undefined) {
+    await ink.waitUntilRenderFlush();
+    ink.unmount();
+    await ink.waitUntilExit();
   }
 }

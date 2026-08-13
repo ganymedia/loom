@@ -133,7 +133,7 @@ Model-controlled file and command tools are restricted to the resolved project r
 
 ## Current 0.1 limitations
 
-- The interactive interface is a minimized readline/Ink session, not a full-screen TUI.
+- Interactive terminals use a persistent Ink render tree; instant keybindings, streaming output, pinned scrollback/input regions, and full resize/exit handling remain in development for v0.1.1.
 - Public pipeline `inject` stages fail loudly because Prompt Store recall is not yet connected to that CLI path.
 - `loom --prompt` is stateless across process runs and does not stream output.
 - The public Foundry marketplace, package managers beyond `install.sh`, automated release CI, and telemetry are not included.

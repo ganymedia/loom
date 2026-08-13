@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-13
 current_phase: phase-8
 current_milestone: m8-1
-current_task: t8-1-1
+current_task: t8-1-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1283,14 +1283,14 @@ phases:
             description: Preserve all existing agent-switching, tool-call, and conversation-state
               logic; this is a rendering-layer rewrite, not a behavior change. AgentContext,
               SessionManager, and handoff triggers must work identically to today.
-            status: in_progress
+            status: completed
             token_estimate: large
             dependencies: []
           - id: t8-1-2
             name: Add useInput-based keybindings with instant Tab agent cycling
             description: Use Ink input handling so Tab cycles agents immediately without
               requiring Enter.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies:
               - t8-1-1
