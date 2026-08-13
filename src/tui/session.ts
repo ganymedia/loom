@@ -351,6 +351,7 @@ export async function startSession(
       ? undefined
       : render(
           createElement(SessionApp, {
+            onCycleAgent: () => inkInput?.push("/tab"),
             onSubmit: (line: string) => inkInput?.push(line),
             store: viewStore,
             themeId: config.defaults.theme,

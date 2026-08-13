@@ -56,10 +56,12 @@ export class SessionViewStore {
 }
 
 export function SessionApp({
+  onCycleAgent,
   onSubmit,
   store,
   themeId,
 }: {
+  onCycleAgent: () => void;
   onSubmit: (line: string) => void;
   store: SessionViewStore;
   themeId: string | undefined;
@@ -72,6 +74,10 @@ export function SessionApp({
     store.getSnapshot,
   );
   useInput((character, key) => {
+    if (key.tab) {
+      onCycleAgent();
+      return;
+    }
     if (key.return) {
       onSubmit(inputRef.current);
       inputRef.current = "";

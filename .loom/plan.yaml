@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-13
 current_phase: phase-8
 current_milestone: m8-1
-current_task: t8-1-2
+current_task: t8-1-3
 phases:
   - id: phase-1
     name: Foundation
@@ -1290,7 +1290,7 @@ phases:
             name: Add useInput-based keybindings with instant Tab agent cycling
             description: Use Ink input handling so Tab cycles agents immediately without
               requiring Enter.
-            status: in_progress
+            status: completed
             token_estimate: medium
             dependencies:
               - t8-1-1
@@ -1298,7 +1298,7 @@ phases:
             name: Stream assistant responses into component state token-by-token
             description: Update live component state for each token instead of printing
               only a completed assistant response block.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies:
               - t8-1-1

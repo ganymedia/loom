@@ -154,13 +154,14 @@ At the prompt, try these commands:
 
 ```text
 /agents
+[press Tab without Enter]
 /tab
 /agent Tester
 /agent Security
 /exit
 ```
 
-Expected result: LOOM shows the built-in agents, changes the active agent for `/tab` and `/agent <name>`, and exits cleanly on `/exit`.
+Expected result: LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; and `/exit` exits cleanly.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 

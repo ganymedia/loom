@@ -57,7 +57,7 @@ async function runCompiledFirstRunWithPty(options: {
   home: string;
   projectRoot: string;
   backendUrl: string;
-}): Promise<{ exitCode: number; output: string }> {
+}): Promise<{ cycledAgent: boolean; exitCode: number; output: string }> {
   const python = String.raw`
 import json, os, pty, select, subprocess, sys, time
 
@@ -77,6 +77,8 @@ proc = subprocess.Popen(
 os.close(slave)
 output = b""
 sent_url = False
+sent_tab = False
+cycled_agent = False
 sent_exit = False
 deadline = time.time() + 15
 
@@ -95,8 +97,12 @@ while time.time() < deadline:
             time.sleep(0.2)
             os.write(master, f"{backend_url}\n".encode())
             sent_url = True
-        if sent_url and not sent_exit and "Enter follow-up prompts." in text:
+        if sent_url and not sent_tab and "Enter follow-up prompts." in text:
             time.sleep(0.1)
+            os.write(master, b"\t")
+            sent_tab = True
+        if sent_tab and not sent_exit and "architect" in text:
+            cycled_agent = True
             os.write(master, b"/exit\n")
             sent_exit = True
     if proc.poll() is not None:
@@ -111,6 +117,7 @@ if proc.poll() is None:
         proc.wait(timeout=2)
 
 print(json.dumps({
+    "cycledAgent": cycled_agent,
     "exitCode": proc.returncode,
     "output": output.decode(errors="replace"),
 }))
@@ -140,7 +147,11 @@ print(json.dumps({
       `pty harness failed\nstdout:\n${stdout}\nstderr:\n${stderr}`,
     );
   }
-  return JSON.parse(stdout) as { exitCode: number; output: string };
+  return JSON.parse(stdout) as {
+    cycledAgent: boolean;
+    exitCode: number;
+    output: string;
+  };
 }
 
 describe("CLI entrypoint", () => {
@@ -232,6 +243,7 @@ stages:
     });
 
     expect(result.exitCode).toBe(0);
+    expect(result.cycledAgent).toBe(true);
     expect(result.output).toContain("OpenAI-compatible backend URL:");
     expect(result.output).toContain("Unable to reach backend model endpoint");
     expect(result.output).not.toContain(`${backendUrl}/models`);
