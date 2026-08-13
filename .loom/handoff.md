@@ -1,5 +1,5 @@
-- **Goal & status** — Phase 8 UX work is active at `m8-1` / `t8-1-2`; Phase 8 is merged with 28 tasks remaining, and v0.1.1 is not released.
-- **Completed work** — Completed and committed `t8-1-1` as `50fa402`: real TTY sessions now use one persistent alternate-screen Ink tree with an observable view store and Ink-owned input queue; compiled PTY input, existing agent switching, tool-call output, conversation history, redaction, token accounting, and handoffs are verified, with typecheck, lint, and all 226 tests passing.
-- **Failed attempts** — The first implementation hung because Ink 7 coalesced `/exit` and its newline into one input chunk, and a synchronous React input ref alone did not fix it; parsing embedded CR, LF, and CRLF boundaries resolved the compiled-PTY regression. Repository status remains dirty only from pre-existing operator/support files.
+- **Goal & status** — Phase 8 UX work is active at `m8-1` / `t8-1-3`; Phase 8 is merged with 27 tasks remaining, and v0.1.1 is not released.
+- **Completed work** — Completed and committed `t8-1-2` as `3110f5d`: bare Tab now cycles agents immediately through the existing `/tab` controller without Enter, the compiled PTY proves Developer-to-Architect cycling, documentation is current, and typecheck, lint, and all 226 tests pass.
+- **Failed attempts** — The first focused test run failed because the new PTY assertion was accidentally inserted in the unrelated version test; moving it to the compiled first-run test fixed the test defect. Repository status remains dirty only from pre-existing operator/support files.
 - **Branch name** — main
-- **Next action** — Implement `t8-1-2` by wiring Ink Tab input to immediate agent cycling through the existing controller without requiring Enter.
+- **Next action** — Trace the backend response interfaces and implement `t8-1-3` token-by-token assistant streaming into `SessionViewStore` without changing non-TTY output semantics.
