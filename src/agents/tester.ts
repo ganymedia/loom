@@ -1,9 +1,10 @@
 import type {
   AgentContext,
+  AgentTurnOptions,
   AgentTurnResult,
   HandoffSummary,
 } from "@loom/agents/base";
-import { BaseAgent } from "@loom/agents/base";
+import { BaseAgent, createAgentTextDeltaProjector } from "@loom/agents/base";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
@@ -149,6 +150,7 @@ export class TesterAgent extends BaseAgent {
   override async runTurn(
     userInput: string,
     context: AgentContext,
+    options: AgentTurnOptions = {},
   ): Promise<AgentTurnResult> {
     const backend = await this.resolveBackend();
     const backendConfig = this.options.config.backends[backend.key];
@@ -170,6 +172,11 @@ export class TesterAgent extends BaseAgent {
       backend,
       backendConfig,
       messages,
+      ...(options.onTextDelta === undefined
+        ? {}
+        : {
+            onTextDelta: createAgentTextDeltaProjector(options.onTextDelta),
+          }),
       ...(this.options.fetchImpl === undefined
         ? {}
         : { fetchImpl: this.options.fetchImpl }),

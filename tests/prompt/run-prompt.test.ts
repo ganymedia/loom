@@ -66,6 +66,70 @@ describe("runPrompt", () => {
     expect(response.content).toBe("Hi");
   });
 
+  test("streams OpenAI-compatible SSE text deltas and usage", async () => {
+    const deltas: string[] = [];
+    const response = await runPrompt({
+      backend,
+      backendConfig,
+      messages: [{ role: "user", content: "Hello" }],
+      onTextDelta: (delta) => deltas.push(delta),
+      fetchImpl: async (_input, init) => {
+        expect(JSON.parse(String(init?.body))).toEqual({
+          model: "discovered-model",
+          messages: [{ role: "user", content: "Hello" }],
+          stream: true,
+          stream_options: { include_usage: true },
+        });
+        return new Response(
+          [
+            'data: {"choices":[{"delta":{"content":"Hel"}}]}',
+            "",
+            'data: {"choices":[{"delta":{"content":"lo"}}]}',
+            "",
+            'data: {"choices":[],"usage":{"prompt_tokens":3,"completion_tokens":2}}',
+            "",
+            "data: [DONE]",
+            "",
+          ].join("\n"),
+          { headers: { "content-type": "text/event-stream" } },
+        );
+      },
+    });
+
+    expect(deltas).toEqual(["Hel", "lo"]);
+    expect(response).toEqual({
+      content: "Hello",
+      usage: { promptTokens: 3, completionTokens: 2 },
+    });
+  });
+
+  test("fails loudly when a streaming response ends before DONE", async () => {
+    await expect(
+      runPrompt({
+        backend,
+        backendConfig,
+        messages: [{ role: "user", content: "Hello" }],
+        onTextDelta: () => {},
+        fetchImpl: async () =>
+          new Response(
+            'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n',
+          ),
+      }),
+    ).rejects.toThrow("before [DONE]");
+  });
+
+  test("rejects an oversized unterminated streaming event", async () => {
+    await expect(
+      runPrompt({
+        backend,
+        backendConfig,
+        messages: [{ role: "user", content: "Hello" }],
+        onTextDelta: () => {},
+        fetchImpl: async () => new Response("x".repeat(1_048_577)),
+      }),
+    ).rejects.toThrow("event was too large");
+  });
+
   test("fails loudly for unsupported backend types", async () => {
     await expect(
       runPrompt({

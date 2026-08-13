@@ -53,4 +53,23 @@ describe("SessionViewStore", () => {
       tokenPercent: 0.25,
     });
   });
+
+  test("updates and clears the live assistant region", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+
+    store.appendAssistantDelta("Developer", "Hel");
+    store.appendAssistantDelta("Developer", "lo");
+    expect(store.getSnapshot().liveAssistant).toEqual({
+      displayName: "Developer",
+      text: "Hello",
+    });
+
+    store.clearAssistantDelta();
+    expect(store.getSnapshot().liveAssistant).toBeUndefined();
+  });
 });

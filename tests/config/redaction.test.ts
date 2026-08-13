@@ -3,6 +3,7 @@ import {
   REDACTED_VALUE,
   configSensitiveValues,
   createConfigRedactor,
+  createStreamingConfigRedactor,
 } from "@loom/config/redaction";
 import { loomConfigSchema } from "@loom/config/schema";
 
@@ -43,5 +44,20 @@ describe("config redaction", () => {
     expect(output).not.toContain("header-secret");
     expect(output).not.toContain("query-secret");
     expect(output).toContain(REDACTED_VALUE);
+  });
+
+  test("does not expose sensitive values split across stream chunks", () => {
+    const redact = createStreamingConfigRedactor(config, {
+      LOOM_TEST_API_KEY: "environment-secret",
+    });
+    const output = [
+      redact.push("safe environment-"),
+      redact.push("secret after"),
+      redact.flush(),
+    ].join("");
+
+    expect(output).toBe(`safe ${REDACTED_VALUE} after`);
+    expect(output).not.toContain("environment-");
+    expect(output).not.toContain("secret");
   });
 });

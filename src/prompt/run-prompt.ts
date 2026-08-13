@@ -1,6 +1,9 @@
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import type { BackendConfig } from "@loom/config/schema";
 
+const MAX_STREAM_EVENT_BYTES = 1_048_576;
+const MAX_STREAM_CONTENT_LENGTH = 16_777_216;
+
 export type PromptRole = "system" | "user" | "assistant";
 
 export interface PromptMessage {
@@ -14,6 +17,7 @@ export interface RunPromptOptions {
   messages: PromptMessage[];
   fetchImpl?: FetchLike;
   env?: NodeJS.ProcessEnv;
+  onTextDelta?: (delta: string) => void;
 }
 
 export interface PromptUsage {
@@ -32,6 +36,14 @@ interface ChatCompletionResponse {
       content?: unknown;
     };
   }>;
+  usage?: {
+    prompt_tokens?: unknown;
+    completion_tokens?: unknown;
+  };
+}
+
+interface ChatCompletionChunk {
+  choices?: Array<{ delta?: { content?: unknown } }>;
   usage?: {
     prompt_tokens?: unknown;
     completion_tokens?: unknown;
@@ -94,6 +106,9 @@ export async function runPrompt(
       body: JSON.stringify({
         model: options.backend.model,
         messages: options.messages,
+        ...(options.onTextDelta === undefined
+          ? {}
+          : { stream: true, stream_options: { include_usage: true } }),
       }),
     });
   } catch (error) {
@@ -109,6 +124,10 @@ export async function runPrompt(
     throw new PromptRequestError(
       `Prompt request returned HTTP ${response.status}`,
     );
+  }
+
+  if (options.onTextDelta !== undefined) {
+    return await readStreamingResponse(response, options.onTextDelta);
   }
 
   let payload: ChatCompletionResponse;
@@ -134,4 +153,93 @@ export async function runPrompt(
       completionTokens: usageNumber(payload.usage?.completion_tokens),
     },
   };
+}
+
+async function readStreamingResponse(
+  response: Response,
+  onTextDelta: (delta: string) => void,
+): Promise<PromptResponse> {
+  if (response.body === null) {
+    throw new PromptRequestError("Streaming prompt response had no body");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = "";
+  let content = "";
+  let sawDone = false;
+  let usage: PromptUsage = { promptTokens: 0, completionTokens: 0 };
+
+  const processEvent = (event: string): void => {
+    const data = event
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice("data:".length).trimStart())
+      .join("\n");
+    if (data.length === 0) return;
+    if (data === "[DONE]") {
+      sawDone = true;
+      return;
+    }
+
+    let chunk: ChatCompletionChunk;
+    try {
+      chunk = JSON.parse(data) as ChatCompletionChunk;
+    } catch (error) {
+      throw new PromptRequestError(
+        "Streaming prompt response was not valid JSON",
+        {
+          cause: error,
+        },
+      );
+    }
+    const delta = chunk.choices?.[0]?.delta?.content;
+    if (typeof delta === "string" && delta.length > 0) {
+      if (content.length + delta.length > MAX_STREAM_CONTENT_LENGTH) {
+        throw new PromptRequestError("Streaming prompt response was too large");
+      }
+      content += delta;
+      onTextDelta(delta);
+    }
+    if (chunk.usage !== undefined) {
+      usage = {
+        promptTokens: usageNumber(chunk.usage.prompt_tokens),
+        completionTokens: usageNumber(chunk.usage.completion_tokens),
+      };
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      pending += decoder.decode(value, { stream: !done });
+      const events = pending.split(/\r?\n\r?\n/);
+      pending = events.pop() ?? "";
+      if (pending.length > MAX_STREAM_EVENT_BYTES) {
+        throw new PromptRequestError("Streaming prompt event was too large");
+      }
+      for (const event of events) processEvent(event);
+      if (done) break;
+    }
+    if (pending.trim().length > 0) processEvent(pending);
+  } catch (error) {
+    if (error instanceof PromptRequestError) throw error;
+    throw new PromptRequestError("Streaming prompt response failed", {
+      cause: error,
+    });
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!sawDone) {
+    throw new PromptRequestError(
+      "Streaming prompt response ended before [DONE]",
+    );
+  }
+  if (content.length === 0) {
+    throw new PromptRequestError(
+      "Prompt response did not include message content",
+    );
+  }
+  return { content, usage };
 }

@@ -5,6 +5,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 
 export interface SessionViewState {
   activeAgentName: BuiltInAgentName;
+  liveAssistant?: { displayName: string; text: string };
   output: readonly string[];
   sessionId: string;
   tokenPercent: number;
@@ -43,6 +44,25 @@ export class SessionViewStore {
       ...this.#state,
       output: [...this.#state.output, message],
     });
+  }
+
+  appendAssistantDelta(displayName: string, delta: string): void {
+    const liveAssistant = this.#state.liveAssistant;
+    this.#setState({
+      ...this.#state,
+      liveAssistant: {
+        displayName,
+        text:
+          liveAssistant?.displayName === displayName
+            ? liveAssistant.text + delta
+            : delta,
+      },
+    });
+  }
+
+  clearAssistantDelta(): void {
+    const { liveAssistant: _liveAssistant, ...state } = this.#state;
+    this.#setState(state);
   }
 
   updateStatus(activeAgentName: BuiltInAgentName, tokenPercent: number): void {
@@ -120,6 +140,11 @@ export function SessionApp({
           {state.output.map((message, index) => (
             <Text key={`${index}-${message}`}>{message.trimEnd()}</Text>
           ))}
+          {state.liveAssistant === undefined ? null : (
+            <Text>
+              {state.liveAssistant.displayName}: {state.liveAssistant.text}
+            </Text>
+          )}
         </Box>
         <StatusBar
           sessionId={state.sessionId}

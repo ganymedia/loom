@@ -44,6 +44,68 @@ export interface AgentTurnResult {
   completionTokens: number;
 }
 
+export interface AgentTurnOptions {
+  onTextDelta?: (delta: string) => void;
+}
+
+export function createAgentTextDeltaProjector(
+  onTextDelta: (delta: string) => void,
+): (delta: string) => void {
+  let raw = "";
+  let emittedLength = 0;
+  let mode: "unknown" | "plain" | "envelope" = "unknown";
+
+  return (delta: string): void => {
+    raw += delta;
+    if (mode === "unknown") {
+      const firstContent = raw.trimStart()[0];
+      if (firstContent === undefined) return;
+      mode = firstContent === "{" ? "envelope" : "plain";
+    }
+
+    const visible = mode === "plain" ? raw : envelopeContentPrefix(raw);
+    if (visible.length > emittedLength) {
+      onTextDelta(visible.slice(emittedLength));
+      emittedLength = visible.length;
+    }
+  };
+}
+
+function envelopeContentPrefix(raw: string): string {
+  const match = /"content"\s*:\s*"/.exec(raw);
+  if (match === null) return "";
+
+  const start = match.index + match[0].length;
+  let encoded = "";
+  for (let index = start; index < raw.length; index += 1) {
+    const character = raw[index];
+    if (character === '"') break;
+    if (character !== "\\") {
+      encoded += character;
+      continue;
+    }
+
+    const escaped = raw[index + 1];
+    if (escaped === undefined) break;
+    if (escaped === "u") {
+      const unicodeEscape = raw.slice(index + 2, index + 6);
+      if (!/^[0-9a-fA-F]{4}$/.test(unicodeEscape)) break;
+      encoded += `\\u${unicodeEscape}`;
+      index += 5;
+      continue;
+    }
+    if (!/["\\/bfnrt]/.test(escaped)) break;
+    encoded += `\\${escaped}`;
+    index += 1;
+  }
+
+  try {
+    return JSON.parse(`"${encoded}"`) as string;
+  } catch {
+    return "";
+  }
+}
+
 export abstract class BaseAgent {
   abstract readonly name: string;
   abstract readonly displayName: string;
@@ -59,6 +121,7 @@ export abstract class BaseAgent {
   abstract runTurn(
     userInput: string,
     context: AgentContext,
+    options?: AgentTurnOptions,
   ): Promise<AgentTurnResult>;
 
   abstract generateHandoffSummary(

@@ -112,6 +112,36 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls[0]?.result.output).toBe("hello loom");
   });
 
+  test("streams projected envelope content while preserving the completed result", async () => {
+    const deltas: string[] = [];
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        return new Response(
+          [
+            `data: ${JSON.stringify({ choices: [{ delta: { content: '{"content":"Hel' } }] })}`,
+            "",
+            `data: ${JSON.stringify({ choices: [{ delta: { content: 'lo","toolCalls":[]}' } }] })}`,
+            "",
+            "data: [DONE]",
+            "",
+          ].join("\n"),
+        );
+      },
+    });
+
+    const result = await agent.runTurn("Stream this", context, {
+      onTextDelta: (delta) => deltas.push(delta),
+    });
+
+    expect(deltas.join("")).toBe("Hello");
+    expect(result.content).toBe("Hello");
+    expect(result.toolCalls).toEqual([]);
+  });
+
   test("rejects unknown tool calls without executing them", async () => {
     const agent = new DeveloperAgent({
       config,

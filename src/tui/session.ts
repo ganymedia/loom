@@ -10,7 +10,10 @@ import { SecurityAgent } from "@loom/agents/security";
 import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
-import { createConfigRedactor } from "@loom/config/redaction";
+import {
+  createConfigRedactor,
+  createStreamingConfigRedactor,
+} from "@loom/config/redaction";
 import type { LoomConfig } from "@loom/config/schema";
 import {
   type HandoffDocument,
@@ -280,9 +283,44 @@ async function runAgentPrompt(
     conversationHistory: AgentMessage[];
   },
   writeOutput: (message: string) => void,
+  viewStore: SessionViewStore | undefined,
+  config: LoomConfig,
 ): Promise<AgentTurnResult> {
-  const turn = await agent.runTurn(prompt, context);
-  writeOutput(`${agent.displayName}: ${turn.content}\n`);
+  const stream =
+    viewStore === undefined
+      ? undefined
+      : {
+          redactor: createStreamingConfigRedactor(config),
+          store: viewStore,
+        };
+  let turn: AgentTurnResult;
+  try {
+    turn = await agent.runTurn(prompt, context, {
+      ...(stream === undefined
+        ? {}
+        : {
+            onTextDelta: (delta: string) => {
+              const safeDelta = stream.redactor.push(delta);
+              if (safeDelta.length > 0) {
+                stream.store.appendAssistantDelta(agent.displayName, safeDelta);
+              }
+            },
+          }),
+    });
+  } catch (error) {
+    stream?.store.clearAssistantDelta();
+    throw error;
+  }
+  if (stream === undefined) {
+    writeOutput(`${agent.displayName}: ${turn.content}\n`);
+  } else {
+    const finalDelta = stream.redactor.flush();
+    if (finalDelta.length > 0) {
+      stream.store.appendAssistantDelta(agent.displayName, finalDelta);
+    }
+    stream.store.clearAssistantDelta();
+    writeOutput(`${agent.displayName}: ${turn.content}\n`);
+  }
   for (const toolResultLine of formatToolCallResults(turn)) {
     writeOutput(`${toolResultLine}\n`);
   }
@@ -440,6 +478,8 @@ export async function startSession(
           options.initialPrompt,
           context,
           writeOutput,
+          viewStore,
+          config,
         );
         sessionManager.recordTurn({
           promptTokens: turn.promptTokens,
@@ -511,6 +551,8 @@ export async function startSession(
             prompt,
             context,
             writeOutput,
+            viewStore,
+            config,
           );
           sessionManager.recordTurn({
             promptTokens: turn.promptTokens,

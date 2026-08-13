@@ -147,7 +147,10 @@ unless a genuine flaw is found during implementation — if one needs to
 change, update this spec and note the change at the bottom of this document.
 
 - **`agents/base.ts`** — `BaseAgent`, `AgentContext`, `AgentTurnResult`,
-  `HandoffSummary`, `SubAgentSpawnRule`.
+  `AgentTurnOptions`, `HandoffSummary`, `SubAgentSpawnRule`. As of
+  2026-08-13, `BaseAgent.runTurn()` accepts optional `AgentTurnOptions` so
+  interactive renderers can receive safe assistant-text deltas while the
+  completed `AgentTurnResult` contract remains unchanged.
 - **`tools/base.ts`** — `ToolDefinition`, `ToolResult`, `Capability`,
   `ToolAccessPolicy`, `isToolPermitted()`.
 - **`pipeline/types.ts`** — `PipelineStage` (discriminated union of the 5
@@ -331,3 +334,8 @@ Do not consider LOOM feature-complete until every task in
   embedding generation for recall, live Session Continuity verification,
   and production binary packaging. Authoritative task breakdown lives in
   `PHASE-5-ADDENDUM.yaml`.
+- v0.8 — Documented the operator-approved 2026-08-13 `AgentTurnOptions`
+  interface extension used for real OpenAI-compatible SSE response streaming.
+  This is a narrow exception to Phase 8's rendering-only scope because the
+  required streaming transport seam did not previously exist; completed agent
+  results, tool execution, and non-interactive prompt behavior remain unchanged.
