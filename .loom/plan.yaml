@@ -1,10 +1,10 @@
 name: LOOM
-version: 0.1.0
+version: 0.1.1
 created: 2026-07-07
 updated: 2026-08-13
-current_phase: phase-7
-current_milestone: m7-4
-current_task: t7-4-2
+current_phase: phase-8
+current_milestone: m8-1
+current_task: t8-1-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1257,3 +1257,310 @@ phases:
             token_estimate: small
             dependencies:
               - m7-3
+  - id: phase-8
+    name: Full-screen Ink TUI and look-and-feel polish (0.1.1)
+    description: UX and interaction-model release following completed Phase 7. Replace
+      the readline loop with a persistent Ink application and deliver the associated
+      look-and-feel improvements without adding backend capability.
+    exit_criterion: LOOM runs as a persistent, live-redrawing full-screen terminal
+      application matching the interaction feel of comparable tools (instant keybindings,
+      streaming output, pinned input, no reprinted frames), every polish item is implemented
+      and verified in a real terminal by the operator, independent external testing and
+      sanitized-findings remediation are complete, and v0.1.1 is released.
+    status: in_progress
+    token_estimate: xlarge
+    milestones:
+      - id: m8-1
+        name: Rebuild session.ts as a persistent Ink render tree
+        description: Developer-owned core architectural change. A single Ink render()
+          call owns the terminal for the session lifetime; commands update the existing
+          frame instead of reprinting the tab strip or status bar as new blocks.
+        status: in_progress
+        token_estimate: xlarge
+        tasks:
+          - id: t8-1-1
+            name: Replace the readline loop in src/tui/session.ts with a top-level Ink render() app
+            description: Preserve all existing agent-switching, tool-call, and conversation-state
+              logic; this is a rendering-layer rewrite, not a behavior change. AgentContext,
+              SessionManager, and handoff triggers must work identically to today.
+            status: in_progress
+            token_estimate: large
+            dependencies: []
+          - id: t8-1-2
+            name: Add useInput-based keybindings with instant Tab agent cycling
+            description: Use Ink input handling so Tab cycles agents immediately without
+              requiring Enter.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-1-1
+          - id: t8-1-3
+            name: Stream assistant responses into component state token-by-token
+            description: Update live component state for each token instead of printing
+              only a completed assistant response block.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-1-1
+          - id: t8-1-4
+            name: Use Static scrollback with a live turn region and pinned input bar
+            description: Render completed scrollback through Static while retaining a live
+              region for the in-progress turn and a pinned input bar.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-1-1
+          - id: t8-1-5
+            name: Handle resize, exits, and non-TTY fallback
+            description: Handle terminal resize and Ctrl+C or Esc exit without regressing
+              non-TTY input. Piped and scripted usage, CI, and --prompt one-shot mode must
+              continue to work without a real terminal.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-1-1
+      - id: m8-2
+        name: Slash command popup list, replacing tab-only discovery
+        description: Developer-owned work after m8-1. Typing / as the first input character
+          shows a live-filtered, navigable list of matching commands and agents near the
+          input line so users do not need to know exact syntax or cycle blindly with Tab.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t8-2-1
+            name: Show a popup list of available slash commands as soon as / is typed
+            description: Include /agent with one entry per built-in and installed agent,
+              /tab, /agents, /exit, /quit, and future slash commands. Render the popup
+              inline in the Ink tree, not in a separate terminal region.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t8-2-2
+            name: Filter the slash command list live
+            description: Filter matching popup entries as characters are typed after /.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - t8-2-1
+          - id: t8-2-3
+            name: Navigate and select slash command popup entries
+            description: Navigate with Up and Down, and select with Enter or a mouse click
+              where supported. Tab may remain an alternate accept, but Enter or click is
+              primary so discovery never relies on invisible Tab cycling.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-2-1
+          - id: t8-2-4
+            name: Close the slash command popup with Esc
+            description: Esc closes the popup without submitting or clearing typed input.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - t8-2-1
+      - id: m8-3
+        name: Distinguish thinking, tool-running, and idle states
+        description: Developer-owned live feedback work after m8-1 that makes thinking,
+          tool execution, and idle states visibly distinct.
+        status: pending
+        token_estimate: medium
+        tasks:
+          - id: t8-3-1
+            name: Add a thinking indicator before the first streamed token
+            description: Show a spinner or animated dots immediately when a prompt is
+              submitted and before the first streamed token arrives.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t8-3-2
+            name: Add a distinct tool-running indicator
+            description: Show tool execution with a visual state separate from the thinking
+              indicator.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-3-1
+      - id: m8-4
+        name: Scrollback hierarchy, markdown rendering, and file-write diffs
+        description: Developer-owned reading-density and hierarchy work after m8-1.
+        status: pending
+        token_estimate: xlarge
+        tasks:
+          - id: t8-4-1
+            name: Visually recede completed turns
+            description: Dim or otherwise recede completed turns so the current exchange
+              remains the clear focus.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t8-4-2
+            name: Render styled markdown and syntax-highlighted code blocks
+            description: Render real syntax-highlighted code blocks and styled bold text
+              and headers. Evaluate an existing Ink-compatible terminal Markdown library
+              before hand-rolling one.
+            status: pending
+            token_estimate: large
+            dependencies: []
+          - id: t8-4-3
+            name: Show file writes as red and green diffs
+            description: Replace File write ok with +/- line diffs. This high-impact trust
+              signal requires the file-writer tool to capture before and after content,
+              not only a success boolean.
+            status: pending
+            token_estimate: large
+            dependencies: []
+      - id: m8-5
+        name: Multi-line input and command history
+        description: Developer-owned input-experience work after m8-1.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t8-5-1
+            name: Support multi-line input with submit and newline hints
+            description: Support Shift+Enter or an equivalent newline action and visibly
+              distinguish it from prompt submission.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t8-5-2
+            name: Add Up-arrow command history
+            description: Reimplement the prior readline behavior so Up recalls previous
+              prompts.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+      - id: m8-6
+        name: Surface Session Continuity, recall, and sub-agent activity
+        description: Developer-owned differentiator-visibility work after m8-1.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t8-6-1
+            name: Show a status-line notice when a handoff triggers
+            description: Make handoff generation visible instead of silently writing it
+              to disk.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t8-6-2
+            name: Indicate when inject or recall uses prior-session context
+            description: Add a visual signal whenever inject or recall pulls in context
+              from a prior session.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+          - id: t8-6-3
+            name: Surface sub-agent activity in a live tray
+            description: Add the small live sub-agent activity tray from the original
+              design specification; this activity is invisible in the shipped product.
+            status: pending
+            token_estimate: medium
+            dependencies: []
+      - id: m8-7
+        name: Cursor, color-coded results, and end-of-turn summaries
+        description: Developer-owned small polish work after m8-1.
+        status: pending
+        token_estimate: medium
+        tasks:
+          - id: t8-7-1
+            name: Add a real blinking input cursor
+            description: Display a real blinking cursor in the input line.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t8-7-2
+            name: Color-code tool results by outcome
+            description: Render success in green and failures in amber or red instead of
+              plain text.
+            status: pending
+            token_estimate: small
+            dependencies: []
+          - id: t8-7-3
+            name: Set apart the Developer end-of-turn summary
+            description: Visually distinguish the what-changed summary that the Developer
+              agent already produces.
+            status: pending
+            token_estimate: small
+            dependencies: []
+      - id: m8-8
+        name: Independent external testing and findings remediation
+        description: External release gate after m8-1 through m8-7 and before m8-9. A
+          tester who is not the operator and lacks deep project context runs USER_TESTING.md
+          against the completed full-screen UX; all resulting reports are sanitized before
+          they are recorded, triaged, and addressed. Deferred Phase 7 testing remains
+          incomplete until this milestone is actually performed.
+        status: pending
+        token_estimate: large
+        tasks:
+          - id: t8-8-1
+            name: Run USER_TESTING.md with an independent external tester
+            description: A tester who is not the operator and has no deep project context
+              must run the guide against the completed full-screen UX after m8-1 through
+              m8-7. Record only sanitized findings and do not substitute operator testing.
+            status: pending
+            token_estimate: large
+            dependencies:
+              - m8-1
+              - m8-2
+              - m8-3
+              - m8-4
+              - m8-5
+              - m8-6
+              - m8-7
+          - id: t8-8-2
+            name: Triage and address all sanitized external-test findings
+            description: Review every sanitized finding, fix product or guide defects, and
+              document any explicit disposition before release work begins.
+            status: pending
+            token_estimate: large
+            dependencies:
+              - t8-8-1
+      - id: m8-9
+        name: Real-terminal verification and 0.1.1 release
+        description: Tester-led final milestone after m8-1 through m8-8. The operator must
+          personally use the full-screen TUI in a real terminal, confirm every Phase 8 item,
+          and publish v0.1.1 by following RELEASE.md exactly as for v0.1.0.
+        status: pending
+        token_estimate: xlarge
+        tasks:
+          - id: t8-9-1
+            name: Run full regression and real end-to-end Phase 8 verification
+            description: Run bun run typecheck, bun run lint, and bun test, plus a real
+              end-to-end session covering every m8-1 through m8-7 item. Begin only after
+              independent external testing and all sanitized findings are addressed.
+            status: pending
+            token_estimate: large
+            dependencies:
+              - m8-8
+          - id: t8-9-2
+            name: Update CHANGELOG.md for the v0.1.1 interaction-model change
+            description: State plainly that v0.1.1 changes the core interaction model and
+              is not a silent patch.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - t8-9-1
+          - id: t8-9-3
+            name: Bump package.json version to 0.1.1
+            description: Set package.json to the Phase 8 release version.
+            status: pending
+            token_estimate: small
+            dependencies:
+              - t8-9-1
+          - id: t8-9-4
+            name: Follow RELEASE.md steps 1-8 for v0.1.1
+            description: Publish v0.1.1, including unauthenticated live-install verification
+              from outside the repository.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-9-2
+              - t8-9-3
+          - id: t8-9-5
+            name: Operator dry run from the published v0.1.1 binary
+            description: The operator must run the full-screen TUI from the published
+              v0.1.1 binary, not local build artifacts.
+            status: pending
+            token_estimate: medium
+            dependencies:
+              - t8-9-4

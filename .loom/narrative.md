@@ -435,3 +435,7 @@ Decision: document that LOOM is not accepting external code contributions or pul
 ## 2026-08-13 — Phase 7 external-test gate deferred
 
 Decision: move independent external testing and findings triage out of Phase 7 instead of claiming they passed, because the operator is not ready to expose the current minimized interaction model to another tester and Phase 8 exists specifically to implement the user-testing feedback already received. The two gates will be preserved in Phase 8 before the v0.1.1 release; no independent test evidence exists yet. With the published v0.1.0 release, public issue intake, and explicit contribution policy complete, `m7-4` and Phase 7 are closed with 0 tasks remaining. This is a deliberate rescope, not completion of the deferred testing.
+
+## 2026-08-13 — Phase 8 plan activation
+
+Decision: merge the authoritative root `PHASE-8-ADDENDUM.yaml` into `.loom/plan.yaml` after completed Phase 7 and activate `phase-8` / `m8-1` / `t8-1-1`. Phase 8 has exactly 29 tasks remaining and v0.1.1 is unreleased. The deferred independent gate is placed after UX milestones `m8-1` through `m8-7` and before the final release milestone: a tester who is not the operator and lacks deep project context must run `USER_TESTING.md` against the completed full-screen UX, then all sanitized findings must be triaged and addressed before release.
