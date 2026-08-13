@@ -1,10 +1,10 @@
 name: LOOM
 version: 0.1.0
 created: 2026-07-07
-updated: 2026-08-07
+updated: 2026-08-13
 current_phase: phase-7
-current_milestone: m7-3
-current_task: t7-3-2
+current_milestone: m7-4
+current_task: t7-4-3
 phases:
   - id: phase-1
     name: Foundation
@@ -1252,7 +1252,7 @@ phases:
             name: Document the external contribution policy
             description: Write CONTRIBUTING.md if external contributions are in scope;
               otherwise explicitly document that they are not yet accepted.
-            status: pending
+            status: completed
             token_estimate: small
             dependencies:
               - m7-3
