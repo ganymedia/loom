@@ -439,3 +439,7 @@ Decision: move independent external testing and findings triage out of Phase 7 i
 ## 2026-08-13 — Phase 8 plan activation
 
 Decision: merge the authoritative root `PHASE-8-ADDENDUM.yaml` into `.loom/plan.yaml` after completed Phase 7 and activate `phase-8` / `m8-1` / `t8-1-1`. Phase 8 has exactly 29 tasks remaining and v0.1.1 is unreleased. The deferred independent gate is placed after UX milestones `m8-1` through `m8-7` and before the final release milestone: a tester who is not the operator and lacks deep project context must run `USER_TESTING.md` against the completed full-screen UX, then all sanitized findings must be triaged and addressed before release.
+
+## 2026-08-13 — Phase 8 activation handoff summary
+
+Phase 7 is complete with 0 tasks remaining. Phase 8 is merged with 29 tasks remaining and active at `m8-1` / `t8-1-1`; v0.1.1 has not been released. This session committed the external-contribution policy as `c6a96af`, the honest deferral of independent testing to Phase 8 as `2c90d3d`, and Phase 8 activation as `338d118`. Full verification passed with `bun run typecheck`, `bun run lint`, and `bun test` (224 passing tests). The next executable action is to read `src/tui/session.ts` and its tests before designing the persistent Ink render-tree boundary; no Phase 8 implementation began after this handoff.
