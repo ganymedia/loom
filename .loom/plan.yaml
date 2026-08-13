@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-13
 current_phase: phase-7
 current_milestone: m7-4
-current_task: t7-4-3
+current_task: t7-4-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1125,10 +1125,11 @@ phases:
     name: Production release readiness
     description: Turn the installable, usable LOOM CLI into a versioned public release
       that users can trust and find support for.
-    exit_criterion: LOOM v1 is tagged, published as a GitHub Release with working install
-      instructions verified by a stranger, has a changelog and license, and has a
-      defined process for receiving and triaging real user feedback.
-    status: in_progress
+    exit_criterion: LOOM v0.1.0 is tagged, published as a GitHub Release with working
+      install instructions, has a changelog and license, and has a defined process for
+      receiving and triaging real user feedback. Independent external testing is deferred
+      to the post-UX Phase 8 release gate.
+    status: completed
     token_estimate: xlarge
     milestones:
       - id: m7-1
@@ -1238,7 +1239,7 @@ phases:
         name: Real user feedback loop
         description: Define where users report problems and how incoming reports are
           triaged before the first external report arrives.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t7-4-1
@@ -1256,19 +1257,3 @@ phases:
             token_estimate: small
             dependencies:
               - m7-3
-          - id: t7-4-3
-            name: Recruit an independent external tester
-            description: Have at least one tester who is not the operator and lacks deep
-              project context run USER_TESTING.md independently.
-            status: pending
-            token_estimate: medium
-            dependencies:
-              - m7-3
-          - id: t7-4-4
-            name: Triage and address external-test findings
-            description: Resolve findings from the independent user test before considering
-              v1 stable.
-            status: pending
-            token_estimate: large
-            dependencies:
-              - t7-4-3

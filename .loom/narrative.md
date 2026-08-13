@@ -431,3 +431,7 @@ Phase 6 remediation `m6-6` is merged and complete with 0 tasks remaining. Phase 
 ## 2026-08-13 — External contribution policy
 
 Decision: document that LOOM is not accepting external code contributions or pull requests for the foreseeable future, because the operator confirmed maintainers cannot yet support the required review workflow. `CONTRIBUTING.md` directs users to the structured bug and feature issue forms, warns that issues are public, and prohibits secrets, backend URLs, configuration files, raw logs, prompts, model output, CUI, and other sensitive data. The plan's stale top-level pointer was corrected while advancing `t7-4-2`; Phase 7 now has 2 tasks remaining and is active at `m7-4` / `t7-4-3`. The independent external-test gate is not complete without an actual tester's results.
+
+## 2026-08-13 — Phase 7 external-test gate deferred
+
+Decision: move independent external testing and findings triage out of Phase 7 instead of claiming they passed, because the operator is not ready to expose the current minimized interaction model to another tester and Phase 8 exists specifically to implement the user-testing feedback already received. The two gates will be preserved in Phase 8 before the v0.1.1 release; no independent test evidence exists yet. With the published v0.1.0 release, public issue intake, and explicit contribution policy complete, `m7-4` and Phase 7 are closed with 0 tasks remaining. This is a deliberate rescope, not completion of the deferred testing.
