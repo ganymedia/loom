@@ -43,3 +43,13 @@ export const sessionSlashCommandEntries: readonly SlashCommandEntry[] = [
 export function shouldShowSlashCommandPopup(input: string): boolean {
   return input.startsWith("/");
 }
+
+export function filterSlashCommandEntries(
+  entries: readonly SlashCommandEntry[],
+  input: string,
+): readonly SlashCommandEntry[] {
+  const normalizedInput = input.toLowerCase();
+  return entries.filter((entry) =>
+    entry.command.toLowerCase().startsWith(normalizedInput),
+  );
+}

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  filterSlashCommandEntries,
   sessionSlashCommandEntries,
   sessionSlashCommands,
   shouldShowSlashCommandPopup,
@@ -31,5 +32,31 @@ describe("session slash commands", () => {
     expect(shouldShowSlashCommandPopup("/agent")).toBe(true);
     expect(shouldShowSlashCommandPopup("text /")).toBe(false);
     expect(shouldShowSlashCommandPopup("")).toBe(false);
+  });
+
+  test("filters executable command prefixes case-insensitively", () => {
+    expect(
+      filterSlashCommandEntries(sessionSlashCommandEntries, "/agent ").map(
+        (entry) => entry.command,
+      ),
+    ).toEqual([
+      "/agent developer",
+      "/agent architect",
+      "/agent tester",
+      "/agent security",
+    ]);
+    expect(
+      filterSlashCommandEntries(sessionSlashCommandEntries, "/AGENT T").map(
+        (entry) => entry.command,
+      ),
+    ).toEqual(["/agent tester"]);
+    expect(
+      filterSlashCommandEntries(sessionSlashCommandEntries, "/q").map(
+        (entry) => entry.command,
+      ),
+    ).toEqual(["/quit"]);
+    expect(filterSlashCommandEntries(sessionSlashCommandEntries, "/x")).toEqual(
+      [],
+    );
   });
 });

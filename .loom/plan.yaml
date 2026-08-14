@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
 current_milestone: m8-2
-current_task: t8-2-2
+current_task: t8-2-3
 phases:
   - id: phase-1
     name: Foundation
@@ -1338,7 +1338,7 @@ phases:
           - id: t8-2-2
             name: Filter the slash command list live
             description: Filter matching popup entries as characters are typed after /.
-            status: in_progress
+            status: completed
             token_estimate: small
             dependencies:
               - t8-2-1
@@ -1347,7 +1347,7 @@ phases:
             description: Navigate with Up and Down, and select with Enter or a mouse click
               where supported. Tab may remain an alternate accept, but Enter or click is
               primary so discovery never relies on invisible Tab cycling.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies:
               - t8-2-1

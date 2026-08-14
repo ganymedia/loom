@@ -104,6 +104,15 @@ describe("SessionApp", () => {
     }
   });
 
+  test("keeps the popup visible when no commands match", () => {
+    const popup = renderToString(
+      createElement(SlashCommandPopup, { entries: [] }),
+    );
+
+    expect(popup).toContain("Commands");
+    expect(popup).toContain("No matching commands");
+  });
+
   test("renders completed output above the live frame", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",

@@ -6,6 +6,7 @@ import {
 } from "@loom/tui/components";
 import {
   type SlashCommandEntry,
+  filterSlashCommandEntries,
   sessionSlashCommandEntries,
   shouldShowSlashCommandPopup,
 } from "@loom/tui/slash-commands";
@@ -109,12 +110,16 @@ export function SlashCommandPopup({
       <Text color={theme.textSecondary} bold>
         Commands
       </Text>
-      {entries.map((entry) => (
-        <Box key={entry.command} gap={1}>
-          <Text color={theme.info}>{entry.command}</Text>
-          <Text color={theme.textTertiary}>{entry.description}</Text>
-        </Box>
-      ))}
+      {entries.length === 0 ? (
+        <Text color={theme.textTertiary}>No matching commands</Text>
+      ) : (
+        entries.map((entry) => (
+          <Box key={entry.command} gap={1}>
+            <Text color={theme.info}>{entry.command}</Text>
+            <Text color={theme.textTertiary}>{entry.description}</Text>
+          </Box>
+        ))
+      )}
     </Box>
   );
 }
@@ -203,7 +208,12 @@ export function SessionApp({
             activeAgentName={state.activeAgentName}
           />
           {shouldShowSlashCommandPopup(input) ? (
-            <SlashCommandPopup entries={sessionSlashCommandEntries} />
+            <SlashCommandPopup
+              entries={filterSlashCommandEntries(
+                sessionSlashCommandEntries,
+                input,
+              )}
+            />
           ) : null}
           <Box paddingX={1}>
             <Text>&gt; {input}</Text>

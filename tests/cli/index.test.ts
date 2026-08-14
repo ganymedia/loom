@@ -122,11 +122,11 @@ while time.time() < deadline:
             os.write(master, f"{backend_url}\n".encode())
             sent_url = True
         if sent_url and not sent_popup_request and "Enter follow-up prompts." in text:
-            os.write(master, b"/")
+            os.write(master, b"/agent t")
             sent_popup_request = True
-        if sent_popup_request and not popup_shown and "Switch to Developer agent" in text:
+        if sent_popup_request and not popup_shown and "Switch to Tester agent" in text:
             popup_shown = True
-            os.write(master, b"\x7f")
+            os.write(master, b"\x7f" * len("/agent t"))
         if sent_url and popup_shown and not sent_resize and "Enter follow-up prompts." in text:
             fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 40, 0, 0))
             sent_resize = True
@@ -320,6 +320,7 @@ stages:
     expect(escapeResult.popupShown).toBe(true);
     expect(escapeResult.resizeRendered).toBe(true);
     expect(escapeResult.cycledAgent).toBe(true);
+    expect(escapeResult.output).toContain("Switch to Tester agent");
     expect(escapeResult.output).toContain("OpenAI-compatible backend URL:");
     expect(escapeResult.output).toContain(
       "Unable to reach backend model endpoint",
