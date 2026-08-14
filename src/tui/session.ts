@@ -1,3 +1,4 @@
+import { fstatSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { ArchitectAgent } from "@loom/agents/architect";
 import type {
@@ -110,11 +111,17 @@ export async function runSessionSmoke(
   return result;
 }
 
-async function* readStdinLines(): AsyncIterable<string> {
+function hasPipedStdin(): boolean {
+  if (process.stdin.isTTY === true) return false;
+  const stdinStats = fstatSync(process.stdin.fd);
+  return stdinStats.isFIFO() || stdinStats.isFile() || stdinStats.isSocket();
+}
+
+async function* readStdinLines(terminal: boolean): AsyncIterable<string> {
   const reader = createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: true,
+    terminal,
   });
 
   try {
@@ -127,10 +134,12 @@ async function* readStdinLines(): AsyncIterable<string> {
 }
 
 class SessionInputQueue implements AsyncIterable<string> {
+  #closed = false;
   readonly #lines: string[] = [];
   readonly #waiters: Array<(result: IteratorResult<string>) => void> = [];
 
   push(line: string): void {
+    if (this.#closed) return;
     const waiter = this.#waiters.shift();
     if (waiter === undefined) {
       this.#lines.push(line);
@@ -139,11 +148,21 @@ class SessionInputQueue implements AsyncIterable<string> {
     }
   }
 
+  close(): void {
+    if (this.#closed) return;
+    this.#closed = true;
+    this.#lines.length = 0;
+    for (const waiter of this.#waiters.splice(0)) {
+      waiter({ value: undefined, done: true });
+    }
+  }
+
   [Symbol.asyncIterator](): AsyncIterator<string> {
     return {
       next: async (): Promise<IteratorResult<string>> => {
         const line = this.#lines.shift();
         if (line !== undefined) return { value: line, done: false };
+        if (this.#closed) return { value: undefined, done: true };
         return await new Promise<IteratorResult<string>>((resolve) => {
           this.#waiters.push(resolve);
         });
@@ -373,6 +392,13 @@ export async function startSession(
     options.writeOutput === undefined &&
     process.stdin.isTTY === true &&
     process.stdout.isTTY === true;
+  const pipedInput =
+    options.initialPrompt === undefined &&
+    options.input === undefined &&
+    options.writeOutput === undefined &&
+    hasPipedStdin()
+      ? readStdinLines(false)
+      : undefined;
   const sessionId = crypto.randomUUID();
   const initialAgentName = options.initialAgent ?? "developer";
   const viewStore = usePersistentInk
@@ -390,11 +416,12 @@ export async function startSession(
       : render(
           createElement(SessionApp, {
             onCycleAgent: () => inkInput?.push("/tab"),
+            onExit: () => inkInput?.close(),
             onSubmit: (line: string) => inkInput?.push(line),
             store: viewStore,
             themeId: config.defaults.theme,
           }),
-          { alternateScreen: true },
+          { alternateScreen: true, exitOnCtrlC: false, interactive: true },
         );
   const outputSink =
     options.writeOutput ?? ((message: string) => process.stdout.write(message));
@@ -428,6 +455,7 @@ export async function startSession(
   const shouldRunAgent =
     (options.initialPrompt !== undefined && options.initialPrompt.length > 0) ||
     options.input !== undefined ||
+    pipedInput !== undefined ||
     (options.interactive ??
       (options.initialPrompt === undefined && process.stdin.isTTY === true));
 
@@ -500,7 +528,10 @@ export async function startSession(
       const input =
         options.input ??
         inkInput ??
-        (interactive ? readStdinLines() : undefined);
+        pipedInput ??
+        (interactive
+          ? readStdinLines(process.stdout.isTTY === true)
+          : undefined);
       if (input !== undefined) {
         writeOutput(
           "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.\n",
@@ -578,6 +609,7 @@ export async function startSession(
   }
 
   if (ink !== undefined) {
+    inkInput?.close();
     await ink.waitUntilRenderFlush();
     ink.unmount();
     await ink.waitUntilExit();

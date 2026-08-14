@@ -3,6 +3,7 @@ import {
   SessionApp,
   SessionViewStore,
   consumeSessionInputChunk,
+  isSessionExitInput,
 } from "@loom/tui/session-app";
 import { renderToString } from "ink";
 import { createElement } from "react";
@@ -21,6 +22,16 @@ describe("consumeSessionInputChunk", () => {
       lines: ["first", "second"],
       remainder: "third",
     });
+  });
+});
+
+describe("isSessionExitInput", () => {
+  test("recognizes Escape and Ctrl+C without treating other control keys as exits", () => {
+    expect(isSessionExitInput("", { ctrl: false, escape: true })).toBe(true);
+    expect(isSessionExitInput("c", { ctrl: true, escape: false })).toBe(true);
+    expect(isSessionExitInput("C", { ctrl: true, escape: false })).toBe(true);
+    expect(isSessionExitInput("x", { ctrl: true, escape: false })).toBe(false);
+    expect(isSessionExitInput("c", { ctrl: false, escape: false })).toBe(false);
   });
 });
 
@@ -90,6 +101,7 @@ describe("SessionApp", () => {
     const frame = renderToString(
       createElement(SessionApp, {
         onCycleAgent: () => {},
+        onExit: () => {},
         onSubmit: () => {},
         store,
         themeId: undefined,

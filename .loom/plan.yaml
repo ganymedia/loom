@@ -3,8 +3,8 @@ version: 0.1.1
 created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
-current_milestone: m8-1
-current_task: t8-1-5
+current_milestone: m8-2
+current_task: t8-2-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1275,7 +1275,7 @@ phases:
         description: Developer-owned core architectural change. A single Ink render()
           call owns the terminal for the session lifetime; commands update the existing
           frame instead of reprinting the tab strip or status bar as new blocks.
-        status: in_progress
+        status: completed
         token_estimate: xlarge
         tasks:
           - id: t8-1-1
@@ -1315,7 +1315,7 @@ phases:
             description: Handle terminal resize and Ctrl+C or Esc exit without regressing
               non-TTY input. Piped and scripted usage, CI, and --prompt one-shot mode must
               continue to work without a real terminal.
-            status: pending
+            status: completed
             token_estimate: medium
             dependencies:
               - t8-1-1
@@ -1324,7 +1324,7 @@ phases:
         description: Developer-owned work after m8-1. Typing / as the first input character
           shows a live-filtered, navigable list of matching commands and agents near the
           input line so users do not need to know exact syntax or cycle blindly with Tab.
-        status: pending
+        status: in_progress
         token_estimate: large
         tasks:
           - id: t8-2-1
@@ -1332,7 +1332,7 @@ phases:
             description: Include /agent with one entry per built-in and installed agent,
               /tab, /agents, /exit, /quit, and future slash commands. Render the popup
               inline in the Ink tree, not in a separate terminal region.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies: []
           - id: t8-2-2

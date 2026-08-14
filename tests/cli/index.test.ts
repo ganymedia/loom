@@ -52,16 +52,28 @@ async function buildCompiledCli(): Promise<string> {
   return binaryPath;
 }
 
-async function runCompiledFirstRunWithPty(options: {
+async function runCompiledSessionWithPty(options: {
   binaryPath: string;
+  cycleAgent: boolean;
+  exitInput: "ctrl-c" | "escape";
+  firstRun: boolean;
   home: string;
   projectRoot: string;
   backendUrl: string;
-}): Promise<{ cycledAgent: boolean; exitCode: number; output: string }> {
+  resize: boolean;
+}): Promise<{
+  cycledAgent: boolean;
+  exitCode: number;
+  output: string;
+  resizeRendered: boolean;
+}> {
   const python = String.raw`
-import json, os, pty, select, subprocess, sys, time
+import fcntl, json, os, pty, select, struct, subprocess, sys, termios, time
 
-binary_path, home, project_root, backend_url = sys.argv[1:5]
+binary_path, home, project_root, backend_url, first_run, cycle_agent, exit_input, resize = sys.argv[1:9]
+first_run = first_run == "1"
+cycle_agent = cycle_agent == "1"
+resize = resize == "1"
 master, slave = pty.openpty()
 env = os.environ.copy()
 env["HOME"] = home
@@ -76,11 +88,18 @@ proc = subprocess.Popen(
 )
 os.close(slave)
 output = b""
-sent_url = False
+sent_url = not first_run
+sent_resize = not resize
+resize_rendered = not resize
 sent_tab = False
 cycled_agent = False
 sent_exit = False
 deadline = time.time() + 15
+
+def send_exit():
+    global sent_exit
+    os.write(master, b"\x03" if exit_input == "ctrl-c" else b"\x1b")
+    sent_exit = True
 
 while time.time() < deadline:
     ready, _, _ = select.select([master], [], [], 0.1)
@@ -97,14 +116,19 @@ while time.time() < deadline:
             time.sleep(0.2)
             os.write(master, f"{backend_url}\n".encode())
             sent_url = True
-        if sent_url and not sent_tab and "Enter follow-up prompts." in text:
+        if sent_url and not sent_resize and "Enter follow-up prompts." in text:
+            fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 40, 0, 0))
+            sent_resize = True
+        if sent_url and sent_resize and cycle_agent and not sent_tab and "Enter follow-up prompts." in text:
             time.sleep(0.1)
             os.write(master, b"\t")
             sent_tab = True
         if sent_tab and not sent_exit and "architect" in text:
             cycled_agent = True
-            os.write(master, b"/exit\n")
-            sent_exit = True
+            resize_rendered = True
+            send_exit()
+        if sent_url and sent_resize and not cycle_agent and not sent_exit and "Enter follow-up prompts." in text:
+            send_exit()
     if proc.poll() is not None:
         break
 
@@ -120,6 +144,7 @@ print(json.dumps({
     "cycledAgent": cycled_agent,
     "exitCode": proc.returncode,
     "output": output.decode(errors="replace"),
+    "resizeRendered": resize_rendered,
 }))
 `;
   const proc = Bun.spawn(
@@ -131,6 +156,10 @@ print(json.dumps({
       options.home,
       options.projectRoot,
       options.backendUrl,
+      options.firstRun ? "1" : "0",
+      options.cycleAgent ? "1" : "0",
+      options.exitInput,
+      options.resize ? "1" : "0",
     ],
     {
       stdout: "pipe",
@@ -151,7 +180,33 @@ print(json.dumps({
     cycledAgent: boolean;
     exitCode: number;
     output: string;
+    resizeRendered: boolean;
   };
+}
+
+async function runCompiledNonTty(options: {
+  args: string[];
+  binaryPath: string;
+  home: string;
+  input: string;
+  projectRoot: string;
+}): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  const proc = Bun.spawn([options.binaryPath, ...options.args], {
+    cwd: options.projectRoot,
+    env: { ...process.env, HOME: options.home },
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  proc.stdin.write(options.input);
+  await proc.stdin.end();
+
+  const [exitCode, stdout, stderr] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  return { exitCode, stdout, stderr };
 }
 
 describe("CLI entrypoint", () => {
@@ -227,7 +282,7 @@ stages:
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 
-  test("compiled first-run prompt accepts delayed terminal input", async () => {
+  test("compiled session handles resize, exits, and non-TTY input", async () => {
     const binaryPath = await buildCompiledCli();
     const home = await mkdtemp(join(tmpdir(), "loom-first-run-home-"));
     const projectRoot = await mkdtemp(
@@ -235,23 +290,71 @@ stages:
     );
     const backendUrl = "http://127.0.0.1:65535/v1";
 
-    const result = await runCompiledFirstRunWithPty({
+    const escapeResult = await runCompiledSessionWithPty({
       binaryPath,
+      cycleAgent: true,
+      exitInput: "escape",
+      firstRun: true,
       home,
       projectRoot,
       backendUrl,
+      resize: true,
     });
 
-    expect(result.exitCode).toBe(0);
-    expect(result.cycledAgent).toBe(true);
-    expect(result.output).toContain("OpenAI-compatible backend URL:");
-    expect(result.output).toContain("Unable to reach backend model endpoint");
-    expect(result.output).not.toContain(`${backendUrl}/models`);
-    expect(result.output).not.toContain(
+    expect(escapeResult.exitCode).toBe(0);
+    expect(escapeResult.resizeRendered).toBe(true);
+    expect(escapeResult.cycledAgent).toBe(true);
+    expect(escapeResult.output).toContain("OpenAI-compatible backend URL:");
+    expect(escapeResult.output).toContain(
+      "Unable to reach backend model endpoint",
+    );
+    expect(escapeResult.output).toContain("\u001B[?1049h");
+    expect(escapeResult.output).toContain("\u001B[?1049l");
+    expect(escapeResult.output).not.toContain(`${backendUrl}/models`);
+    expect(escapeResult.output).not.toContain(
       'Active profile "default" does not define a default backend',
     );
 
     const written = await readFile(join(home, ".loom", "config.yaml"), "utf8");
     expect(written).toContain(`baseUrl: ${backendUrl}`);
-  });
+
+    const ctrlCResult = await runCompiledSessionWithPty({
+      binaryPath,
+      cycleAgent: false,
+      exitInput: "ctrl-c",
+      firstRun: false,
+      home,
+      projectRoot,
+      backendUrl,
+      resize: false,
+    });
+    expect(ctrlCResult.exitCode).toBe(0);
+    expect(ctrlCResult.output).toContain("\u001B[?1049h");
+    expect(ctrlCResult.output).toContain("\u001B[?1049l");
+
+    const pipedResult = await runCompiledNonTty({
+      args: [],
+      binaryPath,
+      home,
+      input: "/exit\n",
+      projectRoot,
+    });
+    expect(pipedResult.exitCode).toBe(0);
+    expect(pipedResult.stdout).toContain("Enter follow-up prompts.");
+    expect(pipedResult.stdout).not.toContain("\u001B[?1049h");
+    expect(pipedResult.stderr).not.toContain("loom: fatal error");
+
+    const promptResult = await runCompiledNonTty({
+      args: ["--prompt", "one-shot prompt"],
+      binaryPath,
+      home,
+      input: "",
+      projectRoot,
+    });
+    expect(promptResult.exitCode).toBe(0);
+    expect(promptResult.stdout).toContain("Developer agent error:");
+    expect(promptResult.stdout).not.toContain("Enter follow-up prompts.");
+    expect(promptResult.stdout).not.toContain("\u001B[?1049h");
+    expect(promptResult.stderr).not.toContain("loom: fatal error");
+  }, 30_000);
 });

@@ -1,6 +1,6 @@
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
-import { Box, Static, Text, useInput } from "ink";
+import { Box, type Key, Static, Text, useInput } from "ink";
 import { useRef, useState, useSyncExternalStore } from "react";
 
 export interface SessionViewState {
@@ -22,6 +22,13 @@ export function consumeSessionInputChunk(
     lines: parts.slice(0, -1),
     remainder: parts.at(-1) ?? "",
   };
+}
+
+export function isSessionExitInput(
+  character: string,
+  key: Pick<Key, "ctrl" | "escape">,
+): boolean {
+  return key.escape || (key.ctrl && character.toLowerCase() === "c");
 }
 
 export class SessionViewStore {
@@ -77,11 +84,13 @@ export class SessionViewStore {
 
 export function SessionApp({
   onCycleAgent,
+  onExit,
   onSubmit,
   store,
   themeId,
 }: {
   onCycleAgent: () => void;
+  onExit: () => void;
   onSubmit: (line: string) => void;
   store: SessionViewStore;
   themeId: string | undefined;
@@ -94,6 +103,10 @@ export function SessionApp({
     store.getSnapshot,
   );
   useInput((character, key) => {
+    if (isSessionExitInput(character, key)) {
+      onExit();
+      return;
+    }
     if (key.tab) {
       onCycleAgent();
       return;
