@@ -159,6 +159,9 @@ At the prompt, try these commands:
 /agents
 [press Tab without Enter]
 /tab
+[type / to reopen the popup]
+[press Down, then Up, and verify the marked selection moves]
+[press Enter and verify the selected command runs]
 /agent Tester
 /agent Security
 [resize the terminal narrower, then wider]
@@ -167,7 +170,7 @@ At the prompt, try these commands:
 
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
-Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 

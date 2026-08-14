@@ -5,6 +5,7 @@ import {
   SlashCommandPopup,
   consumeSessionInputChunk,
   isSessionExitInput,
+  moveSlashCommandSelection,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { renderToString } from "ink";
@@ -34,6 +35,20 @@ describe("isSessionExitInput", () => {
     expect(isSessionExitInput("C", { ctrl: true, escape: false })).toBe(true);
     expect(isSessionExitInput("x", { ctrl: true, escape: false })).toBe(false);
     expect(isSessionExitInput("c", { ctrl: false, escape: false })).toBe(false);
+  });
+});
+
+describe("moveSlashCommandSelection", () => {
+  test("moves in both directions and wraps at popup boundaries", () => {
+    expect(moveSlashCommandSelection(0, 4, 1)).toBe(1);
+    expect(moveSlashCommandSelection(1, 4, -1)).toBe(0);
+    expect(moveSlashCommandSelection(3, 4, 1)).toBe(0);
+    expect(moveSlashCommandSelection(0, 4, -1)).toBe(3);
+  });
+
+  test("handles empty and stale filtered selections", () => {
+    expect(moveSlashCommandSelection(0, 0, 1)).toBe(-1);
+    expect(moveSlashCommandSelection(5, 2, 1)).toBe(1);
   });
 });
 
@@ -95,6 +110,7 @@ describe("SessionApp", () => {
     const popup = renderToString(
       createElement(SlashCommandPopup, {
         entries: sessionSlashCommandEntries,
+        selectedIndex: 1,
       }),
     );
 
@@ -102,11 +118,12 @@ describe("SessionApp", () => {
       expect(popup).toContain(entry.command);
       expect(popup).toContain(entry.description);
     }
+    expect(popup).toContain(`› ${sessionSlashCommandEntries[1]?.command}`);
   });
 
   test("keeps the popup visible when no commands match", () => {
     const popup = renderToString(
-      createElement(SlashCommandPopup, { entries: [] }),
+      createElement(SlashCommandPopup, { entries: [], selectedIndex: -1 }),
     );
 
     expect(popup).toContain("Commands");

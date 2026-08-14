@@ -66,6 +66,7 @@ async function runCompiledSessionWithPty(options: {
   cycledAgent: boolean;
   exitCode: number;
   output: string;
+  popupSelected: boolean;
   popupShown: boolean;
   resizeRendered: boolean;
 }> {
@@ -94,6 +95,8 @@ output = b""
 sent_url = not first_run
 sent_popup_request = not show_popup
 popup_shown = not show_popup
+sent_popup_selection = not show_popup
+popup_selected = not show_popup
 sent_resize = not resize
 resize_rendered = not resize
 sent_tab = False
@@ -122,19 +125,22 @@ while time.time() < deadline:
             os.write(master, f"{backend_url}\n".encode())
             sent_url = True
         if sent_url and not sent_popup_request and "Enter follow-up prompts." in text:
-            os.write(master, b"/agent t")
+            os.write(master, b"/")
             sent_popup_request = True
-        if sent_popup_request and not popup_shown and "Switch to Tester agent" in text:
+        if sent_popup_request and not popup_shown and "Switch to Architect agent" in text:
             popup_shown = True
-            os.write(master, b"\x7f" * len("/agent t"))
-        if sent_url and popup_shown and not sent_resize and "Enter follow-up prompts." in text:
+            os.write(master, b"\x1b[B\r")
+            sent_popup_selection = True
+        if sent_popup_selection and not popup_selected and "architect ▸" in text:
+            popup_selected = True
+        if sent_url and popup_selected and not sent_resize and "Enter follow-up prompts." in text:
             fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 40, 0, 0))
             sent_resize = True
         if sent_url and sent_resize and cycle_agent and not sent_tab and "Enter follow-up prompts." in text:
             time.sleep(0.1)
             os.write(master, b"\t")
             sent_tab = True
-        if sent_tab and not sent_exit and "architect" in text:
+        if sent_tab and not sent_exit and "tester ▸" in text:
             cycled_agent = True
             resize_rendered = True
             send_exit()
@@ -155,6 +161,7 @@ print(json.dumps({
     "cycledAgent": cycled_agent,
     "exitCode": proc.returncode,
     "output": output.decode(errors="replace"),
+    "popupSelected": popup_selected,
     "popupShown": popup_shown,
     "resizeRendered": resize_rendered,
 }))
@@ -193,6 +200,7 @@ print(json.dumps({
     cycledAgent: boolean;
     exitCode: number;
     output: string;
+    popupSelected: boolean;
     popupShown: boolean;
     resizeRendered: boolean;
   };
@@ -318,6 +326,7 @@ stages:
 
     expect(escapeResult.exitCode).toBe(0);
     expect(escapeResult.popupShown).toBe(true);
+    expect(escapeResult.popupSelected).toBe(true);
     expect(escapeResult.resizeRendered).toBe(true);
     expect(escapeResult.cycledAgent).toBe(true);
     expect(escapeResult.output).toContain("Switch to Tester agent");

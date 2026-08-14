@@ -42,6 +42,17 @@ export function isSessionExitInput(
   return key.escape || (key.ctrl && character.toLowerCase() === "c");
 }
 
+export function moveSlashCommandSelection(
+  currentIndex: number,
+  entryCount: number,
+  direction: -1 | 1,
+): number {
+  if (entryCount === 0) return -1;
+  const normalizedIndex =
+    currentIndex >= 0 && currentIndex < entryCount ? currentIndex : 0;
+  return (normalizedIndex + direction + entryCount) % entryCount;
+}
+
 export class SessionViewStore {
   readonly #listeners = new Set<SessionViewListener>();
   #state: SessionViewState;
@@ -95,8 +106,10 @@ export class SessionViewStore {
 
 export function SlashCommandPopup({
   entries,
+  selectedIndex,
 }: {
   entries: readonly SlashCommandEntry[];
+  selectedIndex: number;
 }) {
   const theme = useTheme();
   return (
@@ -113,9 +126,14 @@ export function SlashCommandPopup({
       {entries.length === 0 ? (
         <Text color={theme.textTertiary}>No matching commands</Text>
       ) : (
-        entries.map((entry) => (
+        entries.map((entry, index) => (
           <Box key={entry.command} gap={1}>
-            <Text color={theme.info}>{entry.command}</Text>
+            <Text color={theme.accent} bold={index === selectedIndex}>
+              {index === selectedIndex ? "›" : " "}
+            </Text>
+            <Text color={theme.info} bold={index === selectedIndex}>
+              {entry.command}
+            </Text>
             <Text color={theme.textTertiary}>{entry.description}</Text>
           </Box>
         ))
@@ -138,7 +156,9 @@ export function SessionApp({
   themeId: string | undefined;
 }) {
   const [input, setInput] = useState("");
+  const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
   const inputRef = useRef("");
+  const selectedSlashCommandIndexRef = useRef(0);
   const state = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
@@ -153,15 +173,40 @@ export function SessionApp({
       onCycleAgent();
       return;
     }
+    if (key.upArrow || key.downArrow) {
+      if (!shouldShowSlashCommandPopup(inputRef.current)) return;
+      const entries = filterSlashCommandEntries(
+        sessionSlashCommandEntries,
+        inputRef.current,
+      );
+      selectedSlashCommandIndexRef.current = moveSlashCommandSelection(
+        selectedSlashCommandIndexRef.current,
+        entries.length,
+        key.upArrow ? -1 : 1,
+      );
+      setSelectedSlashCommandIndex(selectedSlashCommandIndexRef.current);
+      return;
+    }
     if (key.return) {
-      onSubmit(inputRef.current);
+      const entries = filterSlashCommandEntries(
+        sessionSlashCommandEntries,
+        inputRef.current,
+      );
+      const selectedEntry = shouldShowSlashCommandPopup(inputRef.current)
+        ? (entries[selectedSlashCommandIndexRef.current] ?? entries[0])
+        : undefined;
+      onSubmit(selectedEntry?.command ?? inputRef.current);
       inputRef.current = "";
+      selectedSlashCommandIndexRef.current = 0;
       setInput("");
+      setSelectedSlashCommandIndex(0);
       return;
     }
     if (key.backspace || key.delete) {
       inputRef.current = inputRef.current.slice(0, -1);
+      selectedSlashCommandIndexRef.current = 0;
       setInput(inputRef.current);
+      setSelectedSlashCommandIndex(0);
       return;
     }
     if (
@@ -174,7 +219,9 @@ export function SessionApp({
       const consumed = consumeSessionInputChunk(inputRef.current, character);
       for (const line of consumed.lines) onSubmit(line);
       inputRef.current = consumed.remainder;
+      selectedSlashCommandIndexRef.current = 0;
       setInput(inputRef.current);
+      setSelectedSlashCommandIndex(0);
     }
   });
   const activeIndex = builtInAgentTabs.findIndex(
@@ -213,6 +260,7 @@ export function SessionApp({
                 sessionSlashCommandEntries,
                 input,
               )}
+              selectedIndex={selectedSlashCommandIndex}
             />
           ) : null}
           <Box paddingX={1}>
