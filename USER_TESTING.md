@@ -155,7 +155,9 @@ At the prompt, try these commands:
 ```text
 [type / as the first input character and inspect the popup]
 [continue typing agent t and verify only /agent tester remains]
-[press Backspace eight times to clear /agent t]
+[press Escape and verify the popup closes while > /agent t remains]
+[type e and verify the popup reopens with > /agent te and /agent tester]
+[press Backspace nine times to clear /agent te]
 /agents
 [press Tab without Enter]
 /tab
@@ -170,7 +172,7 @@ At the prompt, try these commands:
 
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
-Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 

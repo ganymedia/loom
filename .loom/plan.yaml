@@ -3,8 +3,8 @@ version: 0.1.1
 created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
-current_milestone: m8-2
-current_task: t8-2-4
+current_milestone: m8-3
+current_task: t8-3-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1324,7 +1324,7 @@ phases:
         description: Developer-owned work after m8-1. Typing / as the first input character
           shows a live-filtered, navigable list of matching commands and agents near the
           input line so users do not need to know exact syntax or cycle blindly with Tab.
-        status: in_progress
+        status: completed
         token_estimate: large
         tasks:
           - id: t8-2-1
@@ -1354,7 +1354,7 @@ phases:
           - id: t8-2-4
             name: Close the slash command popup with Esc
             description: Esc closes the popup without submitting or clearing typed input.
-            status: in_progress
+            status: completed
             token_estimate: small
             dependencies:
               - t8-2-1
@@ -1362,14 +1362,14 @@ phases:
         name: Distinguish thinking, tool-running, and idle states
         description: Developer-owned live feedback work after m8-1 that makes thinking,
           tool execution, and idle states visibly distinct.
-        status: pending
+        status: in_progress
         token_estimate: medium
         tasks:
           - id: t8-3-1
             name: Add a thinking indicator before the first streamed token
             description: Show a spinner or animated dots immediately when a prompt is
               submitted and before the first streamed token arrives.
-            status: pending
+            status: in_progress
             token_estimate: small
             dependencies: []
           - id: t8-3-2

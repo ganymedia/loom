@@ -66,6 +66,8 @@ async function runCompiledSessionWithPty(options: {
   cycledAgent: boolean;
   exitCode: number;
   output: string;
+  popupClosed: boolean;
+  popupInputPreserved: boolean;
   popupSelected: boolean;
   popupShown: boolean;
   resizeRendered: boolean;
@@ -101,6 +103,14 @@ sent_resize = not resize
 resize_rendered = not resize
 sent_tab = False
 cycled_agent = False
+sent_popup_close_request = not show_popup
+sent_popup_escape = not show_popup
+popup_closed = not show_popup
+sent_popup_continuation = not show_popup
+popup_input_preserved = not show_popup
+close_popup_start = 0
+post_escape_start = 0
+continuation_start = 0
 sent_exit = False
 deadline = time.time() + 15
 
@@ -140,9 +150,29 @@ while time.time() < deadline:
             time.sleep(0.1)
             os.write(master, b"\t")
             sent_tab = True
-        if sent_tab and not sent_exit and "tester ▸" in text:
+        if sent_tab and not cycled_agent and "tester ▸" in text:
             cycled_agent = True
             resize_rendered = True
+        if cycled_agent and not sent_popup_close_request:
+            os.write(master, b"/agent s")
+            sent_popup_close_request = True
+            close_popup_start = len(output)
+        close_popup_text = output[close_popup_start:].decode(errors="replace")
+        if sent_popup_close_request and not sent_popup_escape and "Switch to Security agent" in close_popup_text:
+            os.write(master, b"\x1b")
+            sent_popup_escape = True
+            post_escape_start = len(output)
+        post_escape_text = output[post_escape_start:].decode(errors="replace")
+        if sent_popup_escape and not popup_closed and "> /agent s" in post_escape_text and "Switch to Security agent" not in post_escape_text:
+            popup_closed = True
+            os.write(master, b"e")
+            sent_popup_continuation = True
+            continuation_start = len(output)
+        continuation_text = output[continuation_start:].decode(errors="replace")
+        if sent_popup_continuation and not popup_input_preserved and "> /agent se" in continuation_text and "Switch to Security agent" in continuation_text:
+            popup_input_preserved = True
+            os.write(master, b"\r")
+        if popup_input_preserved and not sent_exit and "security ▸" in continuation_text:
             send_exit()
         if sent_url and sent_resize and not cycle_agent and not sent_exit and "Enter follow-up prompts." in text:
             send_exit()
@@ -161,6 +191,8 @@ print(json.dumps({
     "cycledAgent": cycled_agent,
     "exitCode": proc.returncode,
     "output": output.decode(errors="replace"),
+    "popupClosed": popup_closed,
+    "popupInputPreserved": popup_input_preserved,
     "popupSelected": popup_selected,
     "popupShown": popup_shown,
     "resizeRendered": resize_rendered,
@@ -200,6 +232,8 @@ print(json.dumps({
     cycledAgent: boolean;
     exitCode: number;
     output: string;
+    popupClosed: boolean;
+    popupInputPreserved: boolean;
     popupSelected: boolean;
     popupShown: boolean;
     resizeRendered: boolean;
@@ -327,6 +361,8 @@ stages:
     expect(escapeResult.exitCode).toBe(0);
     expect(escapeResult.popupShown).toBe(true);
     expect(escapeResult.popupSelected).toBe(true);
+    expect(escapeResult.popupClosed).toBe(true);
+    expect(escapeResult.popupInputPreserved).toBe(true);
     expect(escapeResult.resizeRendered).toBe(true);
     expect(escapeResult.cycledAgent).toBe(true);
     expect(escapeResult.output).toContain("Switch to Tester agent");

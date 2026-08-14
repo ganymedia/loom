@@ -53,6 +53,13 @@ export function moveSlashCommandSelection(
   return (normalizedIndex + direction + entryCount) % entryCount;
 }
 
+export function isSlashCommandPopupOpen(
+  input: string,
+  dismissed: boolean,
+): boolean {
+  return !dismissed && shouldShowSlashCommandPopup(input);
+}
+
 export class SessionViewStore {
   readonly #listeners = new Set<SessionViewListener>();
   #state: SessionViewState;
@@ -157,14 +164,28 @@ export function SessionApp({
 }) {
   const [input, setInput] = useState("");
   const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
+  const [slashCommandPopupDismissed, setSlashCommandPopupDismissed] =
+    useState(false);
   const inputRef = useRef("");
   const selectedSlashCommandIndexRef = useRef(0);
+  const slashCommandPopupDismissedRef = useRef(false);
   const state = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
     store.getSnapshot,
   );
   useInput((character, key) => {
+    if (
+      key.escape &&
+      isSlashCommandPopupOpen(
+        inputRef.current,
+        slashCommandPopupDismissedRef.current,
+      )
+    ) {
+      slashCommandPopupDismissedRef.current = true;
+      setSlashCommandPopupDismissed(true);
+      return;
+    }
     if (isSessionExitInput(character, key)) {
       onExit();
       return;
@@ -174,7 +195,13 @@ export function SessionApp({
       return;
     }
     if (key.upArrow || key.downArrow) {
-      if (!shouldShowSlashCommandPopup(inputRef.current)) return;
+      if (
+        !isSlashCommandPopupOpen(
+          inputRef.current,
+          slashCommandPopupDismissedRef.current,
+        )
+      )
+        return;
       const entries = filterSlashCommandEntries(
         sessionSlashCommandEntries,
         inputRef.current,
@@ -192,21 +219,28 @@ export function SessionApp({
         sessionSlashCommandEntries,
         inputRef.current,
       );
-      const selectedEntry = shouldShowSlashCommandPopup(inputRef.current)
+      const selectedEntry = isSlashCommandPopupOpen(
+        inputRef.current,
+        slashCommandPopupDismissedRef.current,
+      )
         ? (entries[selectedSlashCommandIndexRef.current] ?? entries[0])
         : undefined;
       onSubmit(selectedEntry?.command ?? inputRef.current);
       inputRef.current = "";
       selectedSlashCommandIndexRef.current = 0;
+      slashCommandPopupDismissedRef.current = false;
       setInput("");
       setSelectedSlashCommandIndex(0);
+      setSlashCommandPopupDismissed(false);
       return;
     }
     if (key.backspace || key.delete) {
       inputRef.current = inputRef.current.slice(0, -1);
       selectedSlashCommandIndexRef.current = 0;
+      slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
       setSelectedSlashCommandIndex(0);
+      setSlashCommandPopupDismissed(false);
       return;
     }
     if (
@@ -220,8 +254,10 @@ export function SessionApp({
       for (const line of consumed.lines) onSubmit(line);
       inputRef.current = consumed.remainder;
       selectedSlashCommandIndexRef.current = 0;
+      slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
       setSelectedSlashCommandIndex(0);
+      setSlashCommandPopupDismissed(false);
     }
   });
   const activeIndex = builtInAgentTabs.findIndex(
@@ -254,7 +290,7 @@ export function SessionApp({
             tokenPercent={state.tokenPercent}
             activeAgentName={state.activeAgentName}
           />
-          {shouldShowSlashCommandPopup(input) ? (
+          {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
             <SlashCommandPopup
               entries={filterSlashCommandEntries(
                 sessionSlashCommandEntries,

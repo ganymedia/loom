@@ -5,6 +5,7 @@ import {
   SlashCommandPopup,
   consumeSessionInputChunk,
   isSessionExitInput,
+  isSlashCommandPopupOpen,
   moveSlashCommandSelection,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
@@ -49,6 +50,14 @@ describe("moveSlashCommandSelection", () => {
   test("handles empty and stale filtered selections", () => {
     expect(moveSlashCommandSelection(0, 0, 1)).toBe(-1);
     expect(moveSlashCommandSelection(5, 2, 1)).toBe(1);
+  });
+});
+
+describe("isSlashCommandPopupOpen", () => {
+  test("requires slash input and remains closed after dismissal", () => {
+    expect(isSlashCommandPopupOpen("/agent s", false)).toBe(true);
+    expect(isSlashCommandPopupOpen("/agent s", true)).toBe(false);
+    expect(isSlashCommandPopupOpen("plain text", false)).toBe(false);
   });
 });
 
