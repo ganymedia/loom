@@ -71,6 +71,7 @@ async function runCompiledSessionWithPty(options: {
   popupSelected: boolean;
   popupShown: boolean;
   resizeRendered: boolean;
+  thinkingShown: boolean;
 }> {
   const python = String.raw`
 import fcntl, json, os, pty, select, struct, subprocess, sys, termios, time
@@ -111,6 +112,9 @@ popup_input_preserved = not show_popup
 close_popup_start = 0
 post_escape_start = 0
 continuation_start = 0
+sent_prompt = not show_popup
+thinking_shown = not show_popup
+prompt_start = 0
 sent_exit = False
 deadline = time.time() + 15
 
@@ -172,7 +176,13 @@ while time.time() < deadline:
         if sent_popup_continuation and not popup_input_preserved and "> /agent se" in continuation_text and "Switch to Security agent" in continuation_text:
             popup_input_preserved = True
             os.write(master, b"\r")
-        if popup_input_preserved and not sent_exit and "security ▸" in continuation_text:
+        if popup_input_preserved and not sent_prompt and "security ▸" in continuation_text:
+            os.write(master, b"hello\r")
+            sent_prompt = True
+            prompt_start = len(output)
+        prompt_text = output[prompt_start:].decode(errors="replace")
+        if sent_prompt and not thinking_shown and "Thinking" in prompt_text:
+            thinking_shown = True
             send_exit()
         if sent_url and sent_resize and not cycle_agent and not sent_exit and "Enter follow-up prompts." in text:
             send_exit()
@@ -196,6 +206,7 @@ print(json.dumps({
     "popupSelected": popup_selected,
     "popupShown": popup_shown,
     "resizeRendered": resize_rendered,
+    "thinkingShown": thinking_shown,
 }))
 `;
   const proc = Bun.spawn(
@@ -237,6 +248,7 @@ print(json.dumps({
     popupSelected: boolean;
     popupShown: boolean;
     resizeRendered: boolean;
+    thinkingShown: boolean;
   };
 }
 
@@ -365,6 +377,7 @@ stages:
     expect(escapeResult.popupInputPreserved).toBe(true);
     expect(escapeResult.resizeRendered).toBe(true);
     expect(escapeResult.cycledAgent).toBe(true);
+    expect(escapeResult.thinkingShown).toBe(true);
     expect(escapeResult.output).toContain("Switch to Tester agent");
     expect(escapeResult.output).toContain("OpenAI-compatible backend URL:");
     expect(escapeResult.output).toContain(

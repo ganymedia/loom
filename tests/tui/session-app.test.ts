@@ -3,10 +3,12 @@ import {
   SessionApp,
   SessionViewStore,
   SlashCommandPopup,
+  ThinkingIndicator,
   consumeSessionInputChunk,
   isSessionExitInput,
   isSlashCommandPopupOpen,
   moveSlashCommandSelection,
+  thinkingIndicatorText,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { renderToString } from "ink";
@@ -102,8 +104,12 @@ describe("SessionViewStore", () => {
       tokenPercent: 0,
     });
 
+    store.beginThinking("Developer");
+    expect(store.getSnapshot().thinkingAgentDisplayName).toBe("Developer");
+
     store.appendAssistantDelta("Developer", "Hel");
     store.appendAssistantDelta("Developer", "lo");
+    expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
     expect(store.getSnapshot().liveAssistant).toEqual({
       displayName: "Developer",
       text: "Hello",
@@ -111,10 +117,28 @@ describe("SessionViewStore", () => {
 
     store.clearAssistantDelta();
     expect(store.getSnapshot().liveAssistant).toBeUndefined();
+
+    store.beginThinking("Developer");
+    store.clearThinking();
+    expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
   });
 });
 
 describe("SessionApp", () => {
+  test("renders animated thinking text before assistant output", () => {
+    expect(thinkingIndicatorText("Developer", 0)).toBe("Developer: Thinking.");
+    expect(thinkingIndicatorText("Developer", 1)).toBe("Developer: Thinking..");
+    expect(thinkingIndicatorText("Developer", 2)).toBe(
+      "Developer: Thinking...",
+    );
+    expect(thinkingIndicatorText("Developer", 3)).toBe("Developer: Thinking.");
+
+    const indicator = renderToString(
+      createElement(ThinkingIndicator, { displayName: "Developer" }),
+    );
+    expect(indicator).toContain("Developer: Thinking.");
+  });
+
   test("renders every available slash command in the inline popup", () => {
     const popup = renderToString(
       createElement(SlashCommandPopup, {

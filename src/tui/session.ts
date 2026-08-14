@@ -313,6 +313,7 @@ async function runAgentPrompt(
           redactor: createStreamingConfigRedactor(config),
           store: viewStore,
         };
+  stream?.store.beginThinking(agent.displayName);
   let turn: AgentTurnResult;
   try {
     turn = await agent.runTurn(prompt, context, {
@@ -320,6 +321,7 @@ async function runAgentPrompt(
         ? {}
         : {
             onTextDelta: (delta: string) => {
+              stream.store.clearThinking();
               const safeDelta = stream.redactor.push(delta);
               if (safeDelta.length > 0) {
                 stream.store.appendAssistantDelta(agent.displayName, safeDelta);

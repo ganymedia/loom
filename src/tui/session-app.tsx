@@ -12,13 +12,14 @@ import {
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
 import { Box, type Key, Static, Text, useInput } from "ink";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export interface SessionViewState {
   activeAgentName: BuiltInAgentName;
   liveAssistant?: { displayName: string; text: string };
   output: readonly string[];
   sessionId: string;
+  thinkingAgentDisplayName?: string;
   tokenPercent: number;
 }
 
@@ -82,10 +83,22 @@ export class SessionViewStore {
     });
   }
 
+  beginThinking(displayName: string): void {
+    const { liveAssistant: _liveAssistant, ...state } = this.#state;
+    this.#setState({ ...state, thinkingAgentDisplayName: displayName });
+  }
+
+  clearThinking(): void {
+    if (this.#state.thinkingAgentDisplayName === undefined) return;
+    const { thinkingAgentDisplayName: _thinking, ...state } = this.#state;
+    this.#setState(state);
+  }
+
   appendAssistantDelta(displayName: string, delta: string): void {
     const liveAssistant = this.#state.liveAssistant;
+    const { thinkingAgentDisplayName: _thinking, ...state } = this.#state;
     this.#setState({
-      ...this.#state,
+      ...state,
       liveAssistant: {
         displayName,
         text:
@@ -97,7 +110,11 @@ export class SessionViewStore {
   }
 
   clearAssistantDelta(): void {
-    const { liveAssistant: _liveAssistant, ...state } = this.#state;
+    const {
+      liveAssistant: _liveAssistant,
+      thinkingAgentDisplayName: _thinking,
+      ...state
+    } = this.#state;
     this.#setState(state);
   }
 
@@ -109,6 +126,25 @@ export class SessionViewStore {
     this.#state = state;
     for (const listener of this.#listeners) listener();
   }
+}
+
+export function thinkingIndicatorText(
+  displayName: string,
+  frame: number,
+): string {
+  return `${displayName}: Thinking${".".repeat((frame % 3) + 1)}`;
+}
+
+export function ThinkingIndicator({ displayName }: { displayName: string }) {
+  const theme = useTheme();
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setFrame((value) => value + 1), 250);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <Text color={theme.info}>{thinkingIndicatorText(displayName, frame)}</Text>
+  );
 }
 
 export function SlashCommandPopup({
@@ -279,6 +315,9 @@ export function SessionApp({
         <Box flexDirection="column">
           <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
           <Box flexDirection="column" paddingX={1}>
+            {state.thinkingAgentDisplayName === undefined ? null : (
+              <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+            )}
             {state.liveAssistant === undefined ? null : (
               <Text>
                 {state.liveAssistant.displayName}: {state.liveAssistant.text}

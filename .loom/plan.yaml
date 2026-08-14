@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
 current_milestone: m8-3
-current_task: t8-3-1
+current_task: t8-3-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1369,14 +1369,14 @@ phases:
             name: Add a thinking indicator before the first streamed token
             description: Show a spinner or animated dots immediately when a prompt is
               submitted and before the first streamed token arrives.
-            status: in_progress
+            status: completed
             token_estimate: small
             dependencies: []
           - id: t8-3-2
             name: Add a distinct tool-running indicator
             description: Show tool execution with a visual state separate from the thinking
               indicator.
-            status: pending
+            status: in_progress
             token_estimate: medium
             dependencies:
               - t8-3-1
