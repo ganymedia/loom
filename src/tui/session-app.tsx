@@ -1,6 +1,6 @@
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
-import { Box, Text, useInput } from "ink";
+import { Box, Static, Text, useInput } from "ink";
 import { useRef, useState, useSyncExternalStore } from "react";
 
 export interface SessionViewState {
@@ -134,27 +134,29 @@ export function SessionApp({
 
   return (
     <ThemeProvider themeId={themeId}>
-      <Box flexDirection="column">
-        <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
-        <Box flexDirection="column" paddingX={1}>
-          {state.output.map((message, index) => (
-            <Text key={`${index}-${message}`}>{message.trimEnd()}</Text>
-          ))}
-          {state.liveAssistant === undefined ? null : (
-            <Text>
-              {state.liveAssistant.displayName}: {state.liveAssistant.text}
-            </Text>
-          )}
+      <>
+        <Static items={[...state.output]} style={{ paddingX: 1 }}>
+          {(message, index) => <Text key={index}>{message.trimEnd()}</Text>}
+        </Static>
+        <Box flexDirection="column">
+          <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
+          <Box flexDirection="column" paddingX={1}>
+            {state.liveAssistant === undefined ? null : (
+              <Text>
+                {state.liveAssistant.displayName}: {state.liveAssistant.text}
+              </Text>
+            )}
+          </Box>
+          <StatusBar
+            sessionId={state.sessionId}
+            tokenPercent={state.tokenPercent}
+            activeAgentName={state.activeAgentName}
+          />
+          <Box paddingX={1}>
+            <Text>&gt; {input}</Text>
+          </Box>
         </Box>
-        <StatusBar
-          sessionId={state.sessionId}
-          tokenPercent={state.tokenPercent}
-          activeAgentName={state.activeAgentName}
-        />
-        <Box paddingX={1}>
-          <Text>&gt; {input}</Text>
-        </Box>
-      </Box>
+      </>
     </ThemeProvider>
   );
 }

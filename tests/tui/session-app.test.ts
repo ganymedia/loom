@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  SessionApp,
   SessionViewStore,
   consumeSessionInputChunk,
 } from "@loom/tui/session-app";
+import { renderToString } from "ink";
+import { createElement } from "react";
 
 describe("consumeSessionInputChunk", () => {
   test("submits complete PTY lines while retaining incomplete input", () => {
@@ -71,5 +74,40 @@ describe("SessionViewStore", () => {
 
     store.clearAssistantDelta();
     expect(store.getSnapshot().liveAssistant).toBeUndefined();
+  });
+});
+
+describe("SessionApp", () => {
+  test("renders completed output above the live frame", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      liveAssistant: { displayName: "Developer", text: "working" },
+      output: ["first completed line\n", "second completed line\n"],
+      sessionId: "session-1",
+      tokenPercent: 0.25,
+    });
+
+    const frame = renderToString(
+      createElement(SessionApp, {
+        onCycleAgent: () => {},
+        onSubmit: () => {},
+        store,
+        themeId: undefined,
+      }),
+    );
+
+    const firstOutput = frame.indexOf("first completed line");
+    const secondOutput = frame.indexOf("second completed line");
+    const tabs = frame.indexOf("Developer");
+    const liveAssistant = frame.indexOf("Developer: working");
+    const status = frame.indexOf("session-1");
+    const input = frame.lastIndexOf(">");
+
+    expect(firstOutput).toBeGreaterThanOrEqual(0);
+    expect(secondOutput).toBeGreaterThan(firstOutput);
+    expect(tabs).toBeGreaterThan(secondOutput);
+    expect(liveAssistant).toBeGreaterThan(tabs);
+    expect(status).toBeGreaterThan(liveAssistant);
+    expect(input).toBeGreaterThan(status);
   });
 });
