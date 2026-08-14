@@ -61,19 +61,22 @@ async function runCompiledSessionWithPty(options: {
   projectRoot: string;
   backendUrl: string;
   resize: boolean;
+  showPopup: boolean;
 }): Promise<{
   cycledAgent: boolean;
   exitCode: number;
   output: string;
+  popupShown: boolean;
   resizeRendered: boolean;
 }> {
   const python = String.raw`
 import fcntl, json, os, pty, select, struct, subprocess, sys, termios, time
 
-binary_path, home, project_root, backend_url, first_run, cycle_agent, exit_input, resize = sys.argv[1:9]
+binary_path, home, project_root, backend_url, first_run, cycle_agent, exit_input, resize, show_popup = sys.argv[1:10]
 first_run = first_run == "1"
 cycle_agent = cycle_agent == "1"
 resize = resize == "1"
+show_popup = show_popup == "1"
 master, slave = pty.openpty()
 env = os.environ.copy()
 env["HOME"] = home
@@ -89,6 +92,8 @@ proc = subprocess.Popen(
 os.close(slave)
 output = b""
 sent_url = not first_run
+sent_popup_request = not show_popup
+popup_shown = not show_popup
 sent_resize = not resize
 resize_rendered = not resize
 sent_tab = False
@@ -116,7 +121,13 @@ while time.time() < deadline:
             time.sleep(0.2)
             os.write(master, f"{backend_url}\n".encode())
             sent_url = True
-        if sent_url and not sent_resize and "Enter follow-up prompts." in text:
+        if sent_url and not sent_popup_request and "Enter follow-up prompts." in text:
+            os.write(master, b"/")
+            sent_popup_request = True
+        if sent_popup_request and not popup_shown and "Switch to Developer agent" in text:
+            popup_shown = True
+            os.write(master, b"\x7f")
+        if sent_url and popup_shown and not sent_resize and "Enter follow-up prompts." in text:
             fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 18, 40, 0, 0))
             sent_resize = True
         if sent_url and sent_resize and cycle_agent and not sent_tab and "Enter follow-up prompts." in text:
@@ -144,6 +155,7 @@ print(json.dumps({
     "cycledAgent": cycled_agent,
     "exitCode": proc.returncode,
     "output": output.decode(errors="replace"),
+    "popupShown": popup_shown,
     "resizeRendered": resize_rendered,
 }))
 `;
@@ -160,6 +172,7 @@ print(json.dumps({
       options.cycleAgent ? "1" : "0",
       options.exitInput,
       options.resize ? "1" : "0",
+      options.showPopup ? "1" : "0",
     ],
     {
       stdout: "pipe",
@@ -180,6 +193,7 @@ print(json.dumps({
     cycledAgent: boolean;
     exitCode: number;
     output: string;
+    popupShown: boolean;
     resizeRendered: boolean;
   };
 }
@@ -282,7 +296,7 @@ stages:
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 
-  test("compiled session handles resize, exits, and non-TTY input", async () => {
+  test("compiled session handles popup, resize, exits, and non-TTY input", async () => {
     const binaryPath = await buildCompiledCli();
     const home = await mkdtemp(join(tmpdir(), "loom-first-run-home-"));
     const projectRoot = await mkdtemp(
@@ -299,9 +313,11 @@ stages:
       projectRoot,
       backendUrl,
       resize: true,
+      showPopup: true,
     });
 
     expect(escapeResult.exitCode).toBe(0);
+    expect(escapeResult.popupShown).toBe(true);
     expect(escapeResult.resizeRendered).toBe(true);
     expect(escapeResult.cycledAgent).toBe(true);
     expect(escapeResult.output).toContain("OpenAI-compatible backend URL:");
@@ -327,6 +343,7 @@ stages:
       projectRoot,
       backendUrl,
       resize: false,
+      showPopup: false,
     });
     expect(ctrlCResult.exitCode).toBe(0);
     expect(ctrlCResult.output).toContain("\u001B[?1049h");

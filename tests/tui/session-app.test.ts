@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import {
   SessionApp,
   SessionViewStore,
+  SlashCommandPopup,
   consumeSessionInputChunk,
   isSessionExitInput,
 } from "@loom/tui/session-app";
+import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { renderToString } from "ink";
 import { createElement } from "react";
 
@@ -89,6 +91,19 @@ describe("SessionViewStore", () => {
 });
 
 describe("SessionApp", () => {
+  test("renders every available slash command in the inline popup", () => {
+    const popup = renderToString(
+      createElement(SlashCommandPopup, {
+        entries: sessionSlashCommandEntries,
+      }),
+    );
+
+    for (const entry of sessionSlashCommandEntries) {
+      expect(popup).toContain(entry.command);
+      expect(popup).toContain(entry.description);
+    }
+  });
+
   test("renders completed output above the live frame", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",

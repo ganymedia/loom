@@ -27,6 +27,7 @@ import { fileWriterTool } from "@loom/tools/file-writer";
 import { gitOpsTool } from "@loom/tools/git-ops";
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import { SessionApp, SessionViewStore } from "@loom/tui/session-app";
+import { sessionSlashCommands } from "@loom/tui/slash-commands";
 import {
   type BuiltInAgentName,
   builtInAgentTabs,
@@ -539,8 +540,12 @@ export async function startSession(
         for await (const line of input) {
           const prompt = line.trim();
           if (prompt.length === 0) continue;
-          if (prompt === "/exit" || prompt === "/quit") break;
-          if (prompt === "/agents") {
+          if (
+            prompt === sessionSlashCommands.exit ||
+            prompt === sessionSlashCommands.quit
+          )
+            break;
+          if (prompt === sessionSlashCommands.agents) {
             if (viewStore === undefined) {
               writeOutput(
                 `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
@@ -549,7 +554,7 @@ export async function startSession(
             writeSessionStatus();
             continue;
           }
-          if (prompt === "/tab") {
+          if (prompt === sessionSlashCommands.tab) {
             activeAgentName = nextAgentName(activeAgentName);
             agent = createBuiltInAgent(activeAgentName, config, options);
             if (viewStore === undefined) {
@@ -560,8 +565,11 @@ export async function startSession(
             writeSessionStatus();
             continue;
           }
-          if (prompt.startsWith("/agent ")) {
-            const requestedAgent = prompt.slice("/agent ".length).trim();
+          const agentCommandPrefix = `${sessionSlashCommands.agent} `;
+          if (prompt.startsWith(agentCommandPrefix)) {
+            const requestedAgent = prompt
+              .slice(agentCommandPrefix.length)
+              .trim();
             const resolvedAgent = resolveBuiltInAgentName(requestedAgent);
             if (resolvedAgent === undefined) {
               writeOutput(`Unknown agent: ${requestedAgent}\n`);

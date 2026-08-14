@@ -1,4 +1,14 @@
-import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
+import {
+  AgentTabStrip,
+  StatusBar,
+  ThemeProvider,
+  useTheme,
+} from "@loom/tui/components";
+import {
+  type SlashCommandEntry,
+  sessionSlashCommandEntries,
+  shouldShowSlashCommandPopup,
+} from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
 import { Box, type Key, Static, Text, useInput } from "ink";
 import { useRef, useState, useSyncExternalStore } from "react";
@@ -80,6 +90,33 @@ export class SessionViewStore {
     this.#state = state;
     for (const listener of this.#listeners) listener();
   }
+}
+
+export function SlashCommandPopup({
+  entries,
+}: {
+  entries: readonly SlashCommandEntry[];
+}) {
+  const theme = useTheme();
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={theme.border}
+      flexDirection="column"
+      marginX={1}
+      paddingX={1}
+    >
+      <Text color={theme.textSecondary} bold>
+        Commands
+      </Text>
+      {entries.map((entry) => (
+        <Box key={entry.command} gap={1}>
+          <Text color={theme.info}>{entry.command}</Text>
+          <Text color={theme.textTertiary}>{entry.description}</Text>
+        </Box>
+      ))}
+    </Box>
+  );
 }
 
 export function SessionApp({
@@ -165,6 +202,9 @@ export function SessionApp({
             tokenPercent={state.tokenPercent}
             activeAgentName={state.activeAgentName}
           />
+          {shouldShowSlashCommandPopup(input) ? (
+            <SlashCommandPopup entries={sessionSlashCommandEntries} />
+          ) : null}
           <Box paddingX={1}>
             <Text>&gt; {input}</Text>
           </Box>

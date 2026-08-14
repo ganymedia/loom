@@ -4,7 +4,7 @@ created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
 current_milestone: m8-2
-current_task: t8-2-1
+current_task: t8-2-2
 phases:
   - id: phase-1
     name: Foundation
@@ -1332,13 +1332,13 @@ phases:
             description: Include /agent with one entry per built-in and installed agent,
               /tab, /agents, /exit, /quit, and future slash commands. Render the popup
               inline in the Ink tree, not in a separate terminal region.
-            status: in_progress
+            status: completed
             token_estimate: medium
             dependencies: []
           - id: t8-2-2
             name: Filter the slash command list live
             description: Filter matching popup entries as characters are typed after /.
-            status: pending
+            status: in_progress
             token_estimate: small
             dependencies:
               - t8-2-1

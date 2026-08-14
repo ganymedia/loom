@@ -153,6 +153,8 @@ ${LOOM_BIN:-loom}
 At the prompt, try these commands:
 
 ```text
+[type / as the first input character and inspect the popup]
+[press Backspace to clear /]
 /agents
 [press Tab without Enter]
 /tab
@@ -164,7 +166,7 @@ At the prompt, try these commands:
 
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
-Expected result: LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; the live frame reflows after each resize; and `/exit`, Escape, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 
