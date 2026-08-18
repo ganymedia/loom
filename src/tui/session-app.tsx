@@ -21,6 +21,7 @@ export interface SessionViewState {
   sessionId: string;
   thinkingAgentDisplayName?: string;
   tokenPercent: number;
+  toolRunning?: { displayName: string; toolCount: number };
 }
 
 type SessionViewListener = () => void;
@@ -84,13 +85,31 @@ export class SessionViewStore {
   }
 
   beginThinking(displayName: string): void {
-    const { liveAssistant: _liveAssistant, ...state } = this.#state;
+    const {
+      liveAssistant: _liveAssistant,
+      toolRunning: _toolRunning,
+      ...state
+    } = this.#state;
     this.#setState({ ...state, thinkingAgentDisplayName: displayName });
   }
 
   clearThinking(): void {
     if (this.#state.thinkingAgentDisplayName === undefined) return;
     const { thinkingAgentDisplayName: _thinking, ...state } = this.#state;
+    this.#setState(state);
+  }
+
+  beginToolRunning(displayName: string, toolCount: number): void {
+    if (!Number.isInteger(toolCount) || toolCount <= 0) {
+      throw new Error("toolCount must be a positive integer");
+    }
+    const { thinkingAgentDisplayName: _thinking, ...state } = this.#state;
+    this.#setState({ ...state, toolRunning: { displayName, toolCount } });
+  }
+
+  clearToolRunning(): void {
+    if (this.#state.toolRunning === undefined) return;
+    const { toolRunning: _toolRunning, ...state } = this.#state;
     this.#setState(state);
   }
 
@@ -113,6 +132,7 @@ export class SessionViewStore {
     const {
       liveAssistant: _liveAssistant,
       thinkingAgentDisplayName: _thinking,
+      toolRunning: _toolRunning,
       ...state
     } = this.#state;
     this.#setState(state);
@@ -144,6 +164,35 @@ export function ThinkingIndicator({ displayName }: { displayName: string }) {
   }, []);
   return (
     <Text color={theme.info}>{thinkingIndicatorText(displayName, frame)}</Text>
+  );
+}
+
+export function toolRunningIndicatorText(
+  displayName: string,
+  toolCount: number,
+  frame: number,
+): string {
+  const toolLabel = toolCount === 1 ? "tool" : "tools";
+  return `${displayName}: Running ${toolCount} ${toolLabel}${".".repeat((frame % 3) + 1)}`;
+}
+
+export function ToolRunningIndicator({
+  displayName,
+  toolCount,
+}: {
+  displayName: string;
+  toolCount: number;
+}) {
+  const theme = useTheme();
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setFrame((value) => value + 1), 250);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <Text color={theme.warning} bold>
+      {toolRunningIndicatorText(displayName, toolCount, frame)}
+    </Text>
   );
 }
 
@@ -317,6 +366,12 @@ export function SessionApp({
           <Box flexDirection="column" paddingX={1}>
             {state.thinkingAgentDisplayName === undefined ? null : (
               <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+            )}
+            {state.toolRunning === undefined ? null : (
+              <ToolRunningIndicator
+                displayName={state.toolRunning.displayName}
+                toolCount={state.toolRunning.toolCount}
+              />
             )}
             {state.liveAssistant === undefined ? null : (
               <Text>

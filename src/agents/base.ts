@@ -44,8 +44,32 @@ export interface AgentTurnResult {
   completionTokens: number;
 }
 
+export interface AgentToolExecutionEvent {
+  status: "started" | "finished";
+  toolCount: number;
+}
+
 export interface AgentTurnOptions {
   onTextDelta?: (delta: string) => void;
+  onToolExecution?: (event: AgentToolExecutionEvent) => void;
+}
+
+export async function withAgentToolExecution<T>(
+  toolCount: number,
+  options: AgentTurnOptions,
+  execute: () => Promise<T>,
+): Promise<T> {
+  if (!Number.isInteger(toolCount) || toolCount < 0) {
+    throw new Error("toolCount must be a non-negative integer");
+  }
+  if (toolCount === 0) return execute();
+
+  options.onToolExecution?.({ status: "started", toolCount });
+  try {
+    return await execute();
+  } finally {
+    options.onToolExecution?.({ status: "finished", toolCount });
+  }
 }
 
 export function createAgentTextDeltaProjector(

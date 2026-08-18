@@ -169,13 +169,16 @@ At the prompt, try these commands:
 Summarize the current task in one sentence.
 [verify Security: Thinking dots animate before response text]
 [verify the Thinking indicator disappears on first streamed text or turn failure]
+Use the file-reader tool to read package.json and report only the package name.
+[verify Security: Running 1 tool dots appear during execution, distinct from Thinking]
+[verify the Running indicator clears on finish/failure and shows no arguments or file content]
 [resize the terminal narrower, then wider]
 /exit
 ```
 
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
-Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; existing tool execution replaces Thinking with a visually distinct animated Running N tool(s) indicator that clears on finish/failure and never displays arguments or results; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 

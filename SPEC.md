@@ -150,7 +150,10 @@ change, update this spec and note the change at the bottom of this document.
   `AgentTurnOptions`, `HandoffSummary`, `SubAgentSpawnRule`. As of
   2026-08-13, `BaseAgent.runTurn()` accepts optional `AgentTurnOptions` so
   interactive renderers can receive safe assistant-text deltas while the
-  completed `AgentTurnResult` contract remains unchanged.
+  completed `AgentTurnResult` contract remains unchanged. As of 2026-08-14,
+  the same options may report tool-execution start and finish with only a tool
+  count, allowing interactive state rendering without exposing arguments,
+  results, or changing tool/backend capability.
 - **`tools/base.ts`** — `ToolDefinition`, `ToolResult`, `Capability`,
   `ToolAccessPolicy`, `isToolPermitted()`.
 - **`pipeline/types.ts`** — `PipelineStage` (discriminated union of the 5
@@ -339,3 +342,7 @@ Do not consider LOOM feature-complete until every task in
   This is a narrow exception to Phase 8's rendering-only scope because the
   required streaming transport seam did not previously exist; completed agent
   results, tool execution, and non-interactive prompt behavior remain unchanged.
+- v0.9 — Documented the 2026-08-14 renderer-only `AgentTurnOptions` tool
+  lifecycle event. It reports only start/finish status and tool count around
+  existing execution; it adds no tool, backend, transport, argument, or result
+  capability.

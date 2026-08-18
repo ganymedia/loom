@@ -4,7 +4,11 @@ import type {
   AgentTurnResult,
   HandoffSummary,
 } from "@loom/agents/base";
-import { BaseAgent, createAgentTextDeltaProjector } from "@loom/agents/base";
+import {
+  BaseAgent,
+  createAgentTextDeltaProjector,
+  withAgentToolExecution,
+} from "@loom/agents/base";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
@@ -184,10 +188,15 @@ export class TesterAgent extends BaseAgent {
     });
 
     const parsedResponse = parseTesterResponse(response.content);
-    const toolCalls = await Promise.all(
-      parsedResponse.toolCalls.map((toolCall) =>
-        this.executeToolCall(toolCall, context),
-      ),
+    const toolCalls = await withAgentToolExecution(
+      parsedResponse.toolCalls.length,
+      options,
+      () =>
+        Promise.all(
+          parsedResponse.toolCalls.map((toolCall) =>
+            this.executeToolCall(toolCall, context),
+          ),
+        ),
     );
 
     return {

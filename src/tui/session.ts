@@ -320,6 +320,16 @@ async function runAgentPrompt(
       ...(stream === undefined
         ? {}
         : {
+            onToolExecution: (event) => {
+              if (event.status === "started") {
+                stream.store.beginToolRunning(
+                  agent.displayName,
+                  event.toolCount,
+                );
+              } else {
+                stream.store.clearToolRunning();
+              }
+            },
             onTextDelta: (delta: string) => {
               stream.store.clearThinking();
               const safeDelta = stream.redactor.push(delta);

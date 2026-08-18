@@ -3,8 +3,8 @@ version: 0.1.1
 created: 2026-07-07
 updated: 2026-08-14
 current_phase: phase-8
-current_milestone: m8-3
-current_task: t8-3-2
+current_milestone: m8-4
+current_task: t8-4-1
 phases:
   - id: phase-1
     name: Foundation
@@ -1362,7 +1362,7 @@ phases:
         name: Distinguish thinking, tool-running, and idle states
         description: Developer-owned live feedback work after m8-1 that makes thinking,
           tool execution, and idle states visibly distinct.
-        status: in_progress
+        status: completed
         token_estimate: medium
         tasks:
           - id: t8-3-1
@@ -1376,21 +1376,21 @@ phases:
             name: Add a distinct tool-running indicator
             description: Show tool execution with a visual state separate from the thinking
               indicator.
-            status: in_progress
+            status: completed
             token_estimate: medium
             dependencies:
               - t8-3-1
       - id: m8-4
         name: Scrollback hierarchy, markdown rendering, and file-write diffs
         description: Developer-owned reading-density and hierarchy work after m8-1.
-        status: pending
+        status: in_progress
         token_estimate: xlarge
         tasks:
           - id: t8-4-1
             name: Visually recede completed turns
             description: Dim or otherwise recede completed turns so the current exchange
               remains the clear focus.
-            status: pending
+            status: in_progress
             token_estimate: small
             dependencies: []
           - id: t8-4-2

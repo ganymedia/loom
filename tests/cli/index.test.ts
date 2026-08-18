@@ -62,6 +62,7 @@ async function runCompiledSessionWithPty(options: {
   backendUrl: string;
   resize: boolean;
   showPopup: boolean;
+  toolPrompt: boolean;
 }): Promise<{
   cycledAgent: boolean;
   exitCode: number;
@@ -72,15 +73,17 @@ async function runCompiledSessionWithPty(options: {
   popupShown: boolean;
   resizeRendered: boolean;
   thinkingShown: boolean;
+  toolRunningShown: boolean;
 }> {
   const python = String.raw`
 import fcntl, json, os, pty, select, struct, subprocess, sys, termios, time
 
-binary_path, home, project_root, backend_url, first_run, cycle_agent, exit_input, resize, show_popup = sys.argv[1:10]
+binary_path, home, project_root, backend_url, first_run, cycle_agent, exit_input, resize, show_popup, tool_prompt = sys.argv[1:11]
 first_run = first_run == "1"
 cycle_agent = cycle_agent == "1"
 resize = resize == "1"
 show_popup = show_popup == "1"
+tool_prompt = tool_prompt == "1"
 master, slave = pty.openpty()
 env = os.environ.copy()
 env["HOME"] = home
@@ -115,6 +118,9 @@ continuation_start = 0
 sent_prompt = not show_popup
 thinking_shown = not show_popup
 prompt_start = 0
+sent_tool_prompt = not tool_prompt
+tool_running_shown = not tool_prompt
+tool_prompt_start = 0
 sent_exit = False
 deadline = time.time() + 15
 
@@ -185,6 +191,15 @@ while time.time() < deadline:
             thinking_shown = True
             send_exit()
         if sent_url and sent_resize and not cycle_agent and not sent_exit and "Enter follow-up prompts." in text:
+            if tool_prompt and not sent_tool_prompt:
+                os.write(master, b"run tool\r")
+                sent_tool_prompt = True
+                tool_prompt_start = len(output)
+            elif not tool_prompt:
+                send_exit()
+        tool_prompt_text = output[tool_prompt_start:].decode(errors="replace")
+        if sent_tool_prompt and not tool_running_shown and "Running 1 tool" in tool_prompt_text:
+            tool_running_shown = True
             send_exit()
     if proc.poll() is not None:
         break
@@ -207,6 +222,7 @@ print(json.dumps({
     "popupShown": popup_shown,
     "resizeRendered": resize_rendered,
     "thinkingShown": thinking_shown,
+    "toolRunningShown": tool_running_shown,
 }))
 `;
   const proc = Bun.spawn(
@@ -223,6 +239,7 @@ print(json.dumps({
       options.exitInput,
       options.resize ? "1" : "0",
       options.showPopup ? "1" : "0",
+      options.toolPrompt ? "1" : "0",
     ],
     {
       stdout: "pipe",
@@ -249,6 +266,7 @@ print(json.dumps({
     popupShown: boolean;
     resizeRendered: boolean;
     thinkingShown: boolean;
+    toolRunningShown: boolean;
   };
 }
 
@@ -368,6 +386,7 @@ stages:
       backendUrl,
       resize: true,
       showPopup: true,
+      toolPrompt: false,
     });
 
     expect(escapeResult.exitCode).toBe(0);
@@ -390,23 +409,67 @@ stages:
       'Active profile "default" does not define a default backend',
     );
 
-    const written = await readFile(join(home, ".loom", "config.yaml"), "utf8");
+    const configPath = join(home, ".loom", "config.yaml");
+    const written = await readFile(configPath, "utf8");
     expect(written).toContain(`baseUrl: ${backendUrl}`);
 
-    const ctrlCResult = await runCompiledSessionWithPty({
-      binaryPath,
-      cycleAgent: false,
-      exitInput: "ctrl-c",
-      firstRun: false,
-      home,
-      projectRoot,
-      backendUrl,
-      resize: false,
-      showPopup: false,
+    const toolResponse = JSON.stringify({
+      content: "Writing test fixture",
+      toolCalls: [
+        {
+          tool: "file-writer",
+          args: { path: "tool-output.txt", content: "x".repeat(750_000) },
+        },
+      ],
     });
-    expect(ctrlCResult.exitCode).toBe(0);
-    expect(ctrlCResult.output).toContain("\u001B[?1049h");
-    expect(ctrlCResult.output).toContain("\u001B[?1049l");
+    const toolBackend = Bun.serve({
+      port: 0,
+      fetch(request) {
+        const pathname = new URL(request.url).pathname;
+        if (pathname === "/v1/models") {
+          return Response.json({ data: [{ id: "runtime-model" }] });
+        }
+        if (pathname === "/v1/chat/completions") {
+          const chunk = JSON.stringify({
+            choices: [{ delta: { content: toolResponse } }],
+            usage: { prompt_tokens: 2, completion_tokens: 3 },
+          });
+          return new Response(`data: ${chunk}\n\ndata: [DONE]\n\n`, {
+            headers: { "content-type": "text/event-stream" },
+          });
+        }
+        return new Response("Not found", { status: 404 });
+      },
+    });
+    const toolBackendUrl = new URL("v1", toolBackend.url)
+      .toString()
+      .replace(/\/$/, "");
+    try {
+      await writeFile(
+        configPath,
+        written.replace(backendUrl, toolBackendUrl),
+        "utf8",
+      );
+      const ctrlCResult = await runCompiledSessionWithPty({
+        binaryPath,
+        cycleAgent: false,
+        exitInput: "ctrl-c",
+        firstRun: false,
+        home,
+        projectRoot,
+        backendUrl: toolBackendUrl,
+        resize: false,
+        showPopup: false,
+        toolPrompt: true,
+      });
+      expect(ctrlCResult.exitCode).toBe(0);
+      expect(ctrlCResult.toolRunningShown).toBe(true);
+      expect(ctrlCResult.output).toContain("\u001B[?1049h");
+      expect(ctrlCResult.output).toContain("\u001B[?1049l");
+    } finally {
+      toolBackend.stop(true);
+      await writeFile(configPath, written, "utf8");
+    }
 
     const pipedResult = await runCompiledNonTty({
       args: [],

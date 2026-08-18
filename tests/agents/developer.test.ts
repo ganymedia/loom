@@ -75,6 +75,7 @@ describe("DeveloperAgent", () => {
 
   test("executes permitted file-reader tool calls from a response envelope", async () => {
     const projectRoot = await tempProject();
+    const toolEvents: string[] = [];
     await writeFile(join(projectRoot, "note.txt"), "hello loom", "utf8");
     const agent = new DeveloperAgent({
       config,
@@ -99,10 +100,17 @@ describe("DeveloperAgent", () => {
       },
     });
 
-    const result = await agent.runTurn("Read note.txt", {
-      ...context,
-      projectRoot,
-    });
+    const result = await agent.runTurn(
+      "Read note.txt",
+      {
+        ...context,
+        projectRoot,
+      },
+      {
+        onToolExecution: (event) =>
+          toolEvents.push(`${event.status}:${event.toolCount}`),
+      },
+    );
 
     expect(result.content).toBe("Read requested file");
     expect(result.toolCalls).toHaveLength(1);
@@ -110,6 +118,7 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls[0]?.args.projectRoot).toBe(projectRoot);
     expect(result.toolCalls[0]?.result.success).toBe(true);
     expect(result.toolCalls[0]?.result.output).toBe("hello loom");
+    expect(toolEvents).toEqual(["started:1", "finished:1"]);
   });
 
   test("streams projected envelope content while preserving the completed result", async () => {

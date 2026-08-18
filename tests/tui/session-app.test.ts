@@ -4,11 +4,13 @@ import {
   SessionViewStore,
   SlashCommandPopup,
   ThinkingIndicator,
+  ToolRunningIndicator,
   consumeSessionInputChunk,
   isSessionExitInput,
   isSlashCommandPopupOpen,
   moveSlashCommandSelection,
   thinkingIndicatorText,
+  toolRunningIndicatorText,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { renderToString } from "ink";
@@ -122,6 +124,29 @@ describe("SessionViewStore", () => {
     store.clearThinking();
     expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
   });
+
+  test("distinguishes tool execution from thinking and validates its count", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+
+    store.beginThinking("Developer");
+    store.beginToolRunning("Developer", 2);
+    expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
+    expect(store.getSnapshot().toolRunning).toEqual({
+      displayName: "Developer",
+      toolCount: 2,
+    });
+
+    store.clearToolRunning();
+    expect(store.getSnapshot().toolRunning).toBeUndefined();
+    expect(() => store.beginToolRunning("Developer", 0)).toThrow(
+      "toolCount must be a positive integer",
+    );
+  });
 });
 
 describe("SessionApp", () => {
@@ -137,6 +162,24 @@ describe("SessionApp", () => {
       createElement(ThinkingIndicator, { displayName: "Developer" }),
     );
     expect(indicator).toContain("Developer: Thinking.");
+  });
+
+  test("renders tool execution with distinct text and count", () => {
+    expect(toolRunningIndicatorText("Developer", 1, 0)).toBe(
+      "Developer: Running 1 tool.",
+    );
+    expect(toolRunningIndicatorText("Developer", 2, 2)).toBe(
+      "Developer: Running 2 tools...",
+    );
+
+    const indicator = renderToString(
+      createElement(ToolRunningIndicator, {
+        displayName: "Developer",
+        toolCount: 2,
+      }),
+    );
+    expect(indicator).toContain("Developer: Running 2 tools.");
+    expect(indicator).not.toContain("Thinking");
   });
 
   test("renders every available slash command in the inline popup", () => {
