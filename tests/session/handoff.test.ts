@@ -41,6 +41,9 @@ describe("handoff document management", () => {
       ].join("\n"),
     );
     expect(parseHandoff(formatted)).toEqual(document);
+    expect(parseHandoff(formatted.split("\n").slice(2).join("\n"))).toEqual(
+      document,
+    );
   });
 
   test("writes and reads handoff.md under the project .loom directory", async () => {

@@ -5,6 +5,7 @@ import {
   SlashCommandPopup,
   ThinkingIndicator,
   ToolRunningIndicator,
+  completedOutputTextStyle,
   consumeSessionInputChunk,
   isSessionExitInput,
   isSlashCommandPopupOpen,
@@ -13,6 +14,7 @@ import {
   toolRunningIndicatorText,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
+import { loomDark } from "@loom/tui/theme";
 import { renderToString } from "ink";
 import { createElement } from "react";
 
@@ -207,6 +209,11 @@ describe("SessionApp", () => {
   });
 
   test("renders completed output above the live frame", () => {
+    expect(completedOutputTextStyle(loomDark)).toEqual({
+      color: loomDark.textTertiary,
+      dimColor: true,
+    });
+
     const store = new SessionViewStore({
       activeAgentName: "developer",
       liveAssistant: { displayName: "Developer", text: "working" },

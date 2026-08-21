@@ -11,6 +11,7 @@ import {
   shouldShowSlashCommandPopup,
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
+import type { Theme } from "@loom/tui/theme";
 import { Box, type Key, Static, Text, useInput } from "ink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
@@ -234,6 +235,18 @@ export function SlashCommandPopup({
   );
 }
 
+export function completedOutputTextStyle(theme: Pick<Theme, "textTertiary">): {
+  color: string;
+  dimColor: true;
+} {
+  return { color: theme.textTertiary, dimColor: true };
+}
+
+function CompletedOutput({ message }: { message: string }) {
+  const theme = useTheme();
+  return <Text {...completedOutputTextStyle(theme)}>{message.trimEnd()}</Text>;
+}
+
 export function SessionApp({
   onCycleAgent,
   onExit,
@@ -359,7 +372,9 @@ export function SessionApp({
     <ThemeProvider themeId={themeId}>
       <>
         <Static items={[...state.output]} style={{ paddingX: 1 }}>
-          {(message, index) => <Text key={index}>{message.trimEnd()}</Text>}
+          {(message, index) => (
+            <CompletedOutput key={index} message={message} />
+          )}
         </Static>
         <Box flexDirection="column">
           <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />

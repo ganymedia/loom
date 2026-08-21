@@ -40,7 +40,7 @@ export function formatHandoff(document: HandoffDocument): string {
 
 export function parseHandoff(content: string): HandoffDocument {
   const lines = content.split(/\r?\n/);
-  if (lines[0] !== HANDOFF_TITLE) {
+  if (lines[0]?.startsWith("#") && lines[0] !== HANDOFF_TITLE) {
     throw new Error("Handoff document is missing the LOOM handoff title");
   }
 
