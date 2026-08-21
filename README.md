@@ -144,7 +144,6 @@ Model-controlled file and command tools are restricted to the resolved project r
 - [User testing guide](USER_TESTING.md)
 - [Changelog](CHANGELOG.md)
 - [Release procedure](RELEASE.md)
-- [Technical specification](SPEC.md)
 - [Apache-2.0 license](LICENSE)
 
 ## Development
