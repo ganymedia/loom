@@ -4,6 +4,7 @@ import {
   ThemeProvider,
   useTheme,
 } from "@loom/tui/components";
+import { MarkdownText } from "@loom/tui/markdown";
 import {
   type SlashCommandEntry,
   filterSlashCommandEntries,
@@ -15,10 +16,19 @@ import type { Theme } from "@loom/tui/theme";
 import { Box, type Key, Static, Text, useInput } from "ink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+export type SessionOutput =
+  | { id: string; kind: "plain"; text: string }
+  | {
+      id: string;
+      kind: "assistant";
+      displayName: string;
+      content: string;
+    };
+
 export interface SessionViewState {
   activeAgentName: BuiltInAgentName;
   liveAssistant?: { displayName: string; text: string };
-  output: readonly string[];
+  output: readonly SessionOutput[];
   sessionId: string;
   thinkingAgentDisplayName?: string;
   tokenPercent: number;
@@ -65,10 +75,12 @@ export function isSlashCommandPopupOpen(
 
 export class SessionViewStore {
   readonly #listeners = new Set<SessionViewListener>();
+  #nextOutputId: number;
   #state: SessionViewState;
 
   constructor(initialState: SessionViewState) {
     this.#state = initialState;
+    this.#nextOutputId = initialState.output.length;
   }
 
   readonly getSnapshot = (): SessionViewState => this.#state;
@@ -81,7 +93,25 @@ export class SessionViewStore {
   appendOutput(message: string): void {
     this.#setState({
       ...this.#state,
-      output: [...this.#state.output, message],
+      output: [
+        ...this.#state.output,
+        { id: this.#outputId(), kind: "plain", text: message },
+      ],
+    });
+  }
+
+  appendAssistantOutput(displayName: string, content: string): void {
+    this.#setState({
+      ...this.#state,
+      output: [
+        ...this.#state.output,
+        {
+          id: this.#outputId(),
+          kind: "assistant",
+          displayName,
+          content,
+        },
+      ],
     });
   }
 
@@ -146,6 +176,12 @@ export class SessionViewStore {
   #setState(state: SessionViewState): void {
     this.#state = state;
     for (const listener of this.#listeners) listener();
+  }
+
+  #outputId(): string {
+    const id = `output-${this.#nextOutputId}`;
+    this.#nextOutputId += 1;
+    return id;
   }
 }
 
@@ -242,9 +278,21 @@ export function completedOutputTextStyle(theme: Pick<Theme, "textTertiary">): {
   return { color: theme.textTertiary, dimColor: true };
 }
 
-function CompletedOutput({ message }: { message: string }) {
+function CompletedOutput({ output }: { output: SessionOutput }) {
   const theme = useTheme();
-  return <Text {...completedOutputTextStyle(theme)}>{message.trimEnd()}</Text>;
+  if (output.kind === "plain") {
+    return (
+      <Text {...completedOutputTextStyle(theme)}>{output.text.trimEnd()}</Text>
+    );
+  }
+  return (
+    <Box flexDirection="column">
+      <Text {...completedOutputTextStyle(theme)} bold>
+        {output.displayName}
+      </Text>
+      <MarkdownText source={output.content} muted />
+    </Box>
+  );
 }
 
 export function SessionApp({
@@ -372,9 +420,7 @@ export function SessionApp({
     <ThemeProvider themeId={themeId}>
       <>
         <Static items={[...state.output]} style={{ paddingX: 1 }}>
-          {(message, index) => (
-            <CompletedOutput key={index} message={message} />
-          )}
+          {(output) => <CompletedOutput key={output.id} output={output} />}
         </Static>
         <Box flexDirection="column">
           <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
@@ -389,9 +435,10 @@ export function SessionApp({
               />
             )}
             {state.liveAssistant === undefined ? null : (
-              <Text>
-                {state.liveAssistant.displayName}: {state.liveAssistant.text}
-              </Text>
+              <Box flexDirection="column">
+                <Text bold>{state.liveAssistant.displayName}</Text>
+                <MarkdownText source={state.liveAssistant.text} />
+              </Box>
             )}
           </Box>
           <StatusBar

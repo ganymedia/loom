@@ -79,11 +79,17 @@ describe("SessionViewStore", () => {
     const unsubscribe = store.subscribe(() => {
       const state = store.getSnapshot();
       snapshots.push(
-        `${state.activeAgentName}:${state.tokenPercent}:${state.output.join("")}`,
+        `${state.activeAgentName}:${state.tokenPercent}:${state.output
+          .map((output) =>
+            output.kind === "plain"
+              ? output.text
+              : `${output.displayName}: ${output.content}\n`,
+          )
+          .join("")}`,
       );
     });
 
-    store.appendOutput("Developer: first answer\n");
+    store.appendAssistantOutput("Developer", "first answer");
     store.updateStatus("security", 0.25);
     unsubscribe();
     store.appendOutput("ignored after unsubscribe");
@@ -94,7 +100,19 @@ describe("SessionViewStore", () => {
     ]);
     expect(store.getSnapshot()).toEqual({
       activeAgentName: "security",
-      output: ["Developer: first answer\n", "ignored after unsubscribe"],
+      output: [
+        {
+          id: "output-0",
+          kind: "assistant",
+          displayName: "Developer",
+          content: "first answer",
+        },
+        {
+          id: "output-1",
+          kind: "plain",
+          text: "ignored after unsubscribe",
+        },
+      ],
       sessionId: "session-1",
       tokenPercent: 0.25,
     });
@@ -217,7 +235,19 @@ describe("SessionApp", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       liveAssistant: { displayName: "Developer", text: "working" },
-      output: ["first completed line\n", "second completed line\n"],
+      output: [
+        {
+          id: "first",
+          kind: "plain",
+          text: "first completed line\n",
+        },
+        {
+          id: "second",
+          kind: "assistant",
+          displayName: "Security",
+          content: "**second completed line**",
+        },
+      ],
       sessionId: "session-1",
       tokenPercent: 0.25,
     });
@@ -235,7 +265,7 @@ describe("SessionApp", () => {
     const firstOutput = frame.indexOf("first completed line");
     const secondOutput = frame.indexOf("second completed line");
     const tabs = frame.indexOf("Developer");
-    const liveAssistant = frame.indexOf("Developer: working");
+    const liveAssistant = frame.indexOf("working");
     const status = frame.indexOf("session-1");
     const input = frame.lastIndexOf(">");
 

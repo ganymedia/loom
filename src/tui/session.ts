@@ -303,6 +303,7 @@ async function runAgentPrompt(
     conversationHistory: AgentMessage[];
   },
   writeOutput: (message: string) => void,
+  writeAssistantOutput: (displayName: string, content: string) => void,
   viewStore: SessionViewStore | undefined,
   config: LoomConfig,
 ): Promise<AgentTurnResult> {
@@ -344,14 +345,14 @@ async function runAgentPrompt(
     throw error;
   }
   if (stream === undefined) {
-    writeOutput(`${agent.displayName}: ${turn.content}\n`);
+    writeAssistantOutput(agent.displayName, turn.content);
   } else {
     const finalDelta = stream.redactor.flush();
     if (finalDelta.length > 0) {
       stream.store.appendAssistantDelta(agent.displayName, finalDelta);
     }
     stream.store.clearAssistantDelta();
-    writeOutput(`${agent.displayName}: ${turn.content}\n`);
+    writeAssistantOutput(agent.displayName, turn.content);
   }
   for (const toolResultLine of formatToolCallResults(turn)) {
     writeOutput(`${toolResultLine}\n`);
@@ -447,6 +448,14 @@ export async function startSession(
       viewStore.appendOutput(safeMessage);
     }
   };
+  const writeAssistantOutput = (displayName: string, content: string): void => {
+    const safeContent = redact(content);
+    if (viewStore === undefined) {
+      outputSink(`${displayName}: ${safeContent}\n`);
+    } else {
+      viewStore.appendAssistantOutput(displayName, safeContent);
+    }
+  };
   const smoke = await runSessionSmoke(config, options);
 
   writeOutput("LOOM session started.\n");
@@ -519,6 +528,7 @@ export async function startSession(
           options.initialPrompt,
           context,
           writeOutput,
+          writeAssistantOutput,
           viewStore,
           config,
         );
@@ -602,6 +612,7 @@ export async function startSession(
             prompt,
             context,
             writeOutput,
+            writeAssistantOutput,
             viewStore,
             config,
           );
