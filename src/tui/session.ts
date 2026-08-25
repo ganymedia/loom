@@ -23,7 +23,10 @@ import {
 } from "@loom/session/handoff";
 import { SessionManager } from "@loom/session/manager";
 import { fileReaderTool } from "@loom/tools/file-reader";
-import { fileWriterTool } from "@loom/tools/file-writer";
+import {
+  fileWriterTool,
+  isFileWriterResultData,
+} from "@loom/tools/file-writer";
 import { gitOpsTool } from "@loom/tools/git-ops";
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import { SessionApp, SessionViewStore } from "@loom/tui/session-app";
@@ -354,8 +357,29 @@ async function runAgentPrompt(
     stream.store.clearAssistantDelta();
     writeAssistantOutput(agent.displayName, turn.content);
   }
-  for (const toolResultLine of formatToolCallResults(turn)) {
-    writeOutput(`${toolResultLine}\n`);
+  const redactToolContent = createConfigRedactor(config);
+  const toolResultLines = formatToolCallResults(turn);
+  for (const [index, toolCall] of turn.toolCalls.entries()) {
+    if (
+      viewStore !== undefined &&
+      toolCall.result.success &&
+      isFileWriterResultData(toolCall.result.data)
+    ) {
+      viewStore.appendFileDiff(
+        toolCall.result.data.path,
+        toolCall.result.data.beforeContent === null
+          ? null
+          : redactToolContent(toolCall.result.data.beforeContent),
+        toolCall.result.data.afterContent === null
+          ? null
+          : redactToolContent(toolCall.result.data.afterContent),
+      );
+      continue;
+    }
+    const toolResultLine = toolResultLines[index];
+    if (toolResultLine !== undefined) {
+      writeOutput(`${toolResultLine}\n`);
+    }
   }
 
   const timestamp = Date.now();

@@ -116,3 +116,22 @@ export async function writeUtf8FileNoFollow(
     await handle.close();
   }
 }
+
+export async function readUtf8FileNoFollowIfPresent(
+  targetPath: string,
+  maxBytes: number,
+): Promise<string | null | undefined> {
+  let handle: Awaited<ReturnType<typeof open>>;
+  try {
+    handle = await open(targetPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+  try {
+    if ((await handle.stat()).size > maxBytes) return null;
+    return await handle.readFile({ encoding: "utf8" });
+  } finally {
+    await handle.close();
+  }
+}

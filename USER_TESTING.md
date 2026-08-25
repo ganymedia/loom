@@ -206,7 +206,45 @@ ${LOOM_BIN:-loom} recall --vector 1,0 --top-k 3
 
 Expected result: JSON recall output. It may be empty if no events have embeddings; it should not crash.
 
-## 9. What to report
+## 9. File-writer and Ink diffing
+
+Verify the built-in file-writer and persistent Ink diffing:
+
+```bash
+# 1. Create a disposable file
+printf 'line 1\nline 2\nline 3\n' > test_file.txt
+
+# 2. Start the persistent interactive session
+${LOOM_BIN:-loom}
+```
+
+At the `>` prompt, enter:
+
+```text
+Use the file-writer tool to overwrite test_file.txt with exactly four lines: line 1, line 2.5, line 3, and line 4.
+```
+
+Resize the terminal while the diff remains visible, then exit LOOM and run:
+
+```bash
+# 3. Confirm non-TTY output still works without invoking the Ink view
+${LOOM_BIN:-loom} --prompt "Reply with one short sentence and do not use tools."
+
+# 4. Verify the file content
+cat test_file.txt
+
+# 5. Cleanup
+rm test_file.txt
+```
+
+Expected result:
+- `test_file.txt` is overwritten with the exact new content.
+- In the terminal output (Ink), the diff shows `line 2` as red (removed) and `line 2.5` as green (added).
+- Surrounding context (`line 1` and `line 3`) remains visible and unchanged.
+- The terminal resize remains stable during the output.
+- No secrets or CUI are leaked in the file or terminal.
+
+## 10. What to report
 
 For each section, report:
 

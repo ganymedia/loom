@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { FileWriteDiff, createFileDiffLines } from "@loom/tui/file-diff";
 import {
   SessionApp,
   SessionViewStore,
@@ -83,7 +84,9 @@ describe("SessionViewStore", () => {
           .map((output) =>
             output.kind === "plain"
               ? output.text
-              : `${output.displayName}: ${output.content}\n`,
+              : output.kind === "assistant"
+                ? `${output.displayName}: ${output.content}\n`
+                : `diff:${output.path}\n`,
           )
           .join("")}`,
       );
@@ -167,6 +170,25 @@ describe("SessionViewStore", () => {
       "toolCount must be a positive integer",
     );
   });
+
+  test("stores file diffs as typed output", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+
+    store.appendFileDiff("src/example.ts", "const old = 1;", "const next = 2;");
+
+    expect(store.getSnapshot().output[0]).toEqual({
+      id: "output-0",
+      kind: "file-diff",
+      path: "src/example.ts",
+      beforeContent: "const old = 1;",
+      afterContent: "const next = 2;",
+    });
+  });
 });
 
 describe("SessionApp", () => {
@@ -200,6 +222,35 @@ describe("SessionApp", () => {
     );
     expect(indicator).toContain("Developer: Running 2 tools.");
     expect(indicator).not.toContain("Thinking");
+  });
+
+  test("renders unchanged, removed, and added file lines", () => {
+    expect(createFileDiffLines("same\nold\n", "same\nnew\n")).toEqual([
+      { kind: "context", text: "same" },
+      { kind: "removed", text: "old" },
+      { kind: "added", text: "new" },
+    ]);
+
+    const diff = renderToString(
+      createElement(FileWriteDiff, {
+        path: "src/example.ts",
+        beforeContent: "same\nold\n",
+        afterContent: "same\nnew\n",
+      }),
+    );
+    expect(diff).toContain("File src/example.ts");
+    expect(diff).toContain("  same");
+    expect(diff).toContain("- old");
+    expect(diff).toContain("+ new");
+
+    const omitted = renderToString(
+      createElement(FileWriteDiff, {
+        path: "large.txt",
+        beforeContent: null,
+        afterContent: null,
+      }),
+    );
+    expect(omitted).toContain("Diff omitted: change is too large");
   });
 
   test("renders every available slash command in the inline popup", () => {

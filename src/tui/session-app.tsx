@@ -4,6 +4,7 @@ import {
   ThemeProvider,
   useTheme,
 } from "@loom/tui/components";
+import { FileWriteDiff } from "@loom/tui/file-diff";
 import { MarkdownText } from "@loom/tui/markdown";
 import {
   type SlashCommandEntry,
@@ -23,6 +24,13 @@ export type SessionOutput =
       kind: "assistant";
       displayName: string;
       content: string;
+    }
+  | {
+      id: string;
+      kind: "file-diff";
+      path: string;
+      beforeContent: string | null;
+      afterContent: string | null;
     };
 
 export interface SessionViewState {
@@ -110,6 +118,26 @@ export class SessionViewStore {
           kind: "assistant",
           displayName,
           content,
+        },
+      ],
+    });
+  }
+
+  appendFileDiff(
+    path: string,
+    beforeContent: string | null,
+    afterContent: string | null,
+  ): void {
+    this.#setState({
+      ...this.#state,
+      output: [
+        ...this.#state.output,
+        {
+          id: this.#outputId(),
+          kind: "file-diff",
+          path,
+          beforeContent,
+          afterContent,
         },
       ],
     });
@@ -284,6 +312,9 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
     return (
       <Text {...completedOutputTextStyle(theme)}>{output.text.trimEnd()}</Text>
     );
+  }
+  if (output.kind === "file-diff") {
+    return <FileWriteDiff {...output} />;
   }
   return (
     <Box flexDirection="column">

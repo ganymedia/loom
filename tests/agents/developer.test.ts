@@ -63,6 +63,8 @@ describe("DeveloperAgent", () => {
 
     const result = await agent.runTurn("Implement this", context);
 
+    expect(agent.systemPrompt).toContain('"tool":"file-writer"');
+    expect(agent.systemPrompt).toContain("never emit call syntax");
     expect(requestedUrls).toEqual([
       "http://127.0.0.1:8000/v1/models",
       "http://127.0.0.1:8000/v1/chat/completions",

@@ -22,6 +22,13 @@ describe("fileWriterTool", () => {
     expect(await readFile(join(projectRoot, "generated.txt"), "utf8")).toBe(
       "hello loom",
     );
+    expect(result.data).toEqual({
+      kind: "file-write",
+      path: "generated.txt",
+      bytes: 10,
+      beforeContent: "",
+      afterContent: "hello loom",
+    });
   });
 
   test("denies traversal outside the project root", async () => {
@@ -79,6 +86,36 @@ describe("fileWriterTool", () => {
     expect(result.success).toBe(true);
     expect(await readFile(join(projectRoot, "existing.txt"), "utf8")).toBe(
       "new",
+    );
+    expect(result.data).toEqual({
+      kind: "file-write",
+      path: "existing.txt",
+      bytes: 3,
+      beforeContent: "old",
+      afterContent: "new",
+    });
+  });
+
+  test("omits oversized content from diff metadata without blocking the write", async () => {
+    const projectRoot = await tempProject();
+    const content = "x".repeat(200_001);
+
+    const result = await fileWriterTool.execute({
+      projectRoot,
+      path: "large.txt",
+      content,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      kind: "file-write",
+      path: "large.txt",
+      bytes: 200_001,
+      beforeContent: null,
+      afterContent: null,
+    });
+    expect(await readFile(join(projectRoot, "large.txt"), "utf8")).toBe(
+      content,
     );
   });
 
