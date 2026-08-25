@@ -364,20 +364,20 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
       <Box
         borderStyle="round"
         borderColor={agentColor}
-        backgroundColor={theme.panelSurface}
+        backgroundColor={theme.textTertiary}
         flexDirection="column"
         marginTop={1}
         paddingX={1}
       >
         <Box flexDirection="row" justifyContent="space-between">
-          <Text color={agentColor} bold>
+          <Text color={theme.textInverse} bold>
             You
           </Text>
-          <Text color={theme.textTertiary} dimColor>
+          <Text color={theme.textInverse} dimColor>
             Submitted
           </Text>
         </Box>
-        <Text color={theme.textSecondary}>
+        <Text color={theme.textInverse}>
           {sanitizeTerminalText(output.content)}
         </Text>
       </Box>
@@ -635,7 +635,6 @@ export function SessionApp({
             <CompletedOutput key={output.id} output={output} />
           ))}
         </Box>
-        <Box height={1} />
         <StatusBar
           sessionId={state.sessionId}
           tokenPercent={state.tokenPercent}

@@ -41,10 +41,8 @@ describe("SessionApp user prompt rendering", () => {
     expect(output).toContain("╰");
   });
 
-  test("renders user prompt with redacted content", () => {
-    // Note: In a real scenario, redact() is called in session.ts. 
-    // Here we test the component's ability to render what it receives.
-    store.appendUserPrompt("secret-api-key-123", "developer");
+  test("renders subsequent submitted prompt content", () => {
+    store.appendUserPrompt("second prompt", "developer");
 
     const output = renderToString(
       createElement(SessionApp, {
@@ -56,7 +54,7 @@ describe("SessionApp user prompt rendering", () => {
       }),
     );
 
-    expect(output).toContain("secret-api-key-123");
+    expect(output).toContain("second prompt");
   });
 });
 
