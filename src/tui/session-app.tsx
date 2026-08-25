@@ -13,7 +13,7 @@ import {
   shouldShowSlashCommandPopup,
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
-import type { Theme } from "@loom/tui/theme";
+import { type Theme, agentTabColor } from "@loom/tui/theme";
 import { Box, type Key, Text, useInput, useStdout } from "ink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
@@ -36,6 +36,7 @@ export type SessionOutput =
       id: string;
       kind: "user";
       content: string;
+      agentName: BuiltInAgentName;
     };
 
 export interface SessionViewState {
@@ -174,12 +175,12 @@ export class SessionViewStore {
     });
   }
 
-  appendUserPrompt(content: string): void {
+  appendUserPrompt(content: string, agentName: BuiltInAgentName): void {
     this.#setState({
       ...this.#state,
       output: [
         ...this.#state.output,
-        { id: this.#outputId(), kind: "user", content },
+        { id: this.#outputId(), kind: "user", content, agentName },
       ],
     });
   }
@@ -358,11 +359,24 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
     return <FileWriteDiff {...output} />;
   }
   if (output.kind === "user") {
+    const agentColor = agentTabColor(theme, output.agentName);
     return (
-      <Box flexDirection="column">
-        <Text color={theme.accent} bold>
-          You
-        </Text>
+      <Box
+        borderStyle="round"
+        borderColor={agentColor}
+        backgroundColor={theme.panelSurface}
+        flexDirection="column"
+        marginTop={1}
+        paddingX={1}
+      >
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text color={agentColor} bold>
+            You
+          </Text>
+          <Text color={theme.textTertiary} dimColor>
+            Submitted
+          </Text>
+        </Box>
         <Text color={theme.textSecondary}>
           {sanitizeTerminalText(output.content)}
         </Text>
@@ -379,11 +393,29 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
   );
 }
 
-export function SessionInput({ input }: { input: string }) {
+export function SessionInput({
+  activeAgentName,
+  input,
+}: {
+  activeAgentName: BuiltInAgentName;
+  input: string;
+}) {
   const theme = useTheme();
+  const agentColor = agentTabColor(theme, activeAgentName);
   return (
-    <Box flexDirection="column" paddingX={1}>
-      <Text>{formatSessionInput(input)}</Text>
+    <Box flexDirection="column" marginX={1}>
+      <Box
+        borderStyle="round"
+        borderColor={agentColor}
+        backgroundColor={theme.panelSurface}
+        flexDirection="column"
+        paddingX={1}
+      >
+        <Text color={agentColor} bold>
+          Message
+        </Text>
+        <Text>{formatSessionInput(input)}</Text>
+      </Box>
       <Text color={theme.textTertiary} dimColor>
         Enter submit · Ctrl+J newline · Shift+Enter where supported
       </Text>
@@ -603,6 +635,7 @@ export function SessionApp({
             <CompletedOutput key={output.id} output={output} />
           ))}
         </Box>
+        <Box height={1} />
         <StatusBar
           sessionId={state.sessionId}
           tokenPercent={state.tokenPercent}
@@ -617,7 +650,7 @@ export function SessionApp({
             selectedIndex={selectedSlashCommandIndex}
           />
         ) : null}
-        <SessionInput input={input} />
+        <SessionInput activeAgentName={state.activeAgentName} input={input} />
       </Box>
     </ThemeProvider>
   );
