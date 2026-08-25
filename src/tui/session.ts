@@ -317,7 +317,10 @@ async function runAgentPrompt(
           redactor: createStreamingConfigRedactor(config),
           store: viewStore,
         };
-  stream?.store.beginThinking(agent.displayName);
+  if (stream !== undefined) {
+    stream.store.beginThinking(agent.displayName);
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
   let turn: AgentTurnResult;
   try {
     turn = await agent.runTurn(prompt, context, {
@@ -631,6 +634,7 @@ export async function startSession(
             writeSessionStatus();
             continue;
           }
+          viewStore?.appendUserPrompt(redact(prompt));
           const turn = await runAgentPrompt(
             agent,
             prompt,

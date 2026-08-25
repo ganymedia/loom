@@ -65,6 +65,9 @@ export async function withAgentToolExecution<T>(
   if (toolCount === 0) return execute();
 
   options.onToolExecution?.({ status: "started", toolCount });
+  if (options.onToolExecution !== undefined) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
   try {
     return await execute();
   } finally {

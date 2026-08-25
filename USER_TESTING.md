@@ -153,6 +153,11 @@ ${LOOM_BIN:-loom}
 At the prompt, try these commands:
 
 ```text
+[type a short first line, press Ctrl+J, type a second line, and verify both lines remain in the input]
+[press Enter once and verify the two-line prompt submits as one prompt]
+[where supported, repeat with Shift+Enter instead of Ctrl+J]
+[paste a two-line non-sensitive prompt and verify it remains one prompt until Enter]
+[verify the visible hint distinguishes Enter submit from newline actions]
 [type / as the first input character and inspect the popup]
 [continue typing agent t and verify only /agent tester remains]
 [press Escape and verify the popup closes while > /agent t remains]
@@ -182,7 +187,7 @@ Use the file-reader tool to read package.json and report only the package name.
 
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
-Expected result: typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; assistant Markdown renders as styled headings, emphasis, lists, inline code, and recognized syntax-highlighted fenced code without showing raw formatting markers; completed scrollback is visually recessed but readable while the live exchange remains prominent; existing tool execution replaces Thinking with a visually distinct animated Running N tool(s) indicator that clears on finish/failure and never displays arguments or results; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+Expected result: the input shows `Enter submit · Ctrl+J newline · Shift+Enter where supported`; Ctrl+J inserts a visible continuation line without submitting, Shift+Enter does the same when the terminal reports that modifier, pasted multi-line text remains one prompt, and plain Enter submits the complete input once. Typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound, and Enter runs the selected command; LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; assistant Markdown renders as styled headings, emphasis, lists, inline code, and recognized syntax-highlighted fenced code without showing raw formatting markers; completed scrollback is visually recessed but readable while the live exchange remains prominent; existing tool execution replaces Thinking with a visually distinct animated Running N tool(s) indicator that clears on finish/failure and never displays arguments or results; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 

@@ -5,7 +5,7 @@ import {
   useTheme,
 } from "@loom/tui/components";
 import { FileWriteDiff } from "@loom/tui/file-diff";
-import { MarkdownText } from "@loom/tui/markdown";
+import { MarkdownText, sanitizeTerminalText } from "@loom/tui/markdown";
 import {
   type SlashCommandEntry,
   filterSlashCommandEntries,
@@ -14,7 +14,7 @@ import {
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
 import type { Theme } from "@loom/tui/theme";
-import { Box, type Key, Static, Text, useInput } from "ink";
+import { Box, type Key, Text, useInput, useStdout } from "ink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export type SessionOutput =
@@ -31,6 +31,11 @@ export type SessionOutput =
       path: string;
       beforeContent: string | null;
       afterContent: string | null;
+    }
+  | {
+      id: string;
+      kind: "user";
+      content: string;
     };
 
 export interface SessionViewState {
@@ -45,15 +50,31 @@ export interface SessionViewState {
 
 type SessionViewListener = () => void;
 
-export function consumeSessionInputChunk(
-  current: string,
-  chunk: string,
-): { lines: string[]; remainder: string } {
-  const parts = `${current}${chunk}`.split(/\r\n|\r|\n/);
-  return {
-    lines: parts.slice(0, -1),
-    remainder: parts.at(-1) ?? "",
-  };
+export function appendSessionInput(current: string, chunk: string): string {
+  return `${current}${chunk.replace(/\r\n|\r/g, "\n")}`;
+}
+
+export function splitTerminalInputChunk(chunk: string): {
+  text: string;
+  submit: boolean;
+} {
+  const submit = chunk.endsWith("\r");
+  return { text: submit ? chunk.slice(0, -1) : chunk, submit };
+}
+
+export function shouldInsertInputNewline(
+  character: string,
+  key: Pick<Key, "return" | "shift">,
+): boolean {
+  return character === "\n" || (key.return && key.shift);
+}
+
+export function formatSessionInput(input: string): string {
+  return `> ${input.replaceAll("\n", "\n  ")}`;
+}
+
+export function resolveTerminalRows(rows: number | undefined): number {
+  return rows === undefined || rows <= 0 ? 24 : Math.max(rows, 12);
 }
 
 export function isSessionExitInput(
@@ -139,6 +160,16 @@ export class SessionViewStore {
           beforeContent,
           afterContent,
         },
+      ],
+    });
+  }
+
+  appendUserPrompt(content: string): void {
+    this.#setState({
+      ...this.#state,
+      output: [
+        ...this.#state.output,
+        { id: this.#outputId(), kind: "user", content },
       ],
     });
   }
@@ -316,12 +347,36 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
   if (output.kind === "file-diff") {
     return <FileWriteDiff {...output} />;
   }
+  if (output.kind === "user") {
+    return (
+      <Box flexDirection="column">
+        <Text color={theme.accent} bold>
+          You
+        </Text>
+        <Text color={theme.textSecondary}>
+          {sanitizeTerminalText(output.content)}
+        </Text>
+      </Box>
+    );
+  }
   return (
     <Box flexDirection="column">
       <Text {...completedOutputTextStyle(theme)} bold>
         {output.displayName}
       </Text>
       <MarkdownText source={output.content} muted />
+    </Box>
+  );
+}
+
+export function SessionInput({ input }: { input: string }) {
+  const theme = useTheme();
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Text>{formatSessionInput(input)}</Text>
+      <Text color={theme.textTertiary} dimColor>
+        Enter submit · Ctrl+J newline · Shift+Enter where supported
+      </Text>
     </Box>
   );
 }
@@ -351,6 +406,37 @@ export function SessionApp({
     store.getSnapshot,
     store.getSnapshot,
   );
+  const { stdout } = useStdout();
+  const [terminalRows, setTerminalRows] = useState(
+    resolveTerminalRows(stdout.rows),
+  );
+  useEffect(() => {
+    const updateTerminalRows = (): void =>
+      setTerminalRows(resolveTerminalRows(stdout.rows));
+    stdout.on("resize", updateTerminalRows);
+    return () => {
+      stdout.off("resize", updateTerminalRows);
+    };
+  }, [stdout]);
+  const submitInput = (): void => {
+    const entries = filterSlashCommandEntries(
+      sessionSlashCommandEntries,
+      inputRef.current,
+    );
+    const selectedEntry = isSlashCommandPopupOpen(
+      inputRef.current,
+      slashCommandPopupDismissedRef.current,
+    )
+      ? (entries[selectedSlashCommandIndexRef.current] ?? entries[0])
+      : undefined;
+    onSubmit(selectedEntry?.command ?? inputRef.current);
+    inputRef.current = "";
+    selectedSlashCommandIndexRef.current = 0;
+    slashCommandPopupDismissedRef.current = false;
+    setInput("");
+    setSelectedSlashCommandIndex(0);
+    setSlashCommandPopupDismissed(false);
+  };
   useInput((character, key) => {
     if (
       key.escape &&
@@ -391,24 +477,17 @@ export function SessionApp({
       setSelectedSlashCommandIndex(selectedSlashCommandIndexRef.current);
       return;
     }
-    if (key.return) {
-      const entries = filterSlashCommandEntries(
-        sessionSlashCommandEntries,
-        inputRef.current,
-      );
-      const selectedEntry = isSlashCommandPopupOpen(
-        inputRef.current,
-        slashCommandPopupDismissedRef.current,
-      )
-        ? (entries[selectedSlashCommandIndexRef.current] ?? entries[0])
-        : undefined;
-      onSubmit(selectedEntry?.command ?? inputRef.current);
-      inputRef.current = "";
+    if (shouldInsertInputNewline(character, key)) {
+      inputRef.current = appendSessionInput(inputRef.current, "\n");
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
-      setInput("");
+      setInput(inputRef.current);
       setSelectedSlashCommandIndex(0);
       setSlashCommandPopupDismissed(false);
+      return;
+    }
+    if (key.return) {
+      submitInput();
       return;
     }
     if (key.backspace || key.delete) {
@@ -427,9 +506,12 @@ export function SessionApp({
       !key.tab &&
       !key.escape
     ) {
-      const consumed = consumeSessionInputChunk(inputRef.current, character);
-      for (const line of consumed.lines) onSubmit(line);
-      inputRef.current = consumed.remainder;
+      const chunk = splitTerminalInputChunk(character);
+      inputRef.current = appendSessionInput(inputRef.current, chunk.text);
+      if (chunk.submit) {
+        submitInput();
+        return;
+      }
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
@@ -449,48 +531,49 @@ export function SessionApp({
 
   return (
     <ThemeProvider themeId={themeId}>
-      <>
-        <Static items={[...state.output]} style={{ paddingX: 1 }}>
-          {(output) => <CompletedOutput key={output.id} output={output} />}
-        </Static>
-        <Box flexDirection="column">
-          <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
-          <Box flexDirection="column" paddingX={1}>
-            {state.thinkingAgentDisplayName === undefined ? null : (
-              <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
-            )}
-            {state.toolRunning === undefined ? null : (
-              <ToolRunningIndicator
-                displayName={state.toolRunning.displayName}
-                toolCount={state.toolRunning.toolCount}
-              />
-            )}
-            {state.liveAssistant === undefined ? null : (
-              <Box flexDirection="column">
-                <Text bold>{state.liveAssistant.displayName}</Text>
-                <MarkdownText source={state.liveAssistant.text} />
-              </Box>
-            )}
-          </Box>
-          <StatusBar
-            sessionId={state.sessionId}
-            tokenPercent={state.tokenPercent}
-            activeAgentName={state.activeAgentName}
-          />
-          {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
-            <SlashCommandPopup
-              entries={filterSlashCommandEntries(
-                sessionSlashCommandEntries,
-                input,
-              )}
-              selectedIndex={selectedSlashCommandIndex}
+      <Box flexDirection="column" height={terminalRows}>
+        <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
+        <Box
+          flexDirection="column-reverse"
+          flexGrow={1}
+          overflowY="hidden"
+          paddingX={1}
+        >
+          {state.liveAssistant === undefined ? null : (
+            <Box flexDirection="column">
+              <Text bold>{state.liveAssistant.displayName}</Text>
+              <MarkdownText source={state.liveAssistant.text} />
+            </Box>
+          )}
+          {state.toolRunning === undefined ? null : (
+            <ToolRunningIndicator
+              displayName={state.toolRunning.displayName}
+              toolCount={state.toolRunning.toolCount}
             />
-          ) : null}
-          <Box paddingX={1}>
-            <Text>&gt; {input}</Text>
-          </Box>
+          )}
+          {state.thinkingAgentDisplayName === undefined ? null : (
+            <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+          )}
+          {[...state.output].reverse().map((output) => (
+            <CompletedOutput key={output.id} output={output} />
+          ))}
         </Box>
-      </>
+        <StatusBar
+          sessionId={state.sessionId}
+          tokenPercent={state.tokenPercent}
+          activeAgentName={state.activeAgentName}
+        />
+        {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
+          <SlashCommandPopup
+            entries={filterSlashCommandEntries(
+              sessionSlashCommandEntries,
+              input,
+            )}
+            selectedIndex={selectedSlashCommandIndex}
+          />
+        ) : null}
+        <SessionInput input={input} />
+      </Box>
     </ThemeProvider>
   );
 }

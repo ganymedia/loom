@@ -74,6 +74,8 @@ async function runCompiledSessionWithPty(options: {
   resizeRendered: boolean;
   thinkingShown: boolean;
   toolRunningShown: boolean;
+  promptInputShown: boolean;
+  userPromptShown: boolean;
 }> {
   const python = String.raw`
 import fcntl, json, os, pty, select, struct, subprocess, sys, termios, time
@@ -223,6 +225,8 @@ print(json.dumps({
     "resizeRendered": resize_rendered,
     "thinkingShown": thinking_shown,
     "toolRunningShown": tool_running_shown,
+    "promptInputShown": "hello" in prompt_text,
+    "userPromptShown": "You" in prompt_text and "hello" in prompt_text,
 }))
 `;
   const proc = Bun.spawn(
@@ -267,6 +271,8 @@ print(json.dumps({
     resizeRendered: boolean;
     thinkingShown: boolean;
     toolRunningShown: boolean;
+    promptInputShown: boolean;
+    userPromptShown: boolean;
   };
 }
 
@@ -389,14 +395,29 @@ stages:
       toolPrompt: false,
     });
 
-    expect(escapeResult.exitCode).toBe(0);
-    expect(escapeResult.popupShown).toBe(true);
-    expect(escapeResult.popupSelected).toBe(true);
-    expect(escapeResult.popupClosed).toBe(true);
-    expect(escapeResult.popupInputPreserved).toBe(true);
-    expect(escapeResult.resizeRendered).toBe(true);
-    expect(escapeResult.cycledAgent).toBe(true);
-    expect(escapeResult.thinkingShown).toBe(true);
+    expect({
+      exitCode: escapeResult.exitCode,
+      popupShown: escapeResult.popupShown,
+      popupSelected: escapeResult.popupSelected,
+      popupClosed: escapeResult.popupClosed,
+      popupInputPreserved: escapeResult.popupInputPreserved,
+      resizeRendered: escapeResult.resizeRendered,
+      cycledAgent: escapeResult.cycledAgent,
+      thinkingShown: escapeResult.thinkingShown,
+      promptInputShown: escapeResult.promptInputShown,
+      userPromptShown: escapeResult.userPromptShown,
+    }).toEqual({
+      exitCode: 0,
+      popupShown: true,
+      popupSelected: true,
+      popupClosed: true,
+      popupInputPreserved: true,
+      resizeRendered: true,
+      cycledAgent: true,
+      thinkingShown: true,
+      promptInputShown: true,
+      userPromptShown: true,
+    });
     expect(escapeResult.output).toContain("Switch to Tester agent");
     expect(escapeResult.output).toContain("OpenAI-compatible backend URL:");
     expect(escapeResult.output).toContain(

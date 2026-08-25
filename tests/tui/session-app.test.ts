@@ -2,15 +2,20 @@ import { describe, expect, test } from "bun:test";
 import { FileWriteDiff, createFileDiffLines } from "@loom/tui/file-diff";
 import {
   SessionApp,
+  SessionInput,
   SessionViewStore,
   SlashCommandPopup,
   ThinkingIndicator,
   ToolRunningIndicator,
+  appendSessionInput,
   completedOutputTextStyle,
-  consumeSessionInputChunk,
+  formatSessionInput,
   isSessionExitInput,
   isSlashCommandPopupOpen,
   moveSlashCommandSelection,
+  resolveTerminalRows,
+  shouldInsertInputNewline,
+  splitTerminalInputChunk,
   thinkingIndicatorText,
   toolRunningIndicatorText,
 } from "@loom/tui/session-app";
@@ -19,20 +24,43 @@ import { loomDark } from "@loom/tui/theme";
 import { renderToString } from "ink";
 import { createElement } from "react";
 
-describe("consumeSessionInputChunk", () => {
-  test("submits complete PTY lines while retaining incomplete input", () => {
-    expect(consumeSessionInputChunk("", "/exit\n")).toEqual({
-      lines: ["/exit"],
-      remainder: "",
+describe("multi-line session input", () => {
+  test("normalizes pasted newlines and distinguishes newline from submit", () => {
+    expect(appendSessionInput("first", "\r\nsecond\rthird")).toBe(
+      "first\nsecond\nthird",
+    );
+    expect(splitTerminalInputChunk("hello\r")).toEqual({
+      text: "hello",
+      submit: true,
     });
-    expect(consumeSessionInputChunk("partial", " input")).toEqual({
-      lines: [],
-      remainder: "partial input",
+    expect(splitTerminalInputChunk("hello\r\nworld")).toEqual({
+      text: "hello\r\nworld",
+      submit: false,
     });
-    expect(consumeSessionInputChunk("first", "\r\nsecond\rthird")).toEqual({
-      lines: ["first", "second"],
-      remainder: "third",
-    });
+    expect(
+      shouldInsertInputNewline("\n", { return: false, shift: false }),
+    ).toBe(true);
+    expect(shouldInsertInputNewline("\r", { return: true, shift: true })).toBe(
+      true,
+    );
+    expect(shouldInsertInputNewline("", { return: true, shift: false })).toBe(
+      false,
+    );
+  });
+
+  test("renders continuation indentation and visible key hints", () => {
+    expect(formatSessionInput("first\nsecond")).toBe("> first\n  second");
+    expect(resolveTerminalRows(undefined)).toBe(24);
+    expect(resolveTerminalRows(0)).toBe(24);
+    expect(resolveTerminalRows(8)).toBe(12);
+    expect(resolveTerminalRows(40)).toBe(40);
+    const input = renderToString(
+      createElement(SessionInput, { input: "first\nsecond" }),
+    );
+    expect(input).toContain("> first");
+    expect(input).toContain("second");
+    expect(input).toContain("Enter submit");
+    expect(input).toContain("Ctrl+J newline");
   });
 });
 
@@ -86,7 +114,9 @@ describe("SessionViewStore", () => {
               ? output.text
               : output.kind === "assistant"
                 ? `${output.displayName}: ${output.content}\n`
-                : `diff:${output.path}\n`,
+                : output.kind === "file-diff"
+                  ? `diff:${output.path}\n`
+                  : `user:${output.content}\n`,
           )
           .join("")}`,
       );
@@ -187,6 +217,23 @@ describe("SessionViewStore", () => {
       path: "src/example.ts",
       beforeContent: "const old = 1;",
       afterContent: "const next = 2;",
+    });
+  });
+
+  test("stores submitted prompts as typed user output", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+
+    store.appendUserPrompt("first line\nsecond line");
+
+    expect(store.getSnapshot().output[0]).toEqual({
+      id: "output-0",
+      kind: "user",
+      content: "first line\nsecond line",
     });
   });
 });
@@ -294,6 +341,11 @@ describe("SessionApp", () => {
         },
         {
           id: "second",
+          kind: "user",
+          content: "submitted prompt",
+        },
+        {
+          id: "third",
           kind: "assistant",
           displayName: "Security",
           content: "**second completed line**",
@@ -314,16 +366,18 @@ describe("SessionApp", () => {
     );
 
     const firstOutput = frame.indexOf("first completed line");
+    const userOutput = frame.indexOf("submitted prompt");
     const secondOutput = frame.indexOf("second completed line");
     const tabs = frame.indexOf("Developer");
     const liveAssistant = frame.indexOf("working");
     const status = frame.indexOf("session-1");
     const input = frame.lastIndexOf(">");
 
-    expect(firstOutput).toBeGreaterThanOrEqual(0);
-    expect(secondOutput).toBeGreaterThan(firstOutput);
-    expect(tabs).toBeGreaterThan(secondOutput);
-    expect(liveAssistant).toBeGreaterThan(tabs);
+    expect(tabs).toBeGreaterThanOrEqual(0);
+    expect(firstOutput).toBeGreaterThan(tabs);
+    expect(userOutput).toBeGreaterThan(firstOutput);
+    expect(secondOutput).toBeGreaterThan(userOutput);
+    expect(liveAssistant).toBeGreaterThan(secondOutput);
     expect(status).toBeGreaterThan(liveAssistant);
     expect(input).toBeGreaterThan(status);
   });
