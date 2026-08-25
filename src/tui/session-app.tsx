@@ -77,6 +77,16 @@ export function resolveTerminalRows(rows: number | undefined): number {
   return rows === undefined || rows <= 0 ? 24 : Math.max(rows, 12);
 }
 
+export function moveSessionHistoryIndex(
+  currentIndex: number,
+  entryCount: number,
+  direction: -1 | 1,
+): number {
+  if (entryCount === 0) return 0;
+  const normalizedIndex = Math.min(Math.max(currentIndex, 0), entryCount);
+  return Math.min(Math.max(normalizedIndex + direction, 0), entryCount);
+}
+
 export function isSessionExitInput(
   character: string,
   key: Pick<Key, "ctrl" | "escape">,
@@ -399,6 +409,9 @@ export function SessionApp({
   const [slashCommandPopupDismissed, setSlashCommandPopupDismissed] =
     useState(false);
   const inputRef = useRef("");
+  const historyRef = useRef<string[]>([]);
+  const historyDraftRef = useRef("");
+  const historyIndexRef = useRef(0);
   const selectedSlashCommandIndexRef = useRef(0);
   const slashCommandPopupDismissedRef = useRef(false);
   const state = useSyncExternalStore(
@@ -429,7 +442,13 @@ export function SessionApp({
     )
       ? (entries[selectedSlashCommandIndexRef.current] ?? entries[0])
       : undefined;
-    onSubmit(selectedEntry?.command ?? inputRef.current);
+    const submittedInput = selectedEntry?.command ?? inputRef.current;
+    if (submittedInput.trim().length > 0) {
+      historyRef.current = [...historyRef.current.slice(-99), submittedInput];
+    }
+    historyIndexRef.current = historyRef.current.length;
+    historyDraftRef.current = "";
+    onSubmit(submittedInput);
     inputRef.current = "";
     selectedSlashCommandIndexRef.current = 0;
     slashCommandPopupDismissedRef.current = false;
@@ -459,26 +478,48 @@ export function SessionApp({
     }
     if (key.upArrow || key.downArrow) {
       if (
-        !isSlashCommandPopupOpen(
+        isSlashCommandPopupOpen(
           inputRef.current,
           slashCommandPopupDismissedRef.current,
         )
-      )
+      ) {
+        const entries = filterSlashCommandEntries(
+          sessionSlashCommandEntries,
+          inputRef.current,
+        );
+        selectedSlashCommandIndexRef.current = moveSlashCommandSelection(
+          selectedSlashCommandIndexRef.current,
+          entries.length,
+          key.upArrow ? -1 : 1,
+        );
+        setSelectedSlashCommandIndex(selectedSlashCommandIndexRef.current);
         return;
-      const entries = filterSlashCommandEntries(
-        sessionSlashCommandEntries,
-        inputRef.current,
-      );
-      selectedSlashCommandIndexRef.current = moveSlashCommandSelection(
-        selectedSlashCommandIndexRef.current,
-        entries.length,
+      }
+      if (
+        key.upArrow &&
+        historyIndexRef.current === historyRef.current.length
+      ) {
+        historyDraftRef.current = inputRef.current;
+      }
+      const nextIndex = moveSessionHistoryIndex(
+        historyIndexRef.current,
+        historyRef.current.length,
         key.upArrow ? -1 : 1,
       );
-      setSelectedSlashCommandIndex(selectedSlashCommandIndexRef.current);
+      historyIndexRef.current = nextIndex;
+      inputRef.current =
+        nextIndex === historyRef.current.length
+          ? historyDraftRef.current
+          : (historyRef.current[nextIndex] ?? "");
+      slashCommandPopupDismissedRef.current = true;
+      setInput(inputRef.current);
+      setSlashCommandPopupDismissed(true);
       return;
     }
     if (shouldInsertInputNewline(character, key)) {
       inputRef.current = appendSessionInput(inputRef.current, "\n");
+      historyIndexRef.current = historyRef.current.length;
+      historyDraftRef.current = inputRef.current;
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
@@ -492,6 +533,8 @@ export function SessionApp({
     }
     if (key.backspace || key.delete) {
       inputRef.current = inputRef.current.slice(0, -1);
+      historyIndexRef.current = historyRef.current.length;
+      historyDraftRef.current = inputRef.current;
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
@@ -512,6 +555,8 @@ export function SessionApp({
         submitInput();
         return;
       }
+      historyIndexRef.current = historyRef.current.length;
+      historyDraftRef.current = inputRef.current;
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);

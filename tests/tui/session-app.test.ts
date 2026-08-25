@@ -12,6 +12,7 @@ import {
   formatSessionInput,
   isSessionExitInput,
   isSlashCommandPopupOpen,
+  moveSessionHistoryIndex,
   moveSlashCommandSelection,
   resolveTerminalRows,
   shouldInsertInputNewline,
@@ -85,6 +86,18 @@ describe("moveSlashCommandSelection", () => {
   test("handles empty and stale filtered selections", () => {
     expect(moveSlashCommandSelection(0, 0, 1)).toBe(-1);
     expect(moveSlashCommandSelection(5, 2, 1)).toBe(1);
+  });
+});
+
+describe("moveSessionHistoryIndex", () => {
+  test("moves through history boundaries and returns to the draft slot", () => {
+    expect(moveSessionHistoryIndex(3, 3, -1)).toBe(2);
+    expect(moveSessionHistoryIndex(2, 3, -1)).toBe(1);
+    expect(moveSessionHistoryIndex(0, 3, -1)).toBe(0);
+    expect(moveSessionHistoryIndex(1, 3, 1)).toBe(2);
+    expect(moveSessionHistoryIndex(2, 3, 1)).toBe(3);
+    expect(moveSessionHistoryIndex(3, 3, 1)).toBe(3);
+    expect(moveSessionHistoryIndex(0, 0, -1)).toBe(0);
   });
 });
 
