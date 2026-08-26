@@ -168,15 +168,19 @@ export function StatusBar({
   sessionId,
   tokenPercent,
   activeAgentName,
+  handoffWritten = false,
 }: {
   sessionId: string;
   tokenPercent: number;
   activeAgentName: string;
+  handoffWritten?: boolean;
 }) {
   const theme = useTheme();
   return (
     <Box justifyContent="space-between" paddingX={1}>
-      <Text color={theme.textTertiary}>{sessionId}</Text>
+      <Text color={handoffWritten ? theme.warning : theme.textTertiary}>
+        {handoffWritten ? "handoff saved" : sessionId}
+      </Text>
       <Box gap={1}>
         <Text color={theme.textTertiary}>tokens</Text>
         <ProgressBar percent={tokenPercent} width={16} />

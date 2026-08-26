@@ -41,6 +41,7 @@ export type SessionOutput =
 
 export interface SessionViewState {
   activeAgentName: BuiltInAgentName;
+  handoffWritten?: boolean;
   liveAssistant?: { displayName: string; text: string };
   output: readonly SessionOutput[];
   sessionId: string;
@@ -241,6 +242,10 @@ export class SessionViewStore {
 
   updateStatus(activeAgentName: BuiltInAgentName, tokenPercent: number): void {
     this.#setState({ ...this.#state, activeAgentName, tokenPercent });
+  }
+
+  markHandoffWritten(): void {
+    this.#setState({ ...this.#state, handoffWritten: true });
   }
 
   #setState(state: SessionViewState): void {
@@ -633,6 +638,9 @@ export function SessionApp({
           sessionId={state.sessionId}
           tokenPercent={state.tokenPercent}
           activeAgentName={state.activeAgentName}
+          {...(state.handoffWritten === undefined
+            ? {}
+            : { handoffWritten: state.handoffWritten })}
         />
         {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
           <SlashCommandPopup

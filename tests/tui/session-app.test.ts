@@ -56,10 +56,15 @@ describe("multi-line session input", () => {
     expect(resolveTerminalRows(8)).toBe(12);
     expect(resolveTerminalRows(40)).toBe(40);
     const input = renderToString(
-      createElement(SessionInput, { input: "first\nsecond" }),
+      createElement(SessionInput, {
+        activeAgentName: "developer",
+        input: "first\nsecond",
+      }),
     );
     expect(input).toContain("> first");
     expect(input).toContain("second");
+    expect(input).toContain("Message");
+    expect(input).toContain("╭");
     expect(input).toContain("Enter submit");
     expect(input).toContain("Ctrl+J newline");
   });
@@ -191,6 +196,19 @@ describe("SessionViewStore", () => {
     expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
   });
 
+  test("records that an automatic handoff was written", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0.8,
+    });
+
+    store.markHandoffWritten();
+
+    expect(store.getSnapshot().handoffWritten).toBe(true);
+  });
+
   test("distinguishes tool execution from thinking and validates its count", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
@@ -241,17 +259,41 @@ describe("SessionViewStore", () => {
       tokenPercent: 0,
     });
 
-    store.appendUserPrompt("first line\nsecond line");
+    store.appendUserPrompt("first line\nsecond line", "tester");
 
     expect(store.getSnapshot().output[0]).toEqual({
       id: "output-0",
       kind: "user",
       content: "first line\nsecond line",
+      agentName: "tester",
     });
   });
 });
 
 describe("SessionApp", () => {
+  test("shows a handoff notice in the pinned status bar", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      sessionId: "session-1",
+      tokenPercent: 0.8,
+    });
+    store.markHandoffWritten();
+
+    const frame = renderToString(
+      createElement(SessionApp, {
+        onCycleAgent: () => {},
+        onExit: () => {},
+        onSubmit: () => {},
+        store,
+        themeId: undefined,
+      }),
+    );
+
+    expect(frame).toContain("handoff saved");
+    expect(frame).not.toContain("session-1");
+  });
+
   test("renders animated thinking text before assistant output", () => {
     expect(thinkingIndicatorText("Developer", 0)).toBe("Developer: Thinking.");
     expect(thinkingIndicatorText("Developer", 1)).toBe("Developer: Thinking..");
@@ -356,6 +398,7 @@ describe("SessionApp", () => {
           id: "second",
           kind: "user",
           content: "submitted prompt",
+          agentName: "security",
         },
         {
           id: "third",
@@ -380,6 +423,7 @@ describe("SessionApp", () => {
 
     const firstOutput = frame.indexOf("first completed line");
     const userOutput = frame.indexOf("submitted prompt");
+    const userLabel = frame.indexOf("You");
     const secondOutput = frame.indexOf("second completed line");
     const tabs = frame.indexOf("Developer");
     const liveAssistant = frame.indexOf("working");
@@ -388,6 +432,7 @@ describe("SessionApp", () => {
 
     expect(tabs).toBeGreaterThanOrEqual(0);
     expect(firstOutput).toBeGreaterThan(tabs);
+    expect(userLabel).toBeGreaterThan(firstOutput);
     expect(userOutput).toBeGreaterThan(firstOutput);
     expect(secondOutput).toBeGreaterThan(userOutput);
     expect(liveAssistant).toBeGreaterThan(secondOutput);

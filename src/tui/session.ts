@@ -634,7 +634,7 @@ export async function startSession(
             writeSessionStatus();
             continue;
           }
-          viewStore?.appendUserPrompt(redact(prompt));
+          viewStore?.appendUserPrompt(redact(prompt), activeAgentName);
           const turn = await runAgentPrompt(
             agent,
             prompt,
@@ -654,6 +654,7 @@ export async function startSession(
               sessionManager,
             });
             if (automaticHandoffWritten) {
+              viewStore?.markHandoffWritten();
               writeOutput("Automatic handoff written to .loom/handoff.md\n");
             }
           }
