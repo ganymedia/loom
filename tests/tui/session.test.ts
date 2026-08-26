@@ -317,13 +317,77 @@ describe("startSession", () => {
     });
 
     expect(chatRequestCount).toBe(2);
-    expect(output).toContain(
-      "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.",
-    );
+    expect(output).toContain("Enter follow-up prompts. Type / for commands.");
     expect(output).toContain("Developer: First answer");
     expect(output).toContain("Developer: Read the note");
     expect(output).toContain("20%");
     expect(output).toContain("Tool 1 (file-reader): ok — tool output");
+  });
+
+  test("injects recalled prior-session context without printing its content", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+    let recallSessionId = "";
+
+    await startSession(config, {
+      projectRoot,
+      input: ["/recall implementation status", "Use recalled context", "/exit"],
+      recallPriorContext: async (query, currentSessionId) => {
+        expect(query).toBe("implementation status");
+        recallSessionId = currentSessionId;
+        return {
+          context: "Bounded historical reference",
+          resultCount: 2,
+        };
+      },
+      fetchImpl: async (input, init) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "local-model" }] });
+        }
+
+        const requestBody = JSON.parse(String(init?.body)) as {
+          messages: Array<{ role: string; content: string }>;
+        };
+        expect(requestBody.messages).toEqual([
+          expect.objectContaining({ role: "system" }),
+          { role: "user", content: "Bounded historical reference" },
+          { role: "user", content: "Use recalled context" },
+        ]);
+        return jsonResponse({
+          choices: [{ message: { content: "Used prior context" } }],
+          usage: { prompt_tokens: 5, completion_tokens: 3 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(recallSessionId.length).toBeGreaterThan(0);
+    expect(output).toContain("Recall: using 2 prior-session result(s).");
+    expect(output).not.toContain("Bounded historical reference");
+  });
+
+  test("does not expose recall failure details", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      input: ["/recall implementation status", "/exit"],
+      recallPriorContext: async () => {
+        throw new Error("internal backend detail");
+      },
+      fetchImpl: async () => jsonResponse({ data: [{ id: "local-model" }] }),
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).toContain(
+      "Recall failed: unable to retrieve prior-session context.",
+    );
+    expect(output).not.toContain("internal backend detail");
   });
 
   test("switches active agents with tab commands", async () => {

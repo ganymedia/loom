@@ -161,6 +161,7 @@ At the prompt, try these commands:
 [verify the composer is a separately bordered Message region]
 [submit a safe prompt and verify it remains in scrollback as a labeled, bordered You block distinct from the assistant response]
 [type / as the first input character and inspect the popup]
+[verify /recall appears with its prior-session context description]
 [continue typing agent t and verify only /agent tester remains]
 [press Escape and verify the popup closes while > /agent t remains]
 [type e and verify the popup reopens with > /agent te and /agent tester]
@@ -218,6 +219,17 @@ ${LOOM_BIN:-loom} recall --vector 1,0 --top-k 3
 ```
 
 Expected result: JSON recall output. It may be empty if no events have embeddings; it should not crash.
+
+### Interactive recall
+
+If an embedding backend is configured and the Prompt Store contains embedded events, start `${LOOM_BIN:-loom}` and enter:
+
+```text
+/recall hello recall
+Use the prior context to summarize the earlier topic.
+```
+
+Expected result: `/recall` does not print recalled content, reports only the number of prior-session results used, and shows `prior context` in the pinned status bar. The subsequent turn can use the bounded historical context. Recall failures show a fixed message without backend or storage details.
 
 ## 9. File-writer and Ink diffing
 

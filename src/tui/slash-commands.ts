@@ -5,6 +5,7 @@ export const sessionSlashCommands = {
   agents: "/agents",
   exit: "/exit",
   quit: "/quit",
+  recall: "/recall",
   tab: "/tab",
 } as const;
 
@@ -29,6 +30,10 @@ export const sessionSlashCommandEntries: readonly SlashCommandEntry[] = [
   {
     command: sessionSlashCommands.agents,
     description: "Show available agents",
+  },
+  {
+    command: sessionSlashCommands.recall,
+    description: "Recall prior-session context",
   },
   {
     command: sessionSlashCommands.exit,

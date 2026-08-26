@@ -169,17 +169,23 @@ export function StatusBar({
   tokenPercent,
   activeAgentName,
   handoffWritten = false,
+  priorContextUsed = false,
 }: {
   sessionId: string;
   tokenPercent: number;
   activeAgentName: string;
   handoffWritten?: boolean;
+  priorContextUsed?: boolean;
 }) {
   const theme = useTheme();
+  const notices = [
+    ...(handoffWritten ? ["handoff saved"] : []),
+    ...(priorContextUsed ? ["prior context"] : []),
+  ];
   return (
     <Box justifyContent="space-between" paddingX={1}>
-      <Text color={handoffWritten ? theme.warning : theme.textTertiary}>
-        {handoffWritten ? "handoff saved" : sessionId}
+      <Text color={notices.length > 0 ? theme.warning : theme.textTertiary}>
+        {notices.length > 0 ? notices.join(" · ") : sessionId}
       </Text>
       <Box gap={1}>
         <Text color={theme.textTertiary}>tokens</Text>

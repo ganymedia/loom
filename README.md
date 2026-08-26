@@ -6,11 +6,11 @@ Connect LOOM to an existing OpenAI-compatible backend, work interactively with b
 
 ## What you can do
 
-- **Work with terminal agents** in an interactive readline session, with agent switching and visible session status.
+- **Work with terminal agents** in a persistent interactive Ink session, with agent switching and visible session status.
 - **Run one-turn tasks** from scripts or the command line with `loom --prompt`.
 - **Build repeatable workflows** with project-relative `.loom` pipelines, variables, branching, prompts, and parallel stages.
 - **Track project work** through a structured `.loom/plan.yaml` plan.
-- **Log and recall prompt history** from a project-local SQLite Prompt Store.
+- **Log and recall prompt history** from a project-local SQLite Prompt Store; interactive `/recall <query>` injects bounded, untrusted prior-session context without printing recalled content.
 - **Choose a terminal theme** from the built-in theme collection.
 - **Keep tool access narrow** with project-root path boundaries and allowlisted, read-only shell and Git operations.
 
@@ -135,7 +135,7 @@ Model-controlled file and command tools are restricted to the resolved project r
 
 - Interactive TTY sessions use a terminal-height-aware persistent Ink conversation viewport with fixed agent tabs, status, and input regions; older output clips before current activity, and completed output is theme-muted and dimmed so the live exchange remains the clear focus. Assistant Markdown renders as styled headings, emphasis, lists, inline code, tables, quotes, and recognized syntax-highlighted fenced code; raw HTML remains inert text and terminal control characters are neutralized. Successful file-writer calls render bounded, red/green before-and-after line diffs in the interactive view; oversized changes show an explicit omission notice, while non-TTY output retains its concise tool-result format. Persistent Ink, instant Tab cycling, and token streaming are supported, and now include resize reflow and clean Ctrl+C/Escape exits. Interactive prompts show an animated agent-specific Thinking indicator immediately after submission and remove it when the first streamed token arrives or the turn ends/errors. Existing tool execution has a distinct animated active-agent Running N tool(s) indicator, visually separate from Thinking; it clears when execution finishes or fails and reports only tool count, not arguments/results, adding no tool/backend capability. Typing `/` as the first input character shows an inline list of available built-in agent commands and existing session commands that filters live, case-insensitively, by executable command prefix as characters are typed. When the popup is visible, use Up/Down to move a marked selection (with wraparound) and Enter to submit the exact command; Escape closes an open slash-command popup without submitting or clearing typed input, while Escape when no popup is open still exits the interactive session. Subsequent typing reopens live discovery for preserved slash input. Bare Tab still cycles agents globally.
 - Interactive input uses a bordered `Message` composer; submitted prompts remain in bordered, labeled `You` blocks that are structurally distinct from assistant output. Plain Enter submits and Ctrl+J inserts a newline; Shift+Enter also inserts a newline when the terminal reports the modifier. Pasted multi-line text remains one prompt, and the input area displays these key hints. Outside the slash popup, Up/Down traverse up to 100 process-local submitted entries and restore the current unsent draft after the newest entry.
-- When automatic handoff generation succeeds, interactive sessions show an amber `handoff saved` notice in the pinned status bar. Non-TTY output retains its existing handoff message.
+- When automatic handoff generation succeeds, interactive sessions show an amber `handoff saved` notice in the pinned status bar. Successful `/recall <query>` commands show `prior context`; non-TTY output retains its existing handoff message.
 - Public pipeline `inject` stages fail loudly because Prompt Store recall is not yet connected to that CLI path.
 - `loom --prompt` is stateless across process runs and does not stream output.
 - The public Foundry marketplace, package managers beyond `install.sh`, automated release CI, and telemetry are not included.

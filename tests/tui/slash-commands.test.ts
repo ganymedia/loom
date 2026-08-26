@@ -15,6 +15,7 @@ describe("session slash commands", () => {
       "/agent security",
       "/tab",
       "/agents",
+      "/recall",
       "/exit",
       "/quit",
     ]);
@@ -23,6 +24,7 @@ describe("session slash commands", () => {
       agents: "/agents",
       exit: "/exit",
       quit: "/quit",
+      recall: "/recall",
       tab: "/tab",
     });
   });

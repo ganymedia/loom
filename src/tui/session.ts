@@ -22,6 +22,10 @@ import {
   writeHandoff,
 } from "@loom/session/handoff";
 import { SessionManager } from "@loom/session/manager";
+import {
+  type PriorSessionRecallContext,
+  recallPriorSessionContext,
+} from "@loom/store/recall-context";
 import { fileReaderTool } from "@loom/tools/file-reader";
 import {
   fileWriterTool,
@@ -50,6 +54,10 @@ export interface StartSessionOptions {
   input?: AsyncIterable<string> | Iterable<string>;
   interactive?: boolean;
   projectRoot?: string;
+  recallPriorContext?: (
+    query: string,
+    currentSessionId: string,
+  ) => Promise<PriorSessionRecallContext | undefined>;
   smokeFilePath?: string;
   writeOutput?: (message: string) => void;
 }
@@ -518,6 +526,18 @@ export async function startSession(
         options.projectRoot ?? process.cwd(),
       ),
     };
+    const recallPriorContext =
+      options.recallPriorContext ??
+      ((query: string, currentSessionId: string) =>
+        recallPriorSessionContext({
+          config,
+          currentSessionId,
+          projectRoot: context.projectRoot,
+          query,
+          ...(options.fetchImpl === undefined
+            ? {}
+            : { fetchImpl: options.fetchImpl }),
+        }));
     const sessionManager = new SessionManager({
       sessionId: context.sessionId,
       contextLimit: options.contextLimit ?? DEFAULT_SESSION_CONTEXT_LIMIT,
@@ -583,9 +603,7 @@ export async function startSession(
           ? readStdinLines(process.stdout.isTTY === true)
           : undefined);
       if (input !== undefined) {
-        writeOutput(
-          "Enter follow-up prompts. Type /agent <name>, /tab, /agents, /exit, or /quit.\n",
-        );
+        writeOutput("Enter follow-up prompts. Type / for commands.\n");
         for await (const line of input) {
           const prompt = line.trim();
           if (prompt.length === 0) continue;
@@ -632,6 +650,43 @@ export async function startSession(
               );
             }
             writeSessionStatus();
+            continue;
+          }
+          const recallCommandPrefix = `${sessionSlashCommands.recall} `;
+          if (
+            prompt === sessionSlashCommands.recall ||
+            prompt.startsWith(recallCommandPrefix)
+          ) {
+            const query = prompt
+              .slice(sessionSlashCommands.recall.length)
+              .trim();
+            if (query.length === 0) {
+              writeOutput("Usage: /recall <query>\n");
+              continue;
+            }
+            try {
+              const recalled = await recallPriorContext(
+                query,
+                context.sessionId,
+              );
+              if (recalled === undefined) {
+                writeOutput("Recall: no prior-session context found.\n");
+                continue;
+              }
+              context.conversationHistory.push({
+                role: "user",
+                content: recalled.context,
+                timestamp: Date.now(),
+              });
+              viewStore?.markPriorContextUsed();
+              writeOutput(
+                `Recall: using ${recalled.resultCount} prior-session result(s).\n`,
+              );
+            } catch {
+              writeOutput(
+                "Recall failed: unable to retrieve prior-session context.\n",
+              );
+            }
             continue;
           }
           viewStore?.appendUserPrompt(redact(prompt), activeAgentName);

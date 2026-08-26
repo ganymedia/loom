@@ -19,6 +19,7 @@ import {
   splitTerminalInputChunk,
   thinkingIndicatorText,
   toolRunningIndicatorText,
+  visibleSlashCommandWindow,
 } from "@loom/tui/session-app";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { loomDark } from "@loom/tui/theme";
@@ -91,6 +92,22 @@ describe("moveSlashCommandSelection", () => {
   test("handles empty and stale filtered selections", () => {
     expect(moveSlashCommandSelection(0, 0, 1)).toBe(-1);
     expect(moveSlashCommandSelection(5, 2, 1)).toBe(1);
+  });
+});
+
+describe("visibleSlashCommandWindow", () => {
+  test("bounds narrow-terminal entries and follows the selection", () => {
+    const first = visibleSlashCommandWindow(sessionSlashCommandEntries, 0, 3);
+    expect(first.entries).toEqual(sessionSlashCommandEntries.slice(0, 3));
+    expect(first.selectedIndex).toBe(0);
+
+    const last = visibleSlashCommandWindow(
+      sessionSlashCommandEntries,
+      sessionSlashCommandEntries.length - 1,
+      3,
+    );
+    expect(last.entries).toEqual(sessionSlashCommandEntries.slice(-3));
+    expect(last.selectedIndex).toBe(2);
   });
 });
 
@@ -196,7 +213,7 @@ describe("SessionViewStore", () => {
     expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
   });
 
-  test("records that an automatic handoff was written", () => {
+  test("records handoff and prior-context status signals", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
@@ -205,8 +222,10 @@ describe("SessionViewStore", () => {
     });
 
     store.markHandoffWritten();
+    store.markPriorContextUsed();
 
     expect(store.getSnapshot().handoffWritten).toBe(true);
+    expect(store.getSnapshot().priorContextUsed).toBe(true);
   });
 
   test("distinguishes tool execution from thinking and validates its count", () => {
@@ -271,7 +290,7 @@ describe("SessionViewStore", () => {
 });
 
 describe("SessionApp", () => {
-  test("shows a handoff notice in the pinned status bar", () => {
+  test("shows handoff and prior-context notices in the pinned status bar", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
@@ -279,6 +298,7 @@ describe("SessionApp", () => {
       tokenPercent: 0.8,
     });
     store.markHandoffWritten();
+    store.markPriorContextUsed();
 
     const frame = renderToString(
       createElement(SessionApp, {
@@ -291,6 +311,7 @@ describe("SessionApp", () => {
     );
 
     expect(frame).toContain("handoff saved");
+    expect(frame).toContain("prior context");
     expect(frame).not.toContain("session-1");
   });
 

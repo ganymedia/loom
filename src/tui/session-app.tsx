@@ -44,6 +44,7 @@ export interface SessionViewState {
   handoffWritten?: boolean;
   liveAssistant?: { displayName: string; text: string };
   output: readonly SessionOutput[];
+  priorContextUsed?: boolean;
   sessionId: string;
   thinkingAgentDisplayName?: string;
   tokenPercent: number;
@@ -112,6 +113,27 @@ export function isSlashCommandPopupOpen(
   dismissed: boolean,
 ): boolean {
   return !dismissed && shouldShowSlashCommandPopup(input);
+}
+
+export function visibleSlashCommandWindow(
+  entries: readonly SlashCommandEntry[],
+  selectedIndex: number,
+  maxVisibleEntries: number,
+): { entries: readonly SlashCommandEntry[]; selectedIndex: number } {
+  const limit = Math.max(1, Math.floor(maxVisibleEntries));
+  if (entries.length <= limit) return { entries, selectedIndex };
+  const normalizedIndex = Math.min(
+    Math.max(selectedIndex, 0),
+    entries.length - 1,
+  );
+  const start = Math.min(
+    Math.max(normalizedIndex - limit + 1, 0),
+    entries.length - limit,
+  );
+  return {
+    entries: entries.slice(start, start + limit),
+    selectedIndex: normalizedIndex - start,
+  };
 }
 
 export class SessionViewStore {
@@ -248,6 +270,10 @@ export class SessionViewStore {
     this.#setState({ ...this.#state, handoffWritten: true });
   }
 
+  markPriorContextUsed(): void {
+    this.#setState({ ...this.#state, priorContextUsed: true });
+  }
+
   #setState(state: SessionViewState): void {
     this.#state = state;
     for (const listener of this.#listeners) listener();
@@ -310,12 +336,19 @@ export function ToolRunningIndicator({
 
 export function SlashCommandPopup({
   entries,
+  maxVisibleEntries = entries.length,
   selectedIndex,
 }: {
   entries: readonly SlashCommandEntry[];
+  maxVisibleEntries?: number;
   selectedIndex: number;
 }) {
   const theme = useTheme();
+  const visible = visibleSlashCommandWindow(
+    entries,
+    selectedIndex,
+    maxVisibleEntries,
+  );
   return (
     <Box
       borderStyle="round"
@@ -330,12 +363,12 @@ export function SlashCommandPopup({
       {entries.length === 0 ? (
         <Text color={theme.textTertiary}>No matching commands</Text>
       ) : (
-        entries.map((entry, index) => (
+        visible.entries.map((entry, index) => (
           <Box key={entry.command} gap={1}>
-            <Text color={theme.accent} bold={index === selectedIndex}>
-              {index === selectedIndex ? "›" : " "}
+            <Text color={theme.accent} bold={index === visible.selectedIndex}>
+              {index === visible.selectedIndex ? "›" : " "}
             </Text>
-            <Text color={theme.info} bold={index === selectedIndex}>
+            <Text color={theme.info} bold={index === visible.selectedIndex}>
               {entry.command}
             </Text>
             <Text color={theme.textTertiary}>{entry.description}</Text>
@@ -641,6 +674,9 @@ export function SessionApp({
           {...(state.handoffWritten === undefined
             ? {}
             : { handoffWritten: state.handoffWritten })}
+          {...(state.priorContextUsed === undefined
+            ? {}
+            : { priorContextUsed: state.priorContextUsed })}
         />
         {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
           <SlashCommandPopup
@@ -648,6 +684,7 @@ export function SessionApp({
               sessionSlashCommandEntries,
               input,
             )}
+            maxVisibleEntries={Math.max(1, terminalRows - 18)}
             selectedIndex={selectedSlashCommandIndex}
           />
         ) : null}
