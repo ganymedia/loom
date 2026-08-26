@@ -372,13 +372,9 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
           <Text color={agentColor} bold>
             You
           </Text>
-          <Text color={theme.textTertiary} dimColor>
-            Submitted
-          </Text>
+          <Text dimColor>Submitted</Text>
         </Box>
-        <Text color={theme.textSecondary}>
-          {sanitizeTerminalText(output.content)}
-        </Text>
+        <Text>{sanitizeTerminalText(output.content)}</Text>
       </Box>
     );
   }
