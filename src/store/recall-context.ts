@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { FetchLike } from "@loom/backends/discovery";
 import { generateEmbedding } from "@loom/backends/embeddings";
@@ -8,6 +9,17 @@ import {
 } from "@loom/store/prompt-store";
 
 const MAX_RECALL_CONTEXT_CHARS = 16_384;
+
+export type PriorSessionRecallErrorCode =
+  | "prior-session-history-missing"
+  | "embedding-backend-not-configured";
+
+export class PriorSessionRecallError extends Error {
+  constructor(readonly code: PriorSessionRecallErrorCode) {
+    super(code);
+    this.name = "PriorSessionRecallError";
+  }
+}
 
 export interface PriorSessionRecallContext {
   context: string;
@@ -49,6 +61,19 @@ export async function recallPriorSessionContext(
     throw new Error("interactive recall requires a non-empty query");
   }
 
+  const storePath =
+    options.storePath ??
+    join(options.projectRoot, ".loom", "prompt-store.sqlite");
+  if (!existsSync(storePath)) {
+    throw new PriorSessionRecallError("prior-session-history-missing");
+  }
+  if (
+    options.generateVector === undefined &&
+    options.config.store.embeddingBackend === undefined
+  ) {
+    throw new PriorSessionRecallError("embedding-backend-not-configured");
+  }
+
   const vector =
     options.generateVector === undefined
       ? (
@@ -62,10 +87,7 @@ export async function recallPriorSessionContext(
           })
         ).embedding
       : await options.generateVector(query);
-  const store = PromptStore.open(
-    options.storePath ??
-      join(options.projectRoot, ".loom", "prompt-store.sqlite"),
-  );
+  const store = PromptStore.open(storePath);
   try {
     const results = store
       .recallSimilar(vector, { topK: options.config.store.topK })

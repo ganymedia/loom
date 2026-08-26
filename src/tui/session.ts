@@ -24,6 +24,7 @@ import {
 import { SessionManager } from "@loom/session/manager";
 import {
   type PriorSessionRecallContext,
+  PriorSessionRecallError,
   recallPriorSessionContext,
 } from "@loom/store/recall-context";
 import { fileReaderTool } from "@loom/tools/file-reader";
@@ -682,10 +683,18 @@ export async function startSession(
               writeOutput(
                 `Recall: using ${recalled.resultCount} prior-session result(s).\n`,
               );
-            } catch {
-              writeOutput(
-                "Recall failed: unable to retrieve prior-session context.\n",
-              );
+            } catch (error) {
+              if (error instanceof PriorSessionRecallError) {
+                writeOutput(
+                  error.code === "prior-session-history-missing"
+                    ? "Recall unavailable: no indexed prior-session history exists.\n"
+                    : "Recall unavailable: configure store.embeddingBackend.\n",
+                );
+              } else {
+                writeOutput(
+                  "Recall failed: unable to retrieve prior-session context.\n",
+                );
+              }
             }
             continue;
           }

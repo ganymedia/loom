@@ -229,7 +229,7 @@ If an embedding backend is configured and the Prompt Store contains embedded eve
 Use the prior context to summarize the earlier topic.
 ```
 
-Expected result: `/recall` does not print recalled content, reports only the number of prior-session results used, and shows `prior context` in the pinned status bar. The subsequent turn can use the bounded historical context. Recall failures show a fixed message without backend or storage details.
+Expected result: `/recall` does not print recalled content, reports only the number of prior-session results used, and shows `prior context` in the pinned status bar. If no indexed history exists, it shows `Recall unavailable: no indexed prior-session history exists.`; if history exists but `store.embeddingBackend` is absent, it shows `Recall unavailable: configure store.embeddingBackend.`; other failures show a generic sanitized message.
 
 ## 9. File-writer and Ink diffing
 

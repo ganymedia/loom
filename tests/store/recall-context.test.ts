@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loomConfigSchema } from "@loom/config/schema";
 import { PromptStore } from "@loom/store/prompt-store";
-import { recallPriorSessionContext } from "@loom/store/recall-context";
+import {
+  PriorSessionRecallError,
+  recallPriorSessionContext,
+} from "@loom/store/recall-context";
 
 describe("recallPriorSessionContext", () => {
   test("returns bounded context only from prior sessions", async () => {
@@ -61,5 +65,55 @@ describe("recallPriorSessionContext", () => {
         generateVector: async () => [1, 0],
       }),
     ).rejects.toThrow("interactive recall requires a non-empty query");
+  });
+
+  test("reports missing indexed history before generating an embedding or creating a store", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "loom-recall-missing-"));
+    const storePath = join(projectRoot, "prompt-store.sqlite");
+    let generated = false;
+
+    await expect(
+      recallPriorSessionContext({
+        config: loomConfigSchema.parse({}),
+        currentSessionId: "current-session",
+        projectRoot,
+        query: "implementation",
+        storePath,
+        generateVector: async () => {
+          generated = true;
+          return [1, 0];
+        },
+      }),
+    ).rejects.toEqual(
+      new PriorSessionRecallError("prior-session-history-missing"),
+    );
+
+    expect(generated).toBe(false);
+    expect(existsSync(storePath)).toBe(false);
+  });
+
+  test("reports missing embedding configuration before making a request", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "loom-recall-config-"));
+    const storePath = join(projectRoot, "prompt-store.sqlite");
+    PromptStore.open(storePath).close();
+    let requested = false;
+
+    await expect(
+      recallPriorSessionContext({
+        config: loomConfigSchema.parse({}),
+        currentSessionId: "current-session",
+        projectRoot,
+        query: "implementation",
+        storePath,
+        fetchImpl: async () => {
+          requested = true;
+          return new Response(null, { status: 500 });
+        },
+      }),
+    ).rejects.toEqual(
+      new PriorSessionRecallError("embedding-backend-not-configured"),
+    );
+
+    expect(requested).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LoomConfig } from "@loom/config/schema";
 import { writeHandoff } from "@loom/session/handoff";
+import { PriorSessionRecallError } from "@loom/store/recall-context";
 import { runSessionSmoke, startSession } from "@loom/tui/session";
 
 const config: LoomConfig = {
@@ -388,6 +389,50 @@ describe("startSession", () => {
       "Recall failed: unable to retrieve prior-session context.",
     );
     expect(output).not.toContain("internal backend detail");
+  });
+
+  test("reports missing indexed prior-session history without exposing a path", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      input: ["/recall implementation status", "/exit"],
+      recallPriorContext: async () => {
+        throw new PriorSessionRecallError("prior-session-history-missing");
+      },
+      fetchImpl: async () => jsonResponse({ data: [{ id: "local-model" }] }),
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).toContain(
+      "Recall unavailable: no indexed prior-session history exists.",
+    );
+    expect(output).not.toContain(projectRoot);
+  });
+
+  test("reports missing embedding backend configuration without exposing values", async () => {
+    const projectRoot = await tempProject();
+    let output = "";
+
+    await startSession(config, {
+      projectRoot,
+      input: ["/recall implementation status", "/exit"],
+      recallPriorContext: async () => {
+        throw new PriorSessionRecallError("embedding-backend-not-configured");
+      },
+      fetchImpl: async () => jsonResponse({ data: [{ id: "local-model" }] }),
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(output).toContain(
+      "Recall unavailable: configure store.embeddingBackend.",
+    );
+    expect(output).not.toContain(config.backends.local?.baseUrl ?? "");
   });
 
   test("switches active agents with tab commands", async () => {
