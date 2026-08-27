@@ -394,7 +394,14 @@ async function runAgentPrompt(
     }
     const toolResultLine = toolResultLines[index];
     if (toolResultLine !== undefined) {
-      writeOutput(`${toolResultLine}\n`);
+      if (viewStore === undefined) {
+        writeOutput(`${toolResultLine}\n`);
+      } else {
+        viewStore.appendToolResult(
+          redactToolContent(toolResultLine),
+          toolCall.result.success,
+        );
+      }
     }
   }
 

@@ -26,6 +26,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export type SessionOutput =
   | { id: string; kind: "plain"; text: string }
+  | { id: string; kind: "tool-result"; success: boolean; text: string }
   | {
       id: string;
       kind: "assistant";
@@ -201,6 +202,21 @@ export class SessionViewStore {
           kind: "assistant",
           displayName,
           content,
+        },
+      ],
+    });
+  }
+
+  appendToolResult(text: string, success: boolean): void {
+    this.#setState({
+      ...this.#state,
+      output: [
+        ...this.#state.output,
+        {
+          id: this.#outputId(),
+          kind: "tool-result",
+          success,
+          text: sanitizeTerminalText(text),
         },
       ],
     });
@@ -520,6 +536,13 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
   }
   if (output.kind === "file-diff") {
     return <FileWriteDiff {...output} />;
+  }
+  if (output.kind === "tool-result") {
+    return (
+      <Text color={output.success ? theme.success : theme.danger}>
+        {output.success ? "✓" : "✕"} {output.text.trimEnd()}
+      </Text>
+    );
   }
   if (output.kind === "user") {
     const agentColor = agentTabColor(theme, output.agentName);

@@ -177,7 +177,9 @@ describe("SessionViewStore", () => {
                 ? `${output.displayName}: ${output.content}\n`
                 : output.kind === "file-diff"
                   ? `diff:${output.path}\n`
-                  : `user:${output.content}\n`,
+                  : output.kind === "tool-result"
+                    ? `tool:${output.success}:${output.text}\n`
+                    : `user:${output.content}\n`,
           )
           .join("")}`,
       );
@@ -493,5 +495,43 @@ describe("SessionApp", () => {
     expect(liveAssistant).toBeGreaterThan(secondOutput);
     expect(status).toBeGreaterThan(liveAssistant);
     expect(input).toBeGreaterThan(status);
+  });
+
+  test("renders tool outcomes with semantic text labels", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      panel: testPanelState(),
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+    store.appendToolResult("Tool 1: ok", true);
+    store.appendToolResult("Tool 2: failed", false);
+
+    expect(store.getSnapshot().output).toEqual([
+      {
+        id: "output-0",
+        kind: "tool-result",
+        success: true,
+        text: "Tool 1: ok",
+      },
+      {
+        id: "output-1",
+        kind: "tool-result",
+        success: false,
+        text: "Tool 2: failed",
+      },
+    ]);
+    const frame = renderToString(
+      createElement(SessionApp, {
+        onCycleAgent: () => {},
+        onExit: () => {},
+        onSubmit: () => {},
+        store,
+        themeId: undefined,
+      }),
+    );
+    expect(frame).toContain("✓ Tool 1: ok");
+    expect(frame).toContain("✕ Tool 2: failed");
   });
 });
