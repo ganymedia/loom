@@ -34,6 +34,7 @@ export interface Theme {
   border: string; // default box/divider border
   borderMuted: string; // deemphasized dividers (e.g. inside expanded cards)
   backgroundAccent: string; // rarely used — most terminals keep bg transparent
+  panelSurface: string; // subtle filled surface for conversation/composer panels
 
   // Agent tab identity — cycled across built-in + installed agents
   // so each agent has a stable, distinguishable color in the tab strip
@@ -105,6 +106,7 @@ export const loomDark: Theme = {
   border: "#3A3A3A",
   borderMuted: "#2A2A2A",
   backgroundAccent: "#1E1E1E",
+  panelSurface: "#181818",
 
   agentColors: [
     "#8B7FD6",
@@ -141,6 +143,7 @@ export const loomLight: Theme = {
   border: "#D0D0D0",
   borderMuted: "#E5E5E5",
   backgroundAccent: "#F0F0F0",
+  panelSurface: "#F7F7F7",
 
   agentColors: [
     "#6650B0",
@@ -178,6 +181,7 @@ export const highContrast: Theme = {
   border: "#606060",
   borderMuted: "#404040",
   backgroundAccent: "#101010",
+  panelSurface: "#080808",
 
   agentColors: [
     "#B388FF",
@@ -216,6 +220,7 @@ export const monochrome: Theme = {
   border: "#505050",
   borderMuted: "#303030",
   backgroundAccent: "#101010",
+  panelSurface: "#080808",
 
   agentColors: [
     "#FFFFFF",

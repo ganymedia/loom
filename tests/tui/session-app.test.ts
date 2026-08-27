@@ -10,6 +10,7 @@ import {
   appendSessionInput,
   completedOutputTextStyle,
   formatSessionInput,
+  isDismissedSlashPopupMetaText,
   isSessionExitInput,
   isSlashCommandPopupOpen,
   moveSessionHistoryIndex,
@@ -21,10 +22,21 @@ import {
   toolRunningIndicatorText,
   visibleSlashCommandWindow,
 } from "@loom/tui/session-app";
+import type { SessionPanelState } from "@loom/tui/session-panel-state";
 import { sessionSlashCommandEntries } from "@loom/tui/slash-commands";
 import { loomDark } from "@loom/tui/theme";
 import { renderToString } from "ink";
 import { createElement } from "react";
+
+function testPanelState(): SessionPanelState {
+  return {
+    directory: "loom",
+    plan: { availability: "available", tasks: [] },
+    runtime: "idle",
+    title: "New session",
+    version: "0.1.0",
+  };
+}
 
 describe("multi-line session input", () => {
   test("normalizes pasted newlines and distinguishes newline from submit", () => {
@@ -129,6 +141,19 @@ describe("isSlashCommandPopupOpen", () => {
     expect(isSlashCommandPopupOpen("/agent s", true)).toBe(false);
     expect(isSlashCommandPopupOpen("plain text", false)).toBe(false);
   });
+
+  test("recovers a printable Meta continuation after popup dismissal", () => {
+    expect(isDismissedSlashPopupMetaText("/agent s", true, "e", true)).toBe(
+      true,
+    );
+    expect(isDismissedSlashPopupMetaText("/agent s", false, "e", true)).toBe(
+      false,
+    );
+    expect(isDismissedSlashPopupMetaText("plain", true, "e", true)).toBe(false);
+    expect(isDismissedSlashPopupMetaText("/agent s", true, "e", false)).toBe(
+      false,
+    );
+  });
 });
 
 describe("SessionViewStore", () => {
@@ -136,6 +161,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0,
     });
@@ -181,6 +207,7 @@ describe("SessionViewStore", () => {
           text: "ignored after unsubscribe",
         },
       ],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0.25,
     });
@@ -190,6 +217,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0,
     });
@@ -217,6 +245,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0.8,
     });
@@ -232,6 +261,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0,
     });
@@ -255,6 +285,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0,
     });
@@ -274,6 +305,7 @@ describe("SessionViewStore", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0,
     });
@@ -294,6 +326,7 @@ describe("SessionApp", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0.8,
     });
@@ -428,6 +461,7 @@ describe("SessionApp", () => {
           content: "**second completed line**",
         },
       ],
+      panel: testPanelState(),
       sessionId: "session-1",
       tokenPercent: 0.25,
     });

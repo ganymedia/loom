@@ -13,6 +13,7 @@ describe("TUI theme", () => {
     expect(DEFAULT_THEME_ID).toBe("loom-dark");
     expect(resolveTheme(undefined)).toBe(loomDark);
     expect(resolveTheme("loom-dark")).toBe(loomDark);
+    expect(loomDark.panelSurface).not.toBe(loomDark.backgroundAccent);
   });
 
   test("falls back for unknown theme ids without throwing", () => {

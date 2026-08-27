@@ -7,6 +7,12 @@ import {
 } from "@loom/tui/components";
 import { FileWriteDiff } from "@loom/tui/file-diff";
 import { MarkdownText, sanitizeTerminalText } from "@loom/tui/markdown";
+import { SessionPanel, shouldShowSessionPanel } from "@loom/tui/session-panel";
+import {
+  type SessionPanelState,
+  type SessionRuntimeState,
+  deriveSessionTitle,
+} from "@loom/tui/session-panel-state";
 import {
   type SlashCommandEntry,
   filterSlashCommandEntries,
@@ -45,6 +51,7 @@ export interface SessionViewState {
   handoffWritten?: boolean;
   liveAssistant?: { displayName: string; text: string };
   output: readonly SessionOutput[];
+  panel: SessionPanelState;
   priorContextUsed?: boolean;
   sessionId: string;
   thinkingAgentDisplayName?: string;
@@ -119,6 +126,21 @@ export function isSlashCommandPopupOpen(
   dismissed: boolean,
 ): boolean {
   return !dismissed && shouldShowSlashCommandPopup(input);
+}
+
+export function isDismissedSlashPopupMetaText(
+  input: string,
+  dismissed: boolean,
+  character: string,
+  meta: boolean,
+): boolean {
+  return (
+    meta &&
+    dismissed &&
+    input.startsWith("/") &&
+    character.length > 0 &&
+    !character.includes("\u001b")
+  );
 }
 
 export function visibleSlashCommandWindow(
@@ -212,6 +234,29 @@ export class SessionViewStore {
         { id: this.#outputId(), kind: "user", content, agentName },
       ],
     });
+  }
+
+  setPanelTitleFromFirstPrompt(prompt: string): void {
+    if (this.#state.panel.title !== "New session") return;
+    this.#setState({
+      ...this.#state,
+      panel: { ...this.#state.panel, title: deriveSessionTitle(prompt) },
+    });
+  }
+
+  updatePanelRuntime(runtime: SessionRuntimeState): void {
+    switch (runtime) {
+      case "idle":
+      case "active":
+      case "failed":
+        this.#setState({
+          ...this.#state,
+          panel: { ...this.#state.panel, runtime },
+        });
+        return;
+      default:
+        throw new Error("Unknown panel runtime state");
+    }
   }
 
   beginThinking(displayName: string): void {
@@ -535,6 +580,28 @@ export function SessionInput({
   );
 }
 
+export function SessionLayout({
+  application,
+  columns,
+  panel,
+  rows,
+}: {
+  application: React.ReactNode;
+  columns: number;
+  panel: SessionPanelState;
+  rows: number;
+}) {
+  if (!shouldShowSessionPanel(rows, columns)) return application;
+  return (
+    <Box flexDirection="row" height={rows}>
+      <Box flexBasis={0} flexDirection="column" flexGrow={1} flexShrink={1}>
+        {application}
+      </Box>
+      <SessionPanel state={panel} />
+    </Box>
+  );
+}
+
 export function SessionApp({
   onCycleAgent,
   onExit,
@@ -621,6 +688,24 @@ export function SessionApp({
     }
     if (key.tab) {
       onCycleAgent();
+      return;
+    }
+    if (
+      isDismissedSlashPopupMetaText(
+        inputRef.current,
+        slashCommandPopupDismissedRef.current,
+        character,
+        key.meta,
+      )
+    ) {
+      inputRef.current = appendSessionInput(inputRef.current, character);
+      historyIndexRef.current = historyRef.current.length;
+      historyDraftRef.current = inputRef.current;
+      selectedSlashCommandIndexRef.current = 0;
+      slashCommandPopupDismissedRef.current = false;
+      setInput(inputRef.current);
+      setSelectedSlashCommandIndex(0);
+      setSlashCommandPopupDismissed(false);
       return;
     }
     if (key.upArrow || key.downArrow) {
@@ -721,65 +806,70 @@ export function SessionApp({
     );
   }
 
+  const application = (
+    <Box flexDirection="column" height={terminalRows}>
+      <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
+      <Box
+        flexDirection="column-reverse"
+        flexGrow={1}
+        overflowY="hidden"
+        paddingX={1}
+      >
+        {state.liveAssistant === undefined ? null : (
+          <Box flexDirection="column">
+            <Text bold>{state.liveAssistant.displayName}</Text>
+            <MarkdownText source={state.liveAssistant.text} />
+          </Box>
+        )}
+        {state.toolRunning === undefined ? null : (
+          <ToolRunningIndicator
+            displayName={state.toolRunning.displayName}
+            toolCount={state.toolRunning.toolCount}
+          />
+        )}
+        {state.thinkingAgentDisplayName === undefined ? null : (
+          <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+        )}
+        {[...state.output].reverse().map((output) => (
+          <CompletedOutput key={output.id} output={output} />
+        ))}
+      </Box>
+      {(state.subAgentActivity?.length ?? 0) > 0 &&
+      shouldShowSubAgentTray(terminalRows, terminalColumns) ? (
+        <SubAgentTray
+          activity={state.subAgentActivity ?? []}
+          terminalColumns={terminalColumns}
+        />
+      ) : null}
+      <StatusBar
+        sessionId={state.sessionId}
+        tokenPercent={state.tokenPercent}
+        activeAgentName={state.activeAgentName}
+        {...(state.handoffWritten === undefined
+          ? {}
+          : { handoffWritten: state.handoffWritten })}
+        {...(state.priorContextUsed === undefined
+          ? {}
+          : { priorContextUsed: state.priorContextUsed })}
+      />
+      {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
+        <SlashCommandPopup
+          entries={filterSlashCommandEntries(sessionSlashCommandEntries, input)}
+          maxVisibleEntries={Math.max(1, terminalRows - 18)}
+          selectedIndex={selectedSlashCommandIndex}
+        />
+      ) : null}
+      <SessionInput activeAgentName={state.activeAgentName} input={input} />
+    </Box>
+  );
   return (
     <ThemeProvider themeId={themeId}>
-      <Box flexDirection="column" height={terminalRows}>
-        <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
-        <Box
-          flexDirection="column-reverse"
-          flexGrow={1}
-          overflowY="hidden"
-          paddingX={1}
-        >
-          {state.liveAssistant === undefined ? null : (
-            <Box flexDirection="column">
-              <Text bold>{state.liveAssistant.displayName}</Text>
-              <MarkdownText source={state.liveAssistant.text} />
-            </Box>
-          )}
-          {state.toolRunning === undefined ? null : (
-            <ToolRunningIndicator
-              displayName={state.toolRunning.displayName}
-              toolCount={state.toolRunning.toolCount}
-            />
-          )}
-          {state.thinkingAgentDisplayName === undefined ? null : (
-            <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
-          )}
-          {[...state.output].reverse().map((output) => (
-            <CompletedOutput key={output.id} output={output} />
-          ))}
-        </Box>
-        {(state.subAgentActivity?.length ?? 0) > 0 &&
-        shouldShowSubAgentTray(terminalRows, terminalColumns) ? (
-          <SubAgentTray
-            activity={state.subAgentActivity ?? []}
-            terminalColumns={terminalColumns}
-          />
-        ) : null}
-        <StatusBar
-          sessionId={state.sessionId}
-          tokenPercent={state.tokenPercent}
-          activeAgentName={state.activeAgentName}
-          {...(state.handoffWritten === undefined
-            ? {}
-            : { handoffWritten: state.handoffWritten })}
-          {...(state.priorContextUsed === undefined
-            ? {}
-            : { priorContextUsed: state.priorContextUsed })}
-        />
-        {isSlashCommandPopupOpen(input, slashCommandPopupDismissed) ? (
-          <SlashCommandPopup
-            entries={filterSlashCommandEntries(
-              sessionSlashCommandEntries,
-              input,
-            )}
-            maxVisibleEntries={Math.max(1, terminalRows - 18)}
-            selectedIndex={selectedSlashCommandIndex}
-          />
-        ) : null}
-        <SessionInput activeAgentName={state.activeAgentName} input={input} />
-      </Box>
+      <SessionLayout
+        application={application}
+        columns={terminalColumns}
+        panel={state.panel}
+        rows={terminalRows}
+      />
     </ThemeProvider>
   );
 }

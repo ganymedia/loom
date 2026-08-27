@@ -105,6 +105,8 @@ describe("startSession", () => {
     );
     expect(output).toContain("File write: ok");
     expect(output).toContain("File read: ok");
+    expect(output).not.toContain("New session");
+    expect(output).not.toContain("Project plan");
   });
 
   test("runs one Developer-agent prompt when initialPrompt is provided", async () => {

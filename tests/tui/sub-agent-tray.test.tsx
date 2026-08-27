@@ -13,6 +13,13 @@ describe("sub-agent tray", () => {
     const store = new SessionViewStore({
       activeAgentName: "developer",
       output: [],
+      panel: {
+        directory: "loom",
+        plan: { availability: "available", tasks: [] },
+        runtime: "idle",
+        title: "New session",
+        version: "0.1.0",
+      },
       sessionId: "session",
       tokenPercent: 0,
     });

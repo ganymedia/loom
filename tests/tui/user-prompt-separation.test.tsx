@@ -14,6 +14,13 @@ describe("SessionApp user prompt rendering", () => {
     activeAgentName: "developer",
     sessionId: "test-session",
     output: [],
+    panel: {
+      directory: "loom",
+      plan: { availability: "available", tasks: [] },
+      runtime: "idle",
+      title: "New session",
+      version: "0.1.0",
+    },
     tokenPercent: 0,
   });
 

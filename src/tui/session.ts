@@ -37,6 +37,7 @@ import {
 import { gitOpsTool } from "@loom/tools/git-ops";
 import { AgentTabStrip, StatusBar, ThemeProvider } from "@loom/tui/components";
 import { SessionApp, SessionViewStore } from "@loom/tui/session-app";
+import { createSessionPanelState } from "@loom/tui/session-panel-state";
 import { sessionSlashCommands } from "@loom/tui/slash-commands";
 import {
   type BuiltInAgentName,
@@ -478,16 +479,22 @@ export async function startSession(
     hasPipedStdin()
       ? readStdinLines(false)
       : undefined;
+  const projectRoot = options.projectRoot ?? process.cwd();
   const sessionId = crypto.randomUUID();
   const initialAgentName = options.initialAgent ?? "developer";
-  const viewStore = usePersistentInk
-    ? new SessionViewStore({
-        activeAgentName: initialAgentName,
-        output: [],
-        sessionId,
-        tokenPercent: 0,
-      })
+  const panelState = usePersistentInk
+    ? await createSessionPanelState(projectRoot)
     : undefined;
+  const viewStore =
+    panelState === undefined
+      ? undefined
+      : new SessionViewStore({
+          activeAgentName: initialAgentName,
+          output: [],
+          panel: panelState,
+          sessionId,
+          tokenPercent: 0,
+        });
   const inkInput = usePersistentInk ? new SessionInputQueue() : undefined;
   const ink =
     viewStore === undefined
@@ -551,10 +558,8 @@ export async function startSession(
     let agent = createBuiltInAgent(activeAgentName, config, options);
     const context = {
       sessionId,
-      projectRoot: options.projectRoot ?? process.cwd(),
-      conversationHistory: await loadHandoffContext(
-        options.projectRoot ?? process.cwd(),
-      ),
+      projectRoot,
+      conversationHistory: await loadHandoffContext(projectRoot),
     };
     const recallPriorContext =
       options.recallPriorContext ??
@@ -588,21 +593,13 @@ export async function startSession(
         })}\n`,
       );
     };
-
-    try {
-      if (viewStore === undefined) {
-        writeOutput(
-          `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
-        );
-      }
-      writeSessionStatus();
-      if (
-        options.initialPrompt !== undefined &&
-        options.initialPrompt.length > 0
-      ) {
+    const executePrompt = async (prompt: string): Promise<boolean> => {
+      viewStore?.setPanelTitleFromFirstPrompt(prompt);
+      viewStore?.updatePanelRuntime("active");
+      try {
         const turn = await runAgentPrompt(
           agent,
-          options.initialPrompt,
+          prompt,
           context,
           writeOutput,
           writeAssistantOutput,
@@ -620,10 +617,35 @@ export async function startSession(
             sessionManager,
           });
           if (automaticHandoffWritten) {
+            viewStore?.markHandoffWritten();
             writeOutput("Automatic handoff written to .loom/handoff.md\n");
           }
         }
         writeSessionStatus();
+        viewStore?.updatePanelRuntime("idle");
+        return true;
+      } catch (error) {
+        if (viewStore === undefined) throw error;
+        viewStore.updatePanelRuntime("failed");
+        writeOutput(
+          `${agent.displayName} agent error: ${error instanceof Error ? error.message : String(error)}\n`,
+        );
+        return false;
+      }
+    };
+
+    try {
+      if (viewStore === undefined) {
+        writeOutput(
+          `Agents:\n${renderAgentTabs(activeAgentName, config.defaults.theme)}\n`,
+        );
+      }
+      writeSessionStatus();
+      if (
+        options.initialPrompt !== undefined &&
+        options.initialPrompt.length > 0
+      ) {
+        await executePrompt(options.initialPrompt);
       }
 
       const input =
@@ -729,31 +751,7 @@ export async function startSession(
             continue;
           }
           viewStore?.appendUserPrompt(redact(prompt), activeAgentName);
-          const turn = await runAgentPrompt(
-            agent,
-            prompt,
-            context,
-            writeOutput,
-            writeAssistantOutput,
-            viewStore,
-            config,
-            options,
-          );
-          sessionManager.recordTurn({
-            promptTokens: turn.promptTokens,
-            completionTokens: turn.completionTokens,
-          });
-          if (!automaticHandoffWritten) {
-            automaticHandoffWritten = await writeAutomaticHandoff({
-              projectRoot: context.projectRoot,
-              sessionManager,
-            });
-            if (automaticHandoffWritten) {
-              viewStore?.markHandoffWritten();
-              writeOutput("Automatic handoff written to .loom/handoff.md\n");
-            }
-          }
-          writeSessionStatus();
+          await executePrompt(prompt);
         }
       }
     } catch (error) {

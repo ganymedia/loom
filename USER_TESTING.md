@@ -189,6 +189,9 @@ Use the file-reader tool to read package.json and report only the package name.
 [verify Security: Running 1 tool dots appear during execution, distinct from Thinking]
 [verify the Running indicator clears on finish/failure and shows no arguments or file content]
 [resize the terminal narrower, then wider]
+[at 100 columns by 20 rows or larger, verify the right panel appears with session, repository, runtime, plan, and version labels]
+[verify the panel title changes from New session after the first submitted prompt and does not change after later prompts]
+[shrink below 100 columns or 20 rows and verify the panel disappears without leaving blank space]
 /exit
 ```
 
@@ -199,6 +202,8 @@ Expected result: the composer is a separately bordered `Message` region showing 
 When automatic handoff generation succeeds, verify the pinned status bar shows an amber `handoff saved` notice. Non-TTY output should retain its existing handoff message.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
+
+Right-panel acceptance remains pending manual verification. Confirm it shows only a directory basename, uses explicit `idle`, `active`, or `failed` text with a status dot, shows at most five non-completed tasks or a fixed unavailable/empty message, and never displays prompt text or an absolute path.
 
 ## 8. Recall and log commands
 

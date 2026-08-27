@@ -501,6 +501,7 @@ stages:
     });
     expect(pipedResult.exitCode).toBe(0);
     expect(pipedResult.stdout).toContain("Enter follow-up prompts.");
+    expect(pipedResult.stdout).not.toContain("Project plan");
     expect(pipedResult.stdout).not.toContain("\u001B[?1049h");
     expect(pipedResult.stderr).not.toContain("loom: fatal error");
 
@@ -514,6 +515,7 @@ stages:
     expect(promptResult.exitCode).toBe(0);
     expect(promptResult.stdout).toContain("Developer agent error:");
     expect(promptResult.stdout).not.toContain("Enter follow-up prompts.");
+    expect(promptResult.stdout).not.toContain("Project plan");
     expect(promptResult.stdout).not.toContain("\u001B[?1049h");
     expect(promptResult.stderr).not.toContain("loom: fatal error");
   }, 30_000);

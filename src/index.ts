@@ -7,6 +7,7 @@ import { registerRecallCommand } from "@loom/cli/commands/recall";
 import { registerThemeCommand } from "@loom/cli/commands/theme";
 import { ensureFirstRunConfig } from "@loom/config/first-run";
 import { loadConfig } from "@loom/config/loader";
+import { LOOM_VERSION } from "@loom/version";
 import { Command } from "commander";
 
 const program = new Command();
@@ -40,7 +41,7 @@ function isSessionInvocation(args: string[]): boolean {
 program
   .name("loom")
   .description("AI workflow pipeline manager and intelligent terminal agent")
-  .version("0.1.0")
+  .version(LOOM_VERSION)
   .allowExcessArguments(false)
   .option("-p, --profile <name>", "override the active config profile")
   .option("--backend <key>", "override the default backend for this invocation")
