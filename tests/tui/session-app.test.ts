@@ -185,7 +185,7 @@ describe("SessionViewStore", () => {
       );
     });
 
-    store.appendAssistantOutput("Developer", "first answer");
+    store.appendAssistantOutput("developer", "Developer", "first answer");
     store.updateStatus("security", 0.25);
     unsubscribe();
     store.appendOutput("ignored after unsubscribe");
@@ -200,6 +200,7 @@ describe("SessionViewStore", () => {
         {
           id: "output-0",
           kind: "assistant",
+          agentName: "developer",
           displayName: "Developer",
           content: "first answer",
         },
@@ -459,6 +460,7 @@ describe("SessionApp", () => {
         {
           id: "third",
           kind: "assistant",
+          agentName: "security",
           displayName: "Security",
           content: "**second completed line**",
         },
@@ -495,6 +497,36 @@ describe("SessionApp", () => {
     expect(liveAssistant).toBeGreaterThan(secondOutput);
     expect(status).toBeGreaterThan(liveAssistant);
     expect(input).toBeGreaterThan(status);
+  });
+
+  test("sets apart completed Developer output as a summary", () => {
+    const store = new SessionViewStore({
+      activeAgentName: "developer",
+      output: [],
+      panel: testPanelState(),
+      sessionId: "session-1",
+      tokenPercent: 0,
+    });
+    store.appendAssistantOutput(
+      "developer",
+      "Developer",
+      "**Changed:** one file",
+    );
+
+    const frame = renderToString(
+      createElement(SessionApp, {
+        onCycleAgent: () => {},
+        onExit: () => {},
+        onSubmit: () => {},
+        store,
+        themeId: undefined,
+      }),
+    );
+    expect(frame).toContain("Developer summary");
+    expect(frame).toContain("Completed");
+    expect(frame).toContain("Changed: one file");
+    expect(frame).toContain("╭");
+    expect(frame).toContain("╰");
   });
 
   test("renders tool outcomes with semantic text labels", () => {

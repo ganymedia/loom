@@ -189,6 +189,7 @@ Use the file-reader tool to read package.json and report only the package name.
 [verify Security: Running 1 tool dots appear during execution, distinct from Thinking]
 [verify the Running indicator clears on finish/failure and shows no arguments or file content]
 [verify completed tool results use green `✓` success or red `✕` failure rows with explicit outcome text]
+[verify completed Developer output becomes a bordered `Developer summary` block while live streaming and other agents remain unchanged]
 [verify the composer cursor blinks at the end of empty, single-line, and multi-line input without shifting layout]
 [resize the terminal narrower, then wider]
 [at 100 columns by 20 rows or larger, verify the right panel appears with session, repository, runtime, plan, and version labels]

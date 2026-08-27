@@ -318,11 +318,18 @@ async function runAgentPrompt(
     conversationHistory: AgentMessage[];
   },
   writeOutput: (message: string) => void,
-  writeAssistantOutput: (displayName: string, content: string) => void,
+  writeAssistantOutput: (
+    agentName: BuiltInAgentName,
+    displayName: string,
+    content: string,
+  ) => void,
   viewStore: SessionViewStore | undefined,
   config: LoomConfig,
   sessionOptions: Pick<StartSessionOptions, "backendOverride" | "fetchImpl">,
 ): Promise<AgentTurnResult> {
+  if (!isBuiltInAgentName(agent.name)) {
+    throw new Error("Unable to render unknown completed agent output");
+  }
   const stream =
     viewStore === undefined
       ? undefined
@@ -364,14 +371,14 @@ async function runAgentPrompt(
     throw error;
   }
   if (stream === undefined) {
-    writeAssistantOutput(agent.displayName, turn.content);
+    writeAssistantOutput(agent.name, agent.displayName, turn.content);
   } else {
     const finalDelta = stream.redactor.flush();
     if (finalDelta.length > 0) {
       stream.store.appendAssistantDelta(agent.displayName, finalDelta);
     }
     stream.store.clearAssistantDelta();
-    writeAssistantOutput(agent.displayName, turn.content);
+    writeAssistantOutput(agent.name, agent.displayName, turn.content);
   }
   const redactToolContent = createConfigRedactor(config);
   const toolResultLines = formatToolCallResults(turn);
@@ -527,12 +534,16 @@ export async function startSession(
       viewStore.appendOutput(safeMessage);
     }
   };
-  const writeAssistantOutput = (displayName: string, content: string): void => {
+  const writeAssistantOutput = (
+    agentName: BuiltInAgentName,
+    displayName: string,
+    content: string,
+  ): void => {
     const safeContent = redact(content);
     if (viewStore === undefined) {
       outputSink(`${displayName}: ${safeContent}\n`);
     } else {
-      viewStore.appendAssistantOutput(displayName, safeContent);
+      viewStore.appendAssistantOutput(agentName, displayName, safeContent);
     }
   };
   const smoke = await runSessionSmoke(config, options);

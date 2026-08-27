@@ -30,6 +30,7 @@ export type SessionOutput =
   | {
       id: string;
       kind: "assistant";
+      agentName: BuiltInAgentName;
       displayName: string;
       content: string;
     }
@@ -192,7 +193,11 @@ export class SessionViewStore {
     });
   }
 
-  appendAssistantOutput(displayName: string, content: string): void {
+  appendAssistantOutput(
+    agentName: BuiltInAgentName,
+    displayName: string,
+    content: string,
+  ): void {
     this.#setState({
       ...this.#state,
       output: [
@@ -200,6 +205,7 @@ export class SessionViewStore {
         {
           id: this.#outputId(),
           kind: "assistant",
+          agentName,
           displayName,
           content,
         },
@@ -561,6 +567,26 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
           <Text dimColor>Submitted</Text>
         </Box>
         <Text>{sanitizeTerminalText(output.content)}</Text>
+      </Box>
+    );
+  }
+  if (output.agentName === "developer") {
+    const developerColor = agentTabColor(theme, "developer");
+    return (
+      <Box
+        borderColor={developerColor}
+        borderStyle="round"
+        flexDirection="column"
+        marginTop={1}
+        paddingX={1}
+      >
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text color={developerColor} bold>
+            Developer summary
+          </Text>
+          <Text dimColor>Completed</Text>
+        </Box>
+        <MarkdownText source={output.content} />
       </Box>
     );
   }
