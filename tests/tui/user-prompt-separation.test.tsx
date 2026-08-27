@@ -3,6 +3,7 @@ import {
   SessionApp,
   SessionInput,
   SessionViewStore,
+  inputCursorGlyph,
 } from "@loom/tui/session-app";
 import { builtInAgentTabs } from "@loom/tui/tab-strip";
 import { loomDark } from "@loom/tui/theme";
@@ -76,7 +77,23 @@ describe("SessionInput", () => {
 
     expect(output).toContain("Message");
     expect(output).toContain("my input");
+    expect(output).toContain("▌");
     expect(output).toContain("╭");
     expect(output).toContain("╰");
+  });
+
+  test("keeps one cursor cell for visible and hidden frames", () => {
+    expect(inputCursorGlyph(true)).toBe("▌");
+    expect(inputCursorGlyph(false)).toBe(" ");
+    expect(Bun.stringWidth(inputCursorGlyph(true))).toBe(1);
+    expect(Bun.stringWidth(inputCursorGlyph(false))).toBe(1);
+
+    const output = renderToString(
+      createElement(SessionInput, {
+        activeAgentName: "developer",
+        input: "first\nsecond",
+      }),
+    );
+    expect(output).toContain("  second▌");
   });
 });

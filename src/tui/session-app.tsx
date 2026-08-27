@@ -571,13 +571,29 @@ export function SessionInput({
         <Text color={agentColor} bold>
           Message
         </Text>
-        <Text>{formatSessionInput(input)}</Text>
+        <Text>
+          {formatSessionInput(input)}
+          <BlinkingInputCursor color={agentColor} />
+        </Text>
       </Box>
       <Text color={theme.textTertiary} dimColor>
         Enter submit · Ctrl+J newline · Shift+Enter where supported
       </Text>
     </Box>
   );
+}
+
+export function inputCursorGlyph(visible: boolean): "▌" | " " {
+  return visible ? "▌" : " ";
+}
+
+export function BlinkingInputCursor({ color }: { color: string }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const interval = setInterval(() => setVisible((value) => !value), 500);
+    return () => clearInterval(interval);
+  }, []);
+  return <Text color={color}>{inputCursorGlyph(visible)}</Text>;
 }
 
 export function SessionLayout({

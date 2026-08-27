@@ -188,6 +188,7 @@ Reply with Markdown containing a heading, bold text, a two-item list, inline cod
 Use the file-reader tool to read package.json and report only the package name.
 [verify Security: Running 1 tool dots appear during execution, distinct from Thinking]
 [verify the Running indicator clears on finish/failure and shows no arguments or file content]
+[verify the composer cursor blinks at the end of empty, single-line, and multi-line input without shifting layout]
 [resize the terminal narrower, then wider]
 [at 100 columns by 20 rows or larger, verify the right panel appears with session, repository, runtime, plan, and version labels]
 [verify the panel title changes from New session after the first submitted prompt and does not change after later prompts]
