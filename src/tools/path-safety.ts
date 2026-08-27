@@ -18,7 +18,9 @@ function isWithinRoot(projectRoot: string, targetPath: string): boolean {
 }
 
 const SENSITIVE_LOOM_FILES = new Set([
+  ".findings.lock",
   "config.yaml",
+  "findings.jsonl",
   "handoff.md",
   "narrative.md",
   "prompt-store.sqlite",

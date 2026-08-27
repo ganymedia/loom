@@ -7,6 +7,8 @@ import type {
   BaseAgent,
 } from "@loom/agents/base";
 import { DeveloperAgent } from "@loom/agents/developer";
+import { getSastManifest } from "@loom/agents/sast-manifest";
+import { runSastForDeveloperWrites } from "@loom/agents/sast-scanner";
 import { SecurityAgent } from "@loom/agents/security";
 import { TesterAgent } from "@loom/agents/tester";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
@@ -318,6 +320,7 @@ async function runAgentPrompt(
   writeAssistantOutput: (displayName: string, content: string) => void,
   viewStore: SessionViewStore | undefined,
   config: LoomConfig,
+  sessionOptions: Pick<StartSessionOptions, "backendOverride" | "fetchImpl">,
 ): Promise<AgentTurnResult> {
   const stream =
     viewStore === undefined
@@ -394,6 +397,31 @@ async function runAgentPrompt(
     }
   }
 
+  if (agent.name === "developer") {
+    const sast = await runSastForDeveloperWrites({
+      config,
+      projectRoot: context.projectRoot,
+      turn,
+      ...(sessionOptions.backendOverride === undefined
+        ? {}
+        : { backendOverride: sessionOptions.backendOverride }),
+      ...(sessionOptions.fetchImpl === undefined
+        ? {}
+        : { fetchImpl: sessionOptions.fetchImpl }),
+      ...(viewStore === undefined
+        ? {}
+        : {
+            onLifecycle: (event) => viewStore.recordSubAgentLifecycle(event),
+          }),
+    });
+    turn = {
+      ...turn,
+      subAgentsSpawned: [...turn.subAgentsSpawned, ...sast.spawned],
+      promptTokens: turn.promptTokens + sast.promptTokens,
+      completionTokens: turn.completionTokens + sast.completionTokens,
+    };
+  }
+
   const timestamp = Date.now();
   context.conversationHistory.push(
     { role: "user", content: prompt, timestamp },
@@ -433,6 +461,7 @@ export async function startSession(
   config: LoomConfig,
   options: StartSessionOptions = {},
 ): Promise<void> {
+  getSastManifest();
   const interactive =
     options.interactive ??
     (options.initialPrompt === undefined && process.stdin.isTTY === true);
@@ -579,6 +608,7 @@ export async function startSession(
           writeAssistantOutput,
           viewStore,
           config,
+          options,
         );
         sessionManager.recordTurn({
           promptTokens: turn.promptTokens,
@@ -707,6 +737,7 @@ export async function startSession(
             writeAssistantOutput,
             viewStore,
             config,
+            options,
           );
           sessionManager.recordTurn({
             promptTokens: turn.promptTokens,

@@ -513,4 +513,73 @@ describe("startSession", () => {
     expect(chatRequestCount).toBe(0);
     expect(output).toContain("Unknown agent: unknown");
   });
+
+  test("aggregates SAST usage without adding non-TTY activity output", async () => {
+    const projectRoot = await tempProject();
+    const enabledConfig: LoomConfig = {
+      ...config,
+      subAgents: { sast: { enabled: true } },
+    };
+    let output = "";
+    let promptCount = 0;
+
+    await startSession(enabledConfig, {
+      projectRoot,
+      contextLimit: 100,
+      initialPrompt: "Write a source file",
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime" }] });
+        }
+        promptCount += 1;
+        if (promptCount === 1) {
+          return jsonResponse({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    content: "Parent completed",
+                    toolCalls: [
+                      {
+                        tool: "file-writer",
+                        args: {
+                          path: "src.ts",
+                          content: "export const value = 1;",
+                        },
+                      },
+                    ],
+                  }),
+                },
+              },
+            ],
+            usage: { prompt_tokens: 5, completion_tokens: 3 },
+          });
+        }
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  findings: [],
+                  summary: "complete",
+                  filesScanned: 1,
+                }),
+              },
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 2 },
+        });
+      },
+      writeOutput: (message) => {
+        output += message;
+      },
+    });
+
+    expect(promptCount).toBe(2);
+    expect(output).toContain("Developer: Parent completed");
+    expect(output).toContain("Tool 1 (file-writer): ok");
+    expect(output).toContain("20%");
+    expect(output).not.toContain("Sub-agents");
+    expect(output).not.toContain("SAST scanner");
+  });
 });

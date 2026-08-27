@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { chmod, mkdir, mkdtemp, stat, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "@loom/config/loader";
@@ -119,5 +126,36 @@ describe("loadConfig", () => {
 
     expect(message).toBe("Unable to parse LOOM config YAML");
     expect(message).not.toContain("synthetic-secret-marker");
+  });
+
+  test("enables SAST only from the project-local config", async () => {
+    const home = await tempProject();
+    const projectRoot = await tempProject();
+    await mkdir(join(home, ".loom"));
+    await writeFile(
+      join(home, ".loom", "config.yaml"),
+      "subAgents:\n  sast:\n    enabled: true\n",
+    );
+
+    const globalOnly = await loadConfig({ projectRoot, env: { HOME: home } });
+    expect(globalOnly.subAgents).toBeUndefined();
+
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "config.yaml"),
+      "subAgents:\n  sast:\n    enabled: true\n",
+    );
+    const local = await loadConfig({ projectRoot, env: { HOME: home } });
+    expect(local.subAgents?.sast.enabled).toBe(true);
+  });
+
+  test("rejects a symlinked project config directory with a fixed error", async () => {
+    const projectRoot = await tempProject();
+    const outside = await tempProject();
+    await symlink(outside, join(projectRoot, ".loom"));
+
+    await expect(loadConfig({ projectRoot, env: {} })).rejects.toThrow(
+      "Unable to read LOOM config",
+    );
   });
 });

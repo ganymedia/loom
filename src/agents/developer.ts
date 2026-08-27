@@ -9,6 +9,7 @@ import {
   createAgentTextDeltaProjector,
   withAgentToolExecution,
 } from "@loom/agents/base";
+import { getDeveloperSastRule } from "@loom/agents/sast-manifest";
 import type { FetchLike, ResolvedBackend } from "@loom/backends/discovery";
 import { resolveBackendForRequest } from "@loom/backends/router";
 import type { LoomConfig } from "@loom/config/schema";
@@ -88,7 +89,7 @@ export class DeveloperAgent extends BaseAgent {
     shellTool,
     gitOpsTool,
   ];
-  readonly subAgentRules = [];
+  readonly subAgentRules = [getDeveloperSastRule()];
   readonly modelPreferences: Array<{
     backend: string;
     model?: string;

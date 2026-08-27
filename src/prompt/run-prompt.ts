@@ -17,7 +17,9 @@ export interface RunPromptOptions {
   messages: PromptMessage[];
   fetchImpl?: FetchLike;
   env?: NodeJS.ProcessEnv;
+  maxTokens?: number;
   onTextDelta?: (delta: string) => void;
+  signal?: AbortSignal;
 }
 
 export interface PromptUsage {
@@ -90,6 +92,12 @@ function usageNumber(value: unknown): number {
 export async function runPrompt(
   options: RunPromptOptions,
 ): Promise<PromptResponse> {
+  if (
+    options.maxTokens !== undefined &&
+    (!Number.isInteger(options.maxTokens) || options.maxTokens <= 0)
+  ) {
+    throw new PromptRequestError("Prompt maxTokens must be a positive integer");
+  }
   if (options.backend.type !== "openai-compatible") {
     throw new PromptRequestError(
       `Backend type "${options.backend.type}" is not supported by the Phase 1 prompt gateway`,
@@ -106,10 +114,14 @@ export async function runPrompt(
       body: JSON.stringify({
         model: options.backend.model,
         messages: options.messages,
+        ...(options.maxTokens === undefined
+          ? {}
+          : { max_tokens: options.maxTokens }),
         ...(options.onTextDelta === undefined
           ? {}
           : { stream: true, stream_options: { include_usage: true } }),
       }),
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
   } catch (error) {
     throw new PromptRequestError(

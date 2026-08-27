@@ -65,7 +65,12 @@ tools:
     - shell-exec
     - git-ops
 
-sub_agents: []
+sub_agents:
+  - ref: loom-sast-scanner
+    trigger:
+      type: file-write
+      file_match: "*.{c,cc,cpp,cs,go,java,js,jsx,php,py,rb,rs,swift,ts,tsx}"
+    pass_context: []
 
 handoff:
   auto_generate: true

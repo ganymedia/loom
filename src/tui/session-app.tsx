@@ -1,3 +1,4 @@
+import type { SubAgentLifecycleEvent } from "@loom/agents/base";
 import {
   AgentTabStrip,
   StatusBar,
@@ -49,7 +50,12 @@ export interface SessionViewState {
   thinkingAgentDisplayName?: string;
   tokenPercent: number;
   toolRunning?: { displayName: string; toolCount: number };
+  subAgentActivity?: readonly SubAgentActivity[];
 }
+
+export interface SubAgentActivity extends SubAgentLifecycleEvent {}
+
+const MAX_COMPLETED_SUB_AGENT_ROWS = 20;
 
 type SessionViewListener = () => void;
 
@@ -274,6 +280,32 @@ export class SessionViewStore {
     this.#setState({ ...this.#state, priorContextUsed: true });
   }
 
+  recordSubAgentLifecycle(event: SubAgentLifecycleEvent): void {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        event.id,
+      )
+    )
+      return;
+    const displayName = sanitizeTerminalText(event.displayName)
+      .replace(/[\r\n\t]/g, " ")
+      .slice(0, 40);
+    if (displayName.length === 0) return;
+    const activity = [...(this.#state.subAgentActivity ?? [])];
+    const index = activity.findIndex((row) => row.id === event.id);
+    const row = { ...event, displayName };
+    if (index === -1) activity.push(row);
+    else activity[index] = row;
+    const running = activity.filter((item) => item.status === "started");
+    const completed = activity
+      .filter((item) => item.status !== "started")
+      .slice(-MAX_COMPLETED_SUB_AGENT_ROWS);
+    this.#setState({
+      ...this.#state,
+      subAgentActivity: [...running, ...completed],
+    });
+  }
+
   #setState(state: SessionViewState): void {
     this.#state = state;
     for (const listener of this.#listeners) listener();
@@ -331,6 +363,54 @@ export function ToolRunningIndicator({
     <Text color={theme.warning} bold>
       {toolRunningIndicatorText(displayName, toolCount, frame)}
     </Text>
+  );
+}
+
+export function visibleSubAgentActivity(
+  activity: readonly SubAgentActivity[],
+): readonly SubAgentActivity[] {
+  const running = activity.filter((row) => row.status === "started");
+  const completed = activity.filter((row) => row.status !== "started");
+  if (running.length >= 3) return running.slice(-3);
+  return [...running, ...completed.slice(-(3 - running.length))];
+}
+
+export function shouldShowSubAgentTray(rows: number, columns: number): boolean {
+  return rows >= 20 && columns >= 48;
+}
+
+export function SubAgentTray({
+  activity,
+  terminalColumns,
+}: {
+  activity: readonly SubAgentActivity[];
+  terminalColumns: number;
+}) {
+  const theme = useTheme();
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Text color={theme.textTertiary} bold>
+        Sub-agents
+      </Text>
+      {visibleSubAgentActivity(activity).map((row) => {
+        const label = row.status === "started" ? "running" : row.status;
+        const displayName = row.displayName.slice(
+          0,
+          Math.max(1, terminalColumns - label.length - 4),
+        );
+        const color =
+          row.status === "started"
+            ? theme.info
+            : row.status === "succeeded"
+              ? theme.success
+              : theme.danger;
+        return (
+          <Text key={row.id} color={color}>
+            {displayName}: {label}
+          </Text>
+        );
+      })}
+    </Box>
   );
 }
 
@@ -487,9 +567,12 @@ export function SessionApp({
   const [terminalRows, setTerminalRows] = useState(
     resolveTerminalRows(stdout.rows),
   );
+  const [terminalColumns, setTerminalColumns] = useState(stdout.columns ?? 80);
   useEffect(() => {
-    const updateTerminalRows = (): void =>
+    const updateTerminalRows = (): void => {
       setTerminalRows(resolveTerminalRows(stdout.rows));
+      setTerminalColumns(stdout.columns ?? 80);
+    };
     stdout.on("resize", updateTerminalRows);
     return () => {
       stdout.off("resize", updateTerminalRows);
@@ -667,6 +750,13 @@ export function SessionApp({
             <CompletedOutput key={output.id} output={output} />
           ))}
         </Box>
+        {(state.subAgentActivity?.length ?? 0) > 0 &&
+        shouldShowSubAgentTray(terminalRows, terminalColumns) ? (
+          <SubAgentTray
+            activity={state.subAgentActivity ?? []}
+            terminalColumns={terminalColumns}
+          />
+        ) : null}
         <StatusBar
           sessionId={state.sessionId}
           tokenPercent={state.tokenPercent}

@@ -24,12 +24,19 @@ export const storeConfigSchema = z.object({
   topK: z.number().int().positive().default(3),
 });
 
+export const subAgentsConfigSchema = z.object({
+  sast: z.object({
+    enabled: z.boolean().optional(),
+  }),
+});
+
 export const loomConfigSchema = z.object({
   activeProfile: z.string().min(1).default("default"),
   defaults: defaultsConfigSchema.default({ theme: "loom-dark" }),
   store: storeConfigSchema.default({ topK: 3 }),
   profiles: z.record(profileConfigSchema).default({ default: {} }),
   backends: z.record(backendConfigSchema).default({}),
+  subAgents: subAgentsConfigSchema.optional(),
 });
 
 export type BackendType = z.infer<typeof backendTypeSchema>;

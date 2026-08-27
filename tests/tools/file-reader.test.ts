@@ -55,6 +55,25 @@ describe("fileReaderTool", () => {
     expect(result.error).toBe("Model tools cannot access sensitive files");
   });
 
+  test("denies persisted SAST findings", async () => {
+    const projectRoot = await tempProject();
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "findings.jsonl"),
+      '{"message":"synthetic finding"}\n',
+      "utf8",
+    );
+
+    const result = await fileReaderTool.execute({
+      projectRoot,
+      path: ".loom/findings.jsonl",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.output).not.toContain("synthetic finding");
+    expect(result.error).toBe("Model tools cannot access sensitive files");
+  });
+
   test("refuses files larger than maxBytes", async () => {
     const projectRoot = await tempProject();
     await writeFile(join(projectRoot, "large.txt"), "abcdef", "utf8");

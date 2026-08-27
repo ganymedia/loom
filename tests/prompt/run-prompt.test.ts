@@ -49,6 +49,43 @@ describe("runPrompt", () => {
     });
   });
 
+  test("forwards bounded completion tokens and cancellation", async () => {
+    const controller = new AbortController();
+    await runPrompt({
+      backend,
+      backendConfig,
+      messages: [{ role: "user", content: "Hello" }],
+      maxTokens: 4_096,
+      signal: controller.signal,
+      fetchImpl: async (_input, init) => {
+        expect(init?.signal).toBe(controller.signal);
+        expect(JSON.parse(String(init?.body))).toEqual({
+          model: "discovered-model",
+          messages: [{ role: "user", content: "Hello" }],
+          max_tokens: 4_096,
+        });
+        return jsonResponse({ choices: [{ message: { content: "Hi" } }] });
+      },
+    });
+  });
+
+  test("rejects invalid completion-token limits before requesting", async () => {
+    let requested = false;
+    await expect(
+      runPrompt({
+        backend,
+        backendConfig,
+        messages: [{ role: "user", content: "Hello" }],
+        maxTokens: 0,
+        fetchImpl: async () => {
+          requested = true;
+          return jsonResponse({});
+        },
+      }),
+    ).rejects.toThrow("positive integer");
+    expect(requested).toBe(false);
+  });
+
   test("uses apiKeyEnv without exposing the secret in errors", async () => {
     const response = await runPrompt({
       backend,

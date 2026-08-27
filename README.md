@@ -13,6 +13,7 @@ Connect LOOM to an existing OpenAI-compatible backend, work interactively with b
 - **Log and recall prompt history** from a project-local SQLite Prompt Store; interactive `/recall <query>` injects bounded, untrusted prior-session context without printing recalled content.
 - **Choose a terminal theme** from the built-in theme collection.
 - **Keep tool access narrow** with project-root path boundaries and allowlisted, read-only shell and Git operations.
+- **Opt into post-write SAST** per project, with typed findings kept separate from agent conversation history.
 
 ## Install
 
@@ -123,6 +124,9 @@ LOOM loads global configuration from `$HOME/.loom/config.yaml` and supported XDG
 - Use `apiKeyEnv` to reference an API key in the process environment instead of placing the key in YAML.
 - `loom config` does not print API keys, backend URLs, or header values; configured endpoints appear as `"endpoint": "[configured]"`.
 - Project plans and the SQLite Prompt Store remain under the project root.
+- SAST is off by default and global config cannot enable it for a project. To opt in, add `subAgents.sast.enabled: true` to that project's `.loom/config.yaml`.
+- Opted-in Developer `file-writer` changes to supported source files are scanned sequentially after successful writes. Findings are atomically retained as at most 500 newest owner-only JSONL records, bounded to 1 MiB, in `.loom/findings.jsonl`; source text, summaries, prompts, and backend details are not stored there.
+- Opt-in sends changed source to the configured inference backend. Do not enable SAST for projects containing secrets or CUI; use it only where the backend and local findings storage are approved for the project's data.
 - LOOM ships no telemetry or crash reporting in 0.1.0.
 
 See [loom-config.yaml](loom-config.yaml) for the complete configuration reference.

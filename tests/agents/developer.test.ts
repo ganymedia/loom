@@ -37,6 +37,20 @@ async function tempProject(): Promise<string> {
 }
 
 describe("DeveloperAgent", () => {
+  test("exposes the embedded Developer file-write SAST rule", () => {
+    const agent = new DeveloperAgent({ config });
+    expect(agent.subAgentRules).toEqual([
+      {
+        ref: "loom-sast-scanner",
+        trigger: {
+          type: "file-write",
+          fileMatch: "*.{c,cc,cpp,cs,go,java,js,jsx,php,py,rb,rs,swift,ts,tsx}",
+        },
+        passContext: [],
+      },
+    ]);
+  });
+
   test("runs one prompt turn through discovered backend", async () => {
     const requestedUrls: string[] = [];
     const agent = new DeveloperAgent({

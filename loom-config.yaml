@@ -45,5 +45,16 @@ backends:
 # store:
 #   path: ~/.loom/prompt-store.sqlite
 #   embeddingBackend: local
-#   embeddingModel: nomic-embed-text     # hint only — resolved via model discovery
+#   embeddingModel: <embedding-model-hint> # hint only — resolved via model discovery
 #   topK: 3
+
+# ── Project-only SAST opt-in ──────────────────────────────────────────────────
+# This setting is accepted only from the project's .loom/config.yaml. A global
+# config cannot enable automatic source analysis for a project. Enabling it
+# sends supported Developer-written source files to the configured inference
+# backend and stores bounded findings locally; do not enable it for secrets or
+# CUI unless both processing and storage are explicitly approved.
+#
+# subAgents:
+#   sast:
+#     enabled: true

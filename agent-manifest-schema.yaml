@@ -109,6 +109,7 @@ primary_agent_manifest:
           description: "Tools this agent cannot use"
           items:
             type: string
+
         capabilities:
           type: array
           description: "Required capabilities"
@@ -193,6 +194,8 @@ sub_agent_manifest:
     - agent
     - model
     - tools
+    - interface
+    - execution
   properties:
     package:
       type: object
@@ -259,3 +262,43 @@ sub_agent_manifest:
           description: "Denied tools"
           items:
             type: string
+
+    interface:
+      type: object
+      additionalProperties: false
+      required: [input, output]
+      properties:
+        input:
+          type: object
+          additionalProperties: false
+          required: [path, source]
+          properties:
+            path: { type: string }
+            source: { type: string }
+        output:
+          type: object
+          additionalProperties: false
+          required: [findings, summary, filesScanned]
+          properties:
+            findings: { type: array }
+            summary: { type: string }
+            filesScanned: { type: integer }
+
+    execution:
+      type: object
+      additionalProperties: false
+      required: [trigger, supported_extensions, max_source_bytes, max_findings, max_tokens, timeout_seconds, sequential]
+      properties:
+        trigger:
+          type: string
+          enum: [developer-file-writer-success]
+        supported_extensions:
+          type: array
+          items: { type: string }
+        max_source_bytes: { type: integer }
+        max_findings: { type: integer }
+        max_tokens: { type: integer }
+        timeout_seconds: { type: integer }
+        sequential:
+          type: boolean
+          enum: [true]

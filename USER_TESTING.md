@@ -269,7 +269,21 @@ Expected result:
 - The terminal resize remains stable during the output.
 - No secrets or CUI are leaked in the file or terminal.
 
-## 10. What to report
+## 10. Opt-in SAST acceptance
+
+Run this only in a disposable project with non-sensitive source. Add the following project-local setting to `.loom/config.yaml`; do not add it to global config:
+
+```yaml
+subAgents:
+  sast:
+    enabled: true
+```
+
+In a real terminal, start `${LOOM_BIN:-loom}` with enough height and width, ask the Developer agent to write a small supported source file, and observe the activity tray. Acceptance is not presumed complete: verify the tray shows no more than three rows with explicit `running`, `succeeded`, or `failed` labels; hides when the terminal is short or narrow; and does not expose source, paths, findings, model/backend details, or prompts. Verify ordinary parent output and streaming remain unchanged, and verify piped/non-TTY use adds no sub-agent activity text.
+
+After a successful scan with findings, inspect only the record keys and file metadata, not sensitive values. `.loom/findings.jsonl` should be owner mode `0600`, valid JSONL, at most 500 records and 1 MiB, and contain only the documented timestamp, opaque scan ID, rule, severity, relative file, optional line/CWE, message, and fix-hint fields. With the setting absent, verify no scan request, tray, or findings file is created.
+
+## 11. What to report
 
 For each section, report:
 

@@ -49,6 +49,12 @@ export interface AgentToolExecutionEvent {
   toolCount: number;
 }
 
+export interface SubAgentLifecycleEvent {
+  id: string;
+  displayName: string;
+  status: "started" | "succeeded" | "failed";
+}
+
 export interface AgentTurnOptions {
   onTextDelta?: (delta: string) => void;
   onToolExecution?: (event: AgentToolExecutionEvent) => void;

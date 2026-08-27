@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { type LoomConfig, loomConfigSchema } from "@loom/config/schema";
 import { readPrivateConfigFile } from "@loom/config/writer";
@@ -45,8 +45,14 @@ export function defaultGlobalConfigPaths(env: NodeJS.ProcessEnv): string[] {
 }
 
 async function readYamlIfPresent(path: string | undefined): Promise<unknown> {
-  if (path === undefined || !existsSync(path)) return {};
-  const content = await readPrivateConfigFile(path);
+  if (path === undefined) return {};
+  let content: string;
+  try {
+    content = await readPrivateConfigFile(path);
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return {};
+    throw new Error("Unable to read LOOM config");
+  }
   try {
     return YAML.parse(content) ?? {};
   } catch (error) {
@@ -101,7 +107,14 @@ function mergeConfig(globalConfig: unknown, projectConfig: unknown): unknown {
     ...projectRecord,
     profiles: Object.keys(profiles).length === 0 ? { default: {} } : profiles,
     backends,
+    // Security-sensitive capabilities require provenance from this project.
+    subAgents:
+      "subAgents" in projectRecord ? projectRecord.subAgents : undefined,
   };
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }
 
 export async function loadConfig(
@@ -110,6 +123,7 @@ export async function loadConfig(
   const env = options.env ?? process.env;
   const projectRoot = options.projectRoot ?? process.cwd();
   const globalConfig = await readGlobalConfig(env);
+  await assertProjectConfigDirectory(projectRoot);
   const projectConfig = await readYamlIfPresent(
     join(projectRoot, ".loom", "config.yaml"),
   );
@@ -132,4 +146,25 @@ export async function loadConfig(
       [activeProfile]: parsed.profiles[activeProfile] ?? {},
     },
   };
+}
+
+async function assertProjectConfigDirectory(
+  projectRoot: string,
+): Promise<void> {
+  const root = await realpath(projectRoot);
+  try {
+    const loomDirectory = await realpath(join(root, ".loom"));
+    if (loomDirectory !== join(root, ".loom")) {
+      throw new Error("Unable to read LOOM config");
+    }
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return;
+    if (
+      error instanceof Error &&
+      error.message === "Unable to read LOOM config"
+    ) {
+      throw error;
+    }
+    throw new Error("Unable to read LOOM config");
+  }
 }
