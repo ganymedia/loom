@@ -193,7 +193,7 @@ export class DeveloperAgent extends BaseAgent {
 
     const parsedResponse = parseDeveloperResponse(response.content);
     const toolCalls = await withAgentToolExecution(
-      parsedResponse.toolCalls.length,
+      parsedResponse.toolCalls.map((toolCall) => toolCall.tool),
       options,
       () =>
         Promise.all(

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  classifyAgentToolAction,
   createAgentTextDeltaProjector,
   withAgentToolExecution,
 } from "@loom/agents/base";
@@ -37,22 +38,25 @@ describe("withAgentToolExecution", () => {
   test("reports existing tool execution without exposing tool data", async () => {
     const events: string[] = [];
     const result = await withAgentToolExecution(
-      2,
+      ["file-reader", "file-writer"],
       {
         onToolExecution: (event) =>
-          events.push(`${event.status}:${event.toolCount}`),
+          events.push(`${event.status}:${event.toolCount}:${event.action}`),
       },
       async () => "complete",
     );
 
     expect(result).toBe("complete");
-    expect(events).toEqual(["started:2", "finished:2"]);
+    expect(events).toEqual([
+      "started:2:running-tools",
+      "finished:2:running-tools",
+    ]);
   });
 
   test("does not report activity when no tools execute", async () => {
     const events: string[] = [];
     const result = await withAgentToolExecution(
-      0,
+      [],
       { onToolExecution: (event) => events.push(event.status) },
       async () => "complete",
     );
@@ -65,7 +69,7 @@ describe("withAgentToolExecution", () => {
     const events: string[] = [];
     await expect(
       withAgentToolExecution(
-        1,
+        ["file-writer"],
         { onToolExecution: (event) => events.push(event.status) },
         async () => {
           throw new Error("tool failed");
@@ -75,9 +79,16 @@ describe("withAgentToolExecution", () => {
     expect(events).toEqual(["started", "finished"]);
   });
 
-  test("rejects invalid tool counts", async () => {
-    await expect(
-      withAgentToolExecution(-1, {}, async () => undefined),
-    ).rejects.toThrow("toolCount must be a non-negative integer");
+  test("classifies only registered tool names into closed actions", () => {
+    expect(classifyAgentToolAction(["file-reader"])).toBe("reading-file");
+    expect(classifyAgentToolAction(["file-writer", "file-writer"])).toBe(
+      "writing-file",
+    );
+    expect(classifyAgentToolAction(["shell"])).toBe("running-command");
+    expect(classifyAgentToolAction(["git-ops"])).toBe("checking-repository");
+    expect(classifyAgentToolAction(["unknown"])).toBe("running-tools");
+    expect(classifyAgentToolAction(["file-reader", "shell"])).toBe(
+      "running-tools",
+    );
   });
 });

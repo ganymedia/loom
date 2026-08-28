@@ -270,18 +270,19 @@ describe("SessionViewStore", () => {
     });
 
     store.beginThinking("Developer");
-    store.beginToolRunning("Developer", 2);
+    store.beginToolRunning("Developer", 2, "writing-file");
     expect(store.getSnapshot().thinkingAgentDisplayName).toBeUndefined();
     expect(store.getSnapshot().toolRunning).toEqual({
+      action: "writing-file",
       displayName: "Developer",
       toolCount: 2,
     });
 
     store.clearToolRunning();
     expect(store.getSnapshot().toolRunning).toBeUndefined();
-    expect(() => store.beginToolRunning("Developer", 0)).toThrow(
-      "toolCount must be a positive integer",
-    );
+    expect(() =>
+      store.beginToolRunning("Developer", 0, "running-tools"),
+    ).toThrow("toolCount must be a positive integer");
   });
 
   test("stores file diffs as typed output", () => {
@@ -365,22 +366,33 @@ describe("SessionApp", () => {
     expect(indicator).toContain("Developer: Thinking.");
   });
 
-  test("renders tool execution with distinct text and count", () => {
-    expect(toolRunningIndicatorText("Developer", 1, 0)).toBe(
-      "Developer: Running 1 tool.",
+  test("renders typed tool actions without tool data", () => {
+    expect(toolRunningIndicatorText("Developer", 1, "writing-file", 0)).toBe(
+      "Developer: Writing file.",
     );
-    expect(toolRunningIndicatorText("Developer", 2, 2)).toBe(
-      "Developer: Running 2 tools...",
+    expect(toolRunningIndicatorText("Developer", 2, "reading-file", 2)).toBe(
+      "Developer: Reading 2 files...",
+    );
+    expect(toolRunningIndicatorText("Developer", 1, "running-command", 0)).toBe(
+      "Developer: Running command.",
+    );
+    expect(
+      toolRunningIndicatorText("Developer", 1, "checking-repository", 0),
+    ).toBe("Developer: Checking repository.");
+    expect(toolRunningIndicatorText("Developer", 2, "running-tools", 0)).toBe(
+      "Developer: Running 2 tools.",
     );
 
     const indicator = renderToString(
       createElement(ToolRunningIndicator, {
+        action: "writing-file",
         displayName: "Developer",
         toolCount: 2,
       }),
     );
-    expect(indicator).toContain("Developer: Running 2 tools.");
+    expect(indicator).toContain("Developer: Writing 2 files.");
     expect(indicator).not.toContain("Thinking");
+    expect(indicator).not.toContain("file-writer");
   });
 
   test("renders unchanged, removed, and added file lines", () => {

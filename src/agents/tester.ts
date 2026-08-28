@@ -189,7 +189,7 @@ export class TesterAgent extends BaseAgent {
 
     const parsedResponse = parseTesterResponse(response.content);
     const toolCalls = await withAgentToolExecution(
-      parsedResponse.toolCalls.length,
+      parsedResponse.toolCalls.map((toolCall) => toolCall.tool),
       options,
       () =>
         Promise.all(

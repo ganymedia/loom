@@ -352,6 +352,7 @@ async function runAgentPrompt(
                 stream.store.beginToolRunning(
                   agent.displayName,
                   event.toolCount,
+                  event.action,
                 );
               } else {
                 stream.store.clearToolRunning();

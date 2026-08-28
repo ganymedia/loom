@@ -187,7 +187,7 @@ export class ArchitectAgent extends BaseAgent {
 
     const parsedResponse = parseArchitectResponse(response.content);
     const toolCalls = await withAgentToolExecution(
-      parsedResponse.toolCalls.length,
+      parsedResponse.toolCalls.map((toolCall) => toolCall.tool),
       options,
       () =>
         Promise.all(

@@ -200,7 +200,7 @@ while time.time() < deadline:
             elif not tool_prompt:
                 send_exit()
         tool_prompt_text = output[tool_prompt_start:].decode(errors="replace")
-        if sent_tool_prompt and not tool_running_shown and "Running 1 tool" in tool_prompt_text:
+        if sent_tool_prompt and not tool_running_shown and "Writing file" in tool_prompt_text:
             tool_running_shown = True
             send_exit()
     if proc.poll() is not None:

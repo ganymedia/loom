@@ -44,7 +44,15 @@ export interface AgentTurnResult {
   completionTokens: number;
 }
 
+export type AgentToolAction =
+  | "reading-file"
+  | "writing-file"
+  | "running-command"
+  | "checking-repository"
+  | "running-tools";
+
 export interface AgentToolExecutionEvent {
+  action: AgentToolAction;
   status: "started" | "finished";
   toolCount: number;
 }
@@ -61,23 +69,42 @@ export interface AgentTurnOptions {
 }
 
 export async function withAgentToolExecution<T>(
-  toolCount: number,
+  toolNames: readonly string[],
   options: AgentTurnOptions,
   execute: () => Promise<T>,
 ): Promise<T> {
-  if (!Number.isInteger(toolCount) || toolCount < 0) {
-    throw new Error("toolCount must be a non-negative integer");
-  }
+  const toolCount = toolNames.length;
   if (toolCount === 0) return execute();
+  const action = classifyAgentToolAction(toolNames);
 
-  options.onToolExecution?.({ status: "started", toolCount });
+  options.onToolExecution?.({ action, status: "started", toolCount });
   if (options.onToolExecution !== undefined) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await new Promise<void>((resolve) => setTimeout(resolve, 500));
   }
   try {
     return await execute();
   } finally {
-    options.onToolExecution?.({ status: "finished", toolCount });
+    options.onToolExecution?.({ action, status: "finished", toolCount });
+  }
+}
+
+export function classifyAgentToolAction(
+  toolNames: readonly string[],
+): AgentToolAction {
+  if (toolNames.length === 0 || new Set(toolNames).size !== 1) {
+    return "running-tools";
+  }
+  switch (toolNames[0]) {
+    case "file-reader":
+      return "reading-file";
+    case "file-writer":
+      return "writing-file";
+    case "shell":
+      return "running-command";
+    case "git-ops":
+      return "checking-repository";
+    default:
+      return "running-tools";
   }
 }
 

@@ -1,4 +1,7 @@
-import type { SubAgentLifecycleEvent } from "@loom/agents/base";
+import type {
+  AgentToolAction,
+  SubAgentLifecycleEvent,
+} from "@loom/agents/base";
 import {
   AgentTabStrip,
   StatusBar,
@@ -58,7 +61,11 @@ export interface SessionViewState {
   sessionId: string;
   thinkingAgentDisplayName?: string;
   tokenPercent: number;
-  toolRunning?: { displayName: string; toolCount: number };
+  toolRunning?: {
+    action: AgentToolAction;
+    displayName: string;
+    toolCount: number;
+  };
   subAgentActivity?: readonly SubAgentActivity[];
 }
 
@@ -296,12 +303,19 @@ export class SessionViewStore {
     this.#setState(state);
   }
 
-  beginToolRunning(displayName: string, toolCount: number): void {
+  beginToolRunning(
+    displayName: string,
+    toolCount: number,
+    action: AgentToolAction,
+  ): void {
     if (!Number.isInteger(toolCount) || toolCount <= 0) {
       throw new Error("toolCount must be a positive integer");
     }
     const { thinkingAgentDisplayName: _thinking, ...state } = this.#state;
-    this.#setState({ ...state, toolRunning: { displayName, toolCount } });
+    this.#setState({
+      ...state,
+      toolRunning: { action, displayName, toolCount },
+    });
   }
 
   clearToolRunning(): void {
@@ -407,16 +421,42 @@ export function ThinkingIndicator({ displayName }: { displayName: string }) {
 export function toolRunningIndicatorText(
   displayName: string,
   toolCount: number,
+  action: AgentToolAction,
   frame: number,
 ): string {
-  const toolLabel = toolCount === 1 ? "tool" : "tools";
-  return `${displayName}: Running ${toolCount} ${toolLabel}${".".repeat((frame % 3) + 1)}`;
+  let label: string;
+  switch (action) {
+    case "reading-file":
+      label = toolCount === 1 ? "Reading file" : `Reading ${toolCount} files`;
+      break;
+    case "writing-file":
+      label = toolCount === 1 ? "Writing file" : `Writing ${toolCount} files`;
+      break;
+    case "running-command":
+      label =
+        toolCount === 1 ? "Running command" : `Running ${toolCount} commands`;
+      break;
+    case "checking-repository":
+      label =
+        toolCount === 1
+          ? "Checking repository"
+          : `Checking repository (${toolCount} operations)`;
+      break;
+    case "running-tools":
+      label = `Running ${toolCount} ${toolCount === 1 ? "tool" : "tools"}`;
+      break;
+    default:
+      throw new Error("Unable to render unknown tool action");
+  }
+  return `${displayName}: ${label}${".".repeat((frame % 3) + 1)}`;
 }
 
 export function ToolRunningIndicator({
+  action,
   displayName,
   toolCount,
 }: {
+  action: AgentToolAction;
   displayName: string;
   toolCount: number;
 }) {
@@ -428,7 +468,7 @@ export function ToolRunningIndicator({
   }, []);
   return (
     <Text color={theme.warning} bold>
-      {toolRunningIndicatorText(displayName, toolCount, frame)}
+      {toolRunningIndicatorText(displayName, toolCount, action, frame)}
     </Text>
   );
 }
@@ -888,6 +928,7 @@ export function SessionApp({
         )}
         {state.toolRunning === undefined ? null : (
           <ToolRunningIndicator
+            action={state.toolRunning.action}
             displayName={state.toolRunning.displayName}
             toolCount={state.toolRunning.toolCount}
           />

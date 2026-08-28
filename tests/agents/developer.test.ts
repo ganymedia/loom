@@ -124,7 +124,7 @@ describe("DeveloperAgent", () => {
       },
       {
         onToolExecution: (event) =>
-          toolEvents.push(`${event.status}:${event.toolCount}`),
+          toolEvents.push(`${event.status}:${event.toolCount}:${event.action}`),
       },
     );
 
@@ -134,7 +134,10 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls[0]?.args.projectRoot).toBe(projectRoot);
     expect(result.toolCalls[0]?.result.success).toBe(true);
     expect(result.toolCalls[0]?.result.output).toBe("hello loom");
-    expect(toolEvents).toEqual(["started:1", "finished:1"]);
+    expect(toolEvents).toEqual([
+      "started:1:reading-file",
+      "finished:1:reading-file",
+    ]);
   });
 
   test("streams projected envelope content while preserving the completed result", async () => {

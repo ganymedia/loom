@@ -182,7 +182,7 @@ export class SecurityAgent extends BaseAgent {
 
     const parsedResponse = parseSecurityResponse(response.content);
     const toolCalls = await withAgentToolExecution(
-      parsedResponse.toolCalls.length,
+      parsedResponse.toolCalls.map((toolCall) => toolCall.tool),
       options,
       () =>
         Promise.all(
