@@ -219,6 +219,27 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls).toEqual([]);
   });
 
+  test("rejects malformed JSON-looking envelopes without reproducing them", async () => {
+    const malformed =
+      '{"content":"synthetic-envelope-marker","toolCalls":[]} trailing';
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) =>
+        input.endsWith("/v1/models")
+          ? jsonResponse({ data: [{ id: "runtime-model" }] })
+          : jsonResponse({ choices: [{ message: { content: malformed } }] }),
+    });
+
+    let message = "";
+    try {
+      await agent.runTurn("Reject malformed envelope", context);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toBe("Developer response envelope was invalid");
+    expect(message).not.toContain("synthetic-envelope-marker");
+  });
+
   test("generates a minimal handoff summary", async () => {
     const agent = new DeveloperAgent({ config });
     const summary = await agent.generateHandoffSummary({

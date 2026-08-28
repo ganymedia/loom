@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LoomConfig } from "@loom/config/schema";
@@ -103,10 +103,22 @@ describe("startSession", () => {
     expect(output).toContain(
       "Backend: local using discovered model local-model",
     );
-    expect(output).toContain("File write: ok");
-    expect(output).toContain("File read: ok");
+    expect(output).not.toContain("File write:");
+    expect(output).not.toContain("File read:");
     expect(output).not.toContain("New session");
     expect(output).not.toContain("Project plan");
+  });
+
+  test("does not mutate a project without a .loom directory during startup", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "loom-session-clean-"));
+
+    await startSession(config, {
+      projectRoot,
+      fetchImpl: async () => jsonResponse({ data: [{ id: "local-model" }] }),
+      writeOutput: () => {},
+    });
+
+    expect(await readdir(projectRoot)).toEqual([]);
   });
 
   test("runs one Developer-agent prompt when initialPrompt is provided", async () => {

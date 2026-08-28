@@ -76,6 +76,33 @@ export interface SessionSmokeResult {
   fileError?: string;
 }
 
+interface SessionBackendStatus {
+  backend?: ResolvedBackend;
+  backendError?: string;
+}
+
+async function resolveSessionBackend(
+  config: LoomConfig,
+  options: Pick<StartSessionOptions, "backendOverride" | "fetchImpl">,
+): Promise<SessionBackendStatus> {
+  try {
+    return {
+      backend: await resolveBackendForRequest(config, {
+        ...(options.backendOverride === undefined
+          ? {}
+          : { backendOverride: options.backendOverride }),
+        ...(options.fetchImpl === undefined
+          ? {}
+          : { fetchImpl: options.fetchImpl }),
+      }),
+    };
+  } catch (error) {
+    return {
+      backendError: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function runSessionSmoke(
   config: LoomConfig,
   options: StartSessionOptions = {},
@@ -85,21 +112,8 @@ export async function runSessionSmoke(
   const result: SessionSmokeResult = {
     fileWriteOk: false,
     fileReadOk: false,
+    ...(await resolveSessionBackend(config, options)),
   };
-
-  try {
-    result.backend = await resolveBackendForRequest(config, {
-      ...(options.backendOverride === undefined
-        ? {}
-        : { backendOverride: options.backendOverride }),
-      ...(options.fetchImpl === undefined
-        ? {}
-        : { fetchImpl: options.fetchImpl }),
-    });
-  } catch (error) {
-    result.backendError =
-      error instanceof Error ? error.message : String(error);
-  }
 
   const content = `LOOM session smoke file\nbackend=${result.backend?.key ?? "unresolved"}\n`;
   const writeResult = await fileWriterTool.execute({
@@ -547,22 +561,17 @@ export async function startSession(
       viewStore.appendAssistantOutput(agentName, displayName, safeContent);
     }
   };
-  const smoke = await runSessionSmoke(config, options);
+  const backendStatus = await resolveSessionBackend(config, options);
 
   writeOutput("LOOM session started.\n");
-  if (smoke.backend === undefined) {
+  if (backendStatus.backend === undefined) {
     writeOutput(
-      `Backend: unavailable (${smoke.backendError ?? "unknown error"})\n`,
+      `Backend: unavailable (${backendStatus.backendError ?? "unknown error"})\n`,
     );
   } else {
     writeOutput(
-      `Backend: ${smoke.backend.key} using discovered model ${smoke.backend.model}\n`,
+      `Backend: ${backendStatus.backend.key} using discovered model ${backendStatus.backend.model}\n`,
     );
-  }
-  writeOutput(`File write: ${smoke.fileWriteOk ? "ok" : "failed"}\n`);
-  writeOutput(`File read: ${smoke.fileReadOk ? "ok" : "failed"}\n`);
-  if (smoke.fileError !== undefined) {
-    writeOutput(`File error: ${smoke.fileError}\n`);
   }
 
   const shouldRunAgent =

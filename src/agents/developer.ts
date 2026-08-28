@@ -40,31 +40,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseDeveloperResponse(content: string): DeveloperResponseEnvelope {
-  try {
-    const parsed = JSON.parse(content) as unknown;
-    if (!isRecord(parsed)) {
-      return { content, toolCalls: [] };
-    }
-
-    const parsedContent = parsed.content;
-    const parsedToolCalls = parsed.toolCalls;
-    if (typeof parsedContent !== "string" || !Array.isArray(parsedToolCalls)) {
-      return { content, toolCalls: [] };
-    }
-
-    const toolCalls = parsedToolCalls.flatMap(
-      (toolCall): DeveloperToolCallRequest[] => {
-        if (!isRecord(toolCall)) return [];
-        if (typeof toolCall.tool !== "string" || !isRecord(toolCall.args))
-          return [];
-        return [{ tool: toolCall.tool, args: toolCall.args }];
-      },
-    );
-
-    return { content: parsedContent, toolCalls };
-  } catch {
+  if (!content.trimStart().startsWith("{")) {
     return { content, toolCalls: [] };
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content) as unknown;
+  } catch {
+    throw new Error("Developer response envelope was invalid");
+  }
+  if (!isRecord(parsed)) {
+    throw new Error("Developer response envelope was invalid");
+  }
+
+  const parsedContent = parsed.content;
+  const parsedToolCalls = parsed.toolCalls;
+  if (typeof parsedContent !== "string" || !Array.isArray(parsedToolCalls)) {
+    throw new Error("Developer response envelope was invalid");
+  }
+
+  const toolCalls = parsedToolCalls.map(
+    (toolCall): DeveloperToolCallRequest => {
+      if (
+        !isRecord(toolCall) ||
+        typeof toolCall.tool !== "string" ||
+        !isRecord(toolCall.args)
+      ) {
+        throw new Error("Developer response envelope was invalid");
+      }
+      return { tool: toolCall.tool, args: toolCall.args };
+    },
+  );
+
+  return { content: parsedContent, toolCalls };
 }
 
 export interface DeveloperAgentOptions {
