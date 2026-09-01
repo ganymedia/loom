@@ -37,6 +37,15 @@ async function tempProject(): Promise<string> {
 }
 
 describe("ArchitectAgent", () => {
+  test("instructs the backend to use its supported tool envelope", () => {
+    const agent = new ArchitectAgent({ config });
+
+    expect(agent.systemPrompt).toContain('"toolCalls"');
+    expect(agent.systemPrompt).toContain('"file-reader"');
+    expect(agent.systemPrompt).toContain('"git-ops"');
+    expect(agent.systemPrompt).not.toContain('"shell"');
+  });
+
   test("runs one prompt turn through discovered backend", async () => {
     const requestedUrls: string[] = [];
     const agent = new ArchitectAgent({

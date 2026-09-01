@@ -77,8 +77,12 @@ export interface TesterAgentOptions {
 export class TesterAgent extends BaseAgent {
   readonly name = "tester";
   readonly displayName = "Tester";
-  readonly systemPrompt =
-    "You are LOOM's Tester agent. Generate comprehensive tests, identify edge cases, mock external dependencies, keep tests deterministic, and verify failure paths as rigorously as happy paths.";
+  readonly systemPrompt = [
+    "You are LOOM's Tester agent. Generate comprehensive tests, identify edge cases, mock external dependencies, keep tests deterministic, and verify failure paths as rigorously as happy paths.",
+    'Return exactly one JSON object shaped as {"content":"operator-facing response","toolCalls":[{"tool":"file-reader","args":{"path":"relative/path"}}]} when using a tool.',
+    'Use an empty "toolCalls" array when no tool is needed.',
+    'Tool names are exactly "file-reader", "file-writer", "shell", and "git-ops"; never emit call syntax, underscores, or invented aliases.',
+  ].join(" ");
   readonly tools: ToolDefinition[] = [
     fileReaderTool,
     fileWriterTool,

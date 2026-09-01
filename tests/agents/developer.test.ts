@@ -39,6 +39,10 @@ async function tempProject(): Promise<string> {
 describe("DeveloperAgent", () => {
   test("exposes the embedded Developer file-write SAST rule", () => {
     const agent = new DeveloperAgent({ config });
+    expect(agent.systemPrompt).toContain(
+      "Return plain operator-facing text when no tool is needed.",
+    );
+    expect(agent.systemPrompt).toContain("When using a tool");
     expect(agent.subAgentRules).toEqual([
       {
         ref: "loom-sast-scanner",
@@ -219,6 +223,26 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls).toEqual([]);
   });
 
+  test("accepts a strictly fenced response envelope", async () => {
+    const envelope = [
+      "```json",
+      JSON.stringify({ content: "Fenced answer", toolCalls: [] }),
+      "```",
+    ].join("\n");
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) =>
+        input.endsWith("/v1/models")
+          ? jsonResponse({ data: [{ id: "runtime-model" }] })
+          : jsonResponse({ choices: [{ message: { content: envelope } }] }),
+    });
+
+    const result = await agent.runTurn("Accept fenced envelope", context);
+
+    expect(result.content).toBe("Fenced answer");
+    expect(result.toolCalls).toEqual([]);
+  });
+
   test("rejects malformed JSON-looking envelopes without reproducing them", async () => {
     const malformed =
       '{"content":"synthetic-envelope-marker","toolCalls":[]} trailing';
@@ -238,6 +262,27 @@ describe("DeveloperAgent", () => {
     }
     expect(message).toBe("Developer response envelope was invalid");
     expect(message).not.toContain("synthetic-envelope-marker");
+  });
+
+  test("rejects prefixed tool envelopes without reproducing them", async () => {
+    const malformed =
+      'Response follows: {"content":"synthetic-prefixed-marker","toolCalls":[]}';
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) =>
+        input.endsWith("/v1/models")
+          ? jsonResponse({ data: [{ id: "runtime-model" }] })
+          : jsonResponse({ choices: [{ message: { content: malformed } }] }),
+    });
+
+    let message = "";
+    try {
+      await agent.runTurn("Reject prefixed envelope", context);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toBe("Developer response envelope was invalid");
+    expect(message).not.toContain("synthetic-prefixed-marker");
   });
 
   test("generates a minimal handoff summary", async () => {

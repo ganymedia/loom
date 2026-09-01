@@ -23,7 +23,7 @@ import {
   shouldShowSlashCommandPopup,
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
-import { type Theme, agentTabColor } from "@loom/tui/theme";
+import { type Theme, agentTabColor, resolveTheme } from "@loom/tui/theme";
 import { Box, type Key, Text, useInput, useStdout } from "ink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
@@ -98,8 +98,63 @@ export function formatSessionInput(input: string): string {
   return `> ${input.replaceAll("\n", "\n  ")}`;
 }
 
+export function insertSessionInput(
+  input: string,
+  cursorIndex: number,
+  chunk: string,
+): { cursorIndex: number; input: string } {
+  const index = Math.min(Math.max(cursorIndex, 0), input.length);
+  const normalized = chunk.replace(/\r\n|\r/g, "\n");
+  return {
+    cursorIndex: index + normalized.length,
+    input: `${input.slice(0, index)}${normalized}${input.slice(index)}`,
+  };
+}
+
+export function deleteSessionInput(
+  input: string,
+  cursorIndex: number,
+  direction: "backward" | "forward",
+): { cursorIndex: number; input: string } {
+  const index = Math.min(Math.max(cursorIndex, 0), input.length);
+  if (direction === "backward") {
+    if (index === 0) return { cursorIndex: index, input };
+    return {
+      cursorIndex: index - 1,
+      input: `${input.slice(0, index - 1)}${input.slice(index)}`,
+    };
+  }
+  if (index === input.length) return { cursorIndex: index, input };
+  return {
+    cursorIndex: index,
+    input: `${input.slice(0, index)}${input.slice(index + 1)}`,
+  };
+}
+
+export function moveSessionInputCursor(
+  input: string,
+  cursorIndex: number,
+  direction: -1 | 1,
+  byWord = false,
+): number {
+  let index = Math.min(Math.max(cursorIndex, 0), input.length);
+  if (!byWord) return Math.min(Math.max(index + direction, 0), input.length);
+  if (direction === -1) {
+    while (index > 0 && /\s/.test(input[index - 1] ?? "")) index -= 1;
+    while (index > 0 && !/\s/.test(input[index - 1] ?? "")) index -= 1;
+    return index;
+  }
+  while (index < input.length && !/\s/.test(input[index] ?? "")) index += 1;
+  while (index < input.length && /\s/.test(input[index] ?? "")) index += 1;
+  return index;
+}
+
 export function resolveTerminalRows(rows: number | undefined): number {
   return rows === undefined || rows <= 0 ? 24 : Math.max(rows, 12);
+}
+
+export function sessionCanvasColor(themeId: string | undefined): string {
+  return resolveTheme(themeId).panelSurface;
 }
 
 export function moveSessionHistoryIndex(
@@ -137,18 +192,20 @@ export function isSlashCommandPopupOpen(
   return !dismissed && shouldShowSlashCommandPopup(input);
 }
 
-export function isDismissedSlashPopupMetaText(
+export function isSlashPopupMetaText(
   input: string,
-  dismissed: boolean,
   character: string,
   meta: boolean,
 ): boolean {
+  const printableText = character.replaceAll("\u001b", "");
+  const containsOnlyPrintableText = Array.from(printableText).every(
+    (value) => value.charCodeAt(0) >= 32 && value.charCodeAt(0) !== 127,
+  );
   return (
     meta &&
-    dismissed &&
     input.startsWith("/") &&
-    character.length > 0 &&
-    !character.includes("\u001b")
+    printableText.length > 0 &&
+    containsOnlyPrintableText
   );
 }
 
@@ -642,13 +699,18 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
 
 export function SessionInput({
   activeAgentName,
+  cursorIndex,
   input,
 }: {
   activeAgentName: BuiltInAgentName;
+  cursorIndex: number;
   input: string;
 }) {
   const theme = useTheme();
   const agentColor = agentTabColor(theme, activeAgentName);
+  const cursorCharacter = input[cursorIndex];
+  const cursorOverlaysCharacter =
+    cursorCharacter !== undefined && cursorCharacter !== "\n";
   return (
     <Box flexDirection="column" marginX={1}>
       <Box
@@ -661,8 +723,14 @@ export function SessionInput({
           Message
         </Text>
         <Text>
-          {formatSessionInput(input)}
-          <BlinkingInputCursor color={agentColor} />
+          {formatSessionInput(input.slice(0, cursorIndex))}
+          <BlinkingInputCursor
+            color={agentColor}
+            {...(cursorOverlaysCharacter ? { character: cursorCharacter } : {})}
+          />
+          {input
+            .slice(cursorIndex + (cursorOverlaysCharacter ? 1 : 0))
+            .replaceAll("\n", "\n  ")}
         </Text>
       </Box>
       <Text color={theme.textTertiary} dimColor>
@@ -676,12 +744,27 @@ export function inputCursorGlyph(visible: boolean): "▌" | " " {
   return visible ? "▌" : " ";
 }
 
-export function BlinkingInputCursor({ color }: { color: string }) {
+export function BlinkingInputCursor({
+  character,
+  color,
+}: {
+  character?: string;
+  color: string;
+}) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     const interval = setInterval(() => setVisible((value) => !value), 500);
     return () => clearInterval(interval);
   }, []);
+  if (character !== undefined) {
+    return visible ? (
+      <Text color={color} inverse>
+        {character}
+      </Text>
+    ) : (
+      <Text>{character}</Text>
+    );
+  }
   return <Text color={color}>{inputCursorGlyph(visible)}</Text>;
 }
 
@@ -721,10 +804,12 @@ export function SessionApp({
   themeId: string | undefined;
 }) {
   const [input, setInput] = useState("");
+  const [cursorIndex, setCursorIndex] = useState(0);
   const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
   const [slashCommandPopupDismissed, setSlashCommandPopupDismissed] =
     useState(false);
   const inputRef = useRef("");
+  const cursorIndexRef = useRef(0);
   const historyRef = useRef<string[]>([]);
   const historyDraftRef = useRef("");
   const historyIndexRef = useRef(0);
@@ -740,6 +825,7 @@ export function SessionApp({
     resolveTerminalRows(stdout.rows),
   );
   const [terminalColumns, setTerminalColumns] = useState(stdout.columns ?? 80);
+  const canvasColor = sessionCanvasColor(themeId);
   useEffect(() => {
     const updateTerminalRows = (): void => {
       setTerminalRows(resolveTerminalRows(stdout.rows));
@@ -769,13 +855,38 @@ export function SessionApp({
     historyDraftRef.current = "";
     onSubmit(submittedInput);
     inputRef.current = "";
+    cursorIndexRef.current = 0;
     selectedSlashCommandIndexRef.current = 0;
     slashCommandPopupDismissedRef.current = false;
     setInput("");
+    setCursorIndex(0);
     setSelectedSlashCommandIndex(0);
     setSlashCommandPopupDismissed(false);
   };
   useInput((character, key) => {
+    const recoversSlashPopupMetaText = isSlashPopupMetaText(
+      inputRef.current,
+      character,
+      key.meta,
+    );
+    if (recoversSlashPopupMetaText) {
+      const edit = insertSessionInput(
+        inputRef.current,
+        cursorIndexRef.current,
+        character.replaceAll("\u001b", ""),
+      );
+      inputRef.current = edit.input;
+      cursorIndexRef.current = edit.cursorIndex;
+      historyIndexRef.current = historyRef.current.length;
+      historyDraftRef.current = inputRef.current;
+      selectedSlashCommandIndexRef.current = 0;
+      slashCommandPopupDismissedRef.current = false;
+      setInput(inputRef.current);
+      setCursorIndex(cursorIndexRef.current);
+      setSelectedSlashCommandIndex(0);
+      setSlashCommandPopupDismissed(false);
+      return;
+    }
     if (
       key.escape &&
       isSlashCommandPopupOpen(
@@ -793,24 +904,6 @@ export function SessionApp({
     }
     if (key.tab) {
       onCycleAgent();
-      return;
-    }
-    if (
-      isDismissedSlashPopupMetaText(
-        inputRef.current,
-        slashCommandPopupDismissedRef.current,
-        character,
-        key.meta,
-      )
-    ) {
-      inputRef.current = appendSessionInput(inputRef.current, character);
-      historyIndexRef.current = historyRef.current.length;
-      historyDraftRef.current = inputRef.current;
-      selectedSlashCommandIndexRef.current = 0;
-      slashCommandPopupDismissedRef.current = false;
-      setInput(inputRef.current);
-      setSelectedSlashCommandIndex(0);
-      setSlashCommandPopupDismissed(false);
       return;
     }
     if (key.upArrow || key.downArrow) {
@@ -848,18 +941,37 @@ export function SessionApp({
         nextIndex === historyRef.current.length
           ? historyDraftRef.current
           : (historyRef.current[nextIndex] ?? "");
+      cursorIndexRef.current = inputRef.current.length;
       slashCommandPopupDismissedRef.current = true;
       setInput(inputRef.current);
+      setCursorIndex(cursorIndexRef.current);
       setSlashCommandPopupDismissed(true);
       return;
     }
+    if (key.leftArrow || key.rightArrow) {
+      cursorIndexRef.current = moveSessionInputCursor(
+        inputRef.current,
+        cursorIndexRef.current,
+        key.leftArrow ? -1 : 1,
+        key.ctrl || key.meta,
+      );
+      setCursorIndex(cursorIndexRef.current);
+      return;
+    }
     if (shouldInsertInputNewline(character, key)) {
-      inputRef.current = appendSessionInput(inputRef.current, "\n");
+      const edit = insertSessionInput(
+        inputRef.current,
+        cursorIndexRef.current,
+        "\n",
+      );
+      inputRef.current = edit.input;
+      cursorIndexRef.current = edit.cursorIndex;
       historyIndexRef.current = historyRef.current.length;
       historyDraftRef.current = inputRef.current;
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
+      setCursorIndex(cursorIndexRef.current);
       setSelectedSlashCommandIndex(0);
       setSlashCommandPopupDismissed(false);
       return;
@@ -869,12 +981,19 @@ export function SessionApp({
       return;
     }
     if (key.backspace || key.delete) {
-      inputRef.current = inputRef.current.slice(0, -1);
+      const edit = deleteSessionInput(
+        inputRef.current,
+        cursorIndexRef.current,
+        key.backspace ? "backward" : "forward",
+      );
+      inputRef.current = edit.input;
+      cursorIndexRef.current = edit.cursorIndex;
       historyIndexRef.current = historyRef.current.length;
       historyDraftRef.current = inputRef.current;
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
+      setCursorIndex(cursorIndexRef.current);
       setSelectedSlashCommandIndex(0);
       setSlashCommandPopupDismissed(false);
       return;
@@ -887,7 +1006,13 @@ export function SessionApp({
       !key.escape
     ) {
       const chunk = splitTerminalInputChunk(character);
-      inputRef.current = appendSessionInput(inputRef.current, chunk.text);
+      const edit = insertSessionInput(
+        inputRef.current,
+        cursorIndexRef.current,
+        chunk.text,
+      );
+      inputRef.current = edit.input;
+      cursorIndexRef.current = edit.cursorIndex;
       if (chunk.submit) {
         submitInput();
         return;
@@ -897,6 +1022,7 @@ export function SessionApp({
       selectedSlashCommandIndexRef.current = 0;
       slashCommandPopupDismissedRef.current = false;
       setInput(inputRef.current);
+      setCursorIndex(cursorIndexRef.current);
       setSelectedSlashCommandIndex(0);
       setSlashCommandPopupDismissed(false);
     }
@@ -912,32 +1038,44 @@ export function SessionApp({
   }
 
   const application = (
-    <Box flexDirection="column" height={terminalRows}>
+    <Box
+      backgroundColor={canvasColor}
+      flexDirection="column"
+      height={terminalRows}
+    >
       <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
       <Box
         flexDirection="column-reverse"
+        flexBasis={0}
         flexGrow={1}
+        flexShrink={1}
         overflowY="hidden"
         paddingX={1}
       >
         {state.liveAssistant === undefined ? null : (
-          <Box flexDirection="column">
+          <Box flexDirection="column" flexShrink={0}>
             <Text bold>{state.liveAssistant.displayName}</Text>
             <MarkdownText source={state.liveAssistant.text} />
           </Box>
         )}
         {state.toolRunning === undefined ? null : (
-          <ToolRunningIndicator
-            action={state.toolRunning.action}
-            displayName={state.toolRunning.displayName}
-            toolCount={state.toolRunning.toolCount}
-          />
+          <Box flexShrink={0}>
+            <ToolRunningIndicator
+              action={state.toolRunning.action}
+              displayName={state.toolRunning.displayName}
+              toolCount={state.toolRunning.toolCount}
+            />
+          </Box>
         )}
         {state.thinkingAgentDisplayName === undefined ? null : (
-          <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+          <Box flexShrink={0}>
+            <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+          </Box>
         )}
         {[...state.output].reverse().map((output) => (
-          <CompletedOutput key={output.id} output={output} />
+          <Box flexDirection="column" flexShrink={0} key={output.id}>
+            <CompletedOutput output={output} />
+          </Box>
         ))}
       </Box>
       {(state.subAgentActivity?.length ?? 0) > 0 &&
@@ -965,7 +1103,11 @@ export function SessionApp({
           selectedIndex={selectedSlashCommandIndex}
         />
       ) : null}
-      <SessionInput activeAgentName={state.activeAgentName} input={input} />
+      <SessionInput
+        activeAgentName={state.activeAgentName}
+        cursorIndex={cursorIndex}
+        input={input}
+      />
     </Box>
   );
   return (

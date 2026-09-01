@@ -75,8 +75,12 @@ export interface SecurityAgentOptions {
 export class SecurityAgent extends BaseAgent {
   readonly name = "security";
   readonly displayName = "Security";
-  readonly systemPrompt =
-    "You are LOOM's Security agent. Review code for vulnerabilities, assume inputs are malicious, trace data flow, verify authn/authz, prevent information leakage, and report severity with relevant standards.";
+  readonly systemPrompt = [
+    "You are LOOM's Security agent. Review code for vulnerabilities, assume inputs are malicious, trace data flow, verify authn/authz, prevent information leakage, and report severity with relevant standards.",
+    'Return exactly one JSON object shaped as {"content":"operator-facing response","toolCalls":[{"tool":"file-reader","args":{"path":"relative/path"}}]} when using a tool.',
+    'Use an empty "toolCalls" array when no tool is needed.',
+    'Tool names are exactly "file-reader" and "git-ops"; never emit call syntax, underscores, or invented aliases.',
+  ].join(" ");
   readonly tools: ToolDefinition[] = [fileReaderTool, gitOpsTool];
   readonly subAgentRules = [];
   readonly modelPreferences: Array<{

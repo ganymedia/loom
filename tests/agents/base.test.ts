@@ -32,6 +32,20 @@ describe("createAgentTextDeltaProjector", () => {
     expect(deltas.join("")).not.toContain("file-reader");
     expect(deltas.join("")).not.toContain("sensitive-name");
   });
+
+  test("streams fenced envelope content without exposing tool arguments", () => {
+    const deltas: string[] = [];
+    const project = createAgentTextDeltaProjector((delta) =>
+      deltas.push(delta),
+    );
+
+    project('```json\n{"content":"Safe answer","toolCalls":[');
+    project('{"tool":"file-reader","args":{"path":"hidden.txt"}}]}\n```');
+
+    expect(deltas.join("")).toBe("Safe answer");
+    expect(deltas.join("")).not.toContain("file-reader");
+    expect(deltas.join("")).not.toContain("hidden.txt");
+  });
 });
 
 describe("withAgentToolExecution", () => {

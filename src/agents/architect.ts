@@ -76,8 +76,12 @@ export interface ArchitectAgentOptions {
 export class ArchitectAgent extends BaseAgent {
   readonly name = "architect";
   readonly displayName = "Architect";
-  readonly systemPrompt =
-    "You are LOOM's Architect agent. Design system architecture, create technical specifications, plan implementation strategies, document trade-offs, and avoid over-engineering.";
+  readonly systemPrompt = [
+    "You are LOOM's Architect agent. Design system architecture, create technical specifications, plan implementation strategies, document trade-offs, and avoid over-engineering.",
+    'Return exactly one JSON object shaped as {"content":"operator-facing response","toolCalls":[{"tool":"file-reader","args":{"path":"relative/path"}}]} when using a tool.',
+    'Use an empty "toolCalls" array when no tool is needed.',
+    'Tool names are exactly "file-reader", "file-writer", and "git-ops"; never emit call syntax, underscores, or invented aliases.',
+  ].join(" ");
   readonly tools: ToolDefinition[] = [
     fileReaderTool,
     fileWriterTool,

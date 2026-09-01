@@ -118,9 +118,23 @@ export function createAgentTextDeltaProjector(
   return (delta: string): void => {
     raw += delta;
     if (mode === "unknown") {
-      const firstContent = raw.trimStart()[0];
+      const trimmed = raw.trimStart();
+      const firstContent = trimmed[0];
       if (firstContent === undefined) return;
-      mode = firstContent === "{" ? "envelope" : "plain";
+      if (firstContent === "{") {
+        mode = "envelope";
+      } else if (firstContent === "`") {
+        const openingLineEnd = trimmed.indexOf("\n");
+        if (openingLineEnd === -1) return;
+        const openingLine = trimmed.slice(0, openingLineEnd).trim();
+        const fencedContent = trimmed.slice(openingLineEnd + 1).trimStart();
+        mode =
+          /^```json$/i.test(openingLine) && fencedContent.startsWith("{")
+            ? "envelope"
+            : "plain";
+      } else {
+        mode = "plain";
+      }
     }
 
     const visible = mode === "plain" ? raw : envelopeContentPrefix(raw);

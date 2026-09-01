@@ -66,6 +66,8 @@ ${LOOM_BIN:-loom} theme list
 
 Expected result: a list of built-in themes, with `loom-dark` available.
 
+Switch between `loom-light` and `loom-dark` and start an interactive session after each change. Expected result: the entire TUI canvas, including the optional right panel, uses the selected light or dark background consistently; message blocks remain separated by borders rather than isolated background rectangles.
+
 Create a small pipeline file:
 
 ```bash
@@ -155,7 +157,7 @@ At the prompt, try these commands:
 ```text
 [type a short first line, press Ctrl+J, type a second line, and verify both lines remain in the input]
 [press Enter once and verify the two-line prompt submits as one prompt]
-[where supported, repeat with Shift+Enter instead of Ctrl+J]
+[where supported, repeat with Shift+Enter instead of Ctrl+J; if the terminal does not report the Shift modifier, record the path as unsupported rather than failed]
 [paste a two-line non-sensitive prompt and verify it remains one prompt until Enter]
 [verify the visible hint distinguishes Enter submit from newline actions]
 [verify the composer is a separately bordered Message region]
@@ -178,6 +180,7 @@ At the prompt, try these commands:
 [verify Up/Down navigation does not interfere with the slash popup selection when the popup is active]
 /agent Tester
 /agent Security
+[switch to Architect, Tester, and Security in turn; ask each to use file-reader on .loom/smoke.loom and verify the permitted tool executes instead of remaining at Thinking]
 Summarize the current task in one sentence.
 [verify Security: Thinking dots animate before response text]
 [verify the Thinking indicator disappears on first streamed text or turn failure]
@@ -191,7 +194,8 @@ Use the file-reader tool to read package.json and report only the package name.
 [verify the tool-action indicator clears on finish/failure and shows no names, arguments, paths, or file content]
 [verify completed tool results use green `✓` success or red `✕` failure rows with explicit outcome text]
 [verify completed Developer output becomes a bordered `Developer summary` block while live streaming and other agents remain unchanged]
-[verify the composer cursor blinks at the end of empty, single-line, and multi-line input without shifting layout]
+[verify the composer cursor blinks, paints the current character without shifting surrounding text, and uses its own cell only at the end of empty, single-line, and multi-line input]
+[type a non-sensitive multi-word line, verify Left/Right move by character, edit in the middle, then verify Ctrl+Left/Ctrl+Right or the terminal-equivalent Meta shortcuts move by word]
 [resize the terminal narrower, then wider]
 [at 100 columns by 20 rows or larger, verify the right panel appears with session, repository, runtime, plan, and version labels]
 [verify the panel title changes from New session after the first submitted prompt and does not change after later prompts]
@@ -203,11 +207,11 @@ Start two fresh interactive sessions after the command sequence. Press Escape to
 
 Expected result: the composer is a separately bordered `Message` region showing `Enter submit · Ctrl+J newline · Shift+Enter where supported`; Ctrl+J inserts a visible continuation line without submitting, Shift+Enter does the same when the terminal reports the modifier, pasted multi-line text remains one prompt, and plain Enter submits the complete input once. Submitted prompts remain as labeled, bordered `You` blocks distinct from assistant responses by structure and text, not color alone, and narrow/wide resize preserves those boundaries. Typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound within the popup, and Enter runs the selected command; outside the popup, Up moves backward through current-session submitted entries, Down moves forward, multi-line entries remain intact, and Down past the newest entry restores the unsent draft; popup selection retains precedence while open. LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; assistant Markdown renders as styled headings, emphasis, lists, inline code, and recognized syntax-highlighted fenced code without showing raw formatting markers; completed scrollback is visually recessed but readable while the live exchange remains prominent; existing tool execution replaces Thinking with a visually distinct animated Running N tool(s) indicator that clears on finish/failure and never displays arguments or results; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
 
-When automatic handoff generation succeeds, verify the pinned status bar shows an amber `handoff saved` notice. Non-TTY output should retain its existing handoff message.
+Automatic handoff is triggered only after reported token usage reaches 80% of the active context limit. A short ordinary session may never reach it. If the operator provides a controlled small-context test backend, cross the threshold and verify the pinned status bar shows an amber `handoff saved` notice. Otherwise record this item as not exercised, not failed. Non-TTY output should retain its existing handoff message when the threshold is crossed.
 
 Agent IDs are displayed in lowercase, but `/agent <name>` matching is case-insensitive. Both mixed-case commands above should work.
 
-Right-panel acceptance remains pending manual verification. Confirm it shows only a directory basename, uses explicit `idle`, `active`, or `failed` text with a status dot, shows at most five non-completed tasks or a fixed unavailable/empty message, and never displays prompt text or an absolute path.
+Confirm the right panel shows only a directory basename, uses explicit `idle`, `active`, or `failed` text with a status dot, shows at most five non-completed tasks or a fixed unavailable/empty message, and never displays prompt text or an absolute path.
 
 ## 8. Recall and log commands
 
@@ -289,6 +293,8 @@ subAgents:
 ```
 
 In a real terminal, start `${LOOM_BIN:-loom}` with enough height and width, ask the Developer agent to write a small supported source file, and observe the activity tray. Acceptance is not presumed complete: verify the tray shows no more than three rows with explicit `running`, `succeeded`, or `failed` labels; hides when the terminal is short or narrow; and does not expose source, paths, findings, model/backend details, or prompts. Verify ordinary parent output and streaming remain unchanged, and verify piped/non-TTY use adds no sub-agent activity text.
+
+If the tray ends at `failed`, the parent turn must still succeed and no `.loom/findings.jsonl` file is expected; record the fixed failure state without copying backend output. A findings file is expected only after a successful scan that returned validated findings.
 
 After a successful scan with findings, inspect only the record keys and file metadata, not sensitive values. `.loom/findings.jsonl` should be owner mode `0600`, valid JSONL, at most 500 records and 1 MiB, and contain only the documented timestamp, opaque scan ID, rule, severity, relative file, optional line/CWE, message, and fix-hint fields. With the setting absent, verify no scan request, tray, or findings file is created.
 

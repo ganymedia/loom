@@ -40,12 +40,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseDeveloperResponse(content: string): DeveloperResponseEnvelope {
-  if (!content.trimStart().startsWith("{")) {
+  const trimmed = content.trim();
+  const fencedEnvelope = /^```json[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(
+    trimmed,
+  );
+  const envelopeContent = fencedEnvelope?.[1]?.trim() ?? trimmed;
+  if (!envelopeContent.startsWith("{")) {
+    if (/"toolCalls"\s*:/.test(trimmed)) {
+      throw new Error("Developer response envelope was invalid");
+    }
     return { content, toolCalls: [] };
   }
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content) as unknown;
+    parsed = JSON.parse(envelopeContent) as unknown;
   } catch {
     throw new Error("Developer response envelope was invalid");
   }
@@ -87,8 +95,8 @@ export class DeveloperAgent extends BaseAgent {
   readonly displayName = "Developer";
   readonly systemPrompt = [
     "You are LOOM's Developer agent. Help implement scoped code changes, prefer clear failures over silent behavior, and never expose secrets.",
-    'Return exactly one JSON object shaped as {"content":"operator-facing response","toolCalls":[{"tool":"file-writer","args":{"path":"relative/path","content":"complete UTF-8 content"}}]}.',
-    'Use an empty "toolCalls" array when no tool is needed.',
+    "Return plain operator-facing text when no tool is needed.",
+    'When using a tool, return exactly one JSON object shaped as {"content":"operator-facing response","toolCalls":[{"tool":"file-writer","args":{"path":"relative/path","content":"complete UTF-8 content"}}]}.',
     'Tool names are exactly "file-reader", "file-writer", "shell", and "git-ops"; never emit call syntax, underscores, or invented aliases.',
   ].join(" ");
   readonly tools: ToolDefinition[] = [

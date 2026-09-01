@@ -4,6 +4,7 @@ import {
   SessionInput,
   SessionViewStore,
   inputCursorGlyph,
+  sessionCanvasColor,
 } from "@loom/tui/session-app";
 import { builtInAgentTabs } from "@loom/tui/tab-strip";
 import { loomDark } from "@loom/tui/theme";
@@ -64,6 +65,12 @@ describe("SessionApp user prompt rendering", () => {
 
     expect(output).toContain("second prompt");
   });
+
+  test("selects distinct full-application theme surfaces", () => {
+    expect(sessionCanvasColor("loom-light")).not.toBe(
+      sessionCanvasColor("loom-dark"),
+    );
+  });
 });
 
 describe("SessionInput", () => {
@@ -71,13 +78,14 @@ describe("SessionInput", () => {
     const output = renderToString(
       createElement(SessionInput, {
         activeAgentName: "developer",
+        cursorIndex: 2,
         input: "my input",
       }),
     );
 
     expect(output).toContain("Message");
     expect(output).toContain("my input");
-    expect(output).toContain("▌");
+    expect(output).not.toContain("my▌ input");
     expect(output).toContain("╭");
     expect(output).toContain("╰");
   });
@@ -91,6 +99,7 @@ describe("SessionInput", () => {
     const output = renderToString(
       createElement(SessionInput, {
         activeAgentName: "developer",
+        cursorIndex: 12,
         input: "first\nsecond",
       }),
     );

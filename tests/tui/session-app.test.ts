@@ -9,11 +9,14 @@ import {
   ToolRunningIndicator,
   appendSessionInput,
   completedOutputTextStyle,
+  deleteSessionInput,
   formatSessionInput,
-  isDismissedSlashPopupMetaText,
+  insertSessionInput,
   isSessionExitInput,
   isSlashCommandPopupOpen,
+  isSlashPopupMetaText,
   moveSessionHistoryIndex,
+  moveSessionInputCursor,
   moveSlashCommandSelection,
   resolveTerminalRows,
   shouldInsertInputNewline,
@@ -71,6 +74,7 @@ describe("multi-line session input", () => {
     const input = renderToString(
       createElement(SessionInput, {
         activeAgentName: "developer",
+        cursorIndex: 12,
         input: "first\nsecond",
       }),
     );
@@ -80,6 +84,25 @@ describe("multi-line session input", () => {
     expect(input).toContain("╭");
     expect(input).toContain("Enter submit");
     expect(input).toContain("Ctrl+J newline");
+  });
+
+  test("edits at the cursor and moves by character or word", () => {
+    expect(insertSessionInput("first last", 6, "safe ")).toEqual({
+      cursorIndex: 11,
+      input: "first safe last",
+    });
+    expect(deleteSessionInput("first safe", 6, "backward")).toEqual({
+      cursorIndex: 5,
+      input: "firstsafe",
+    });
+    expect(deleteSessionInput("first safe", 5, "forward")).toEqual({
+      cursorIndex: 5,
+      input: "firstsafe",
+    });
+    expect(moveSessionInputCursor("first safe last", 10, -1)).toBe(9);
+    expect(moveSessionInputCursor("first safe last", 10, 1)).toBe(11);
+    expect(moveSessionInputCursor("first safe last", 15, -1, true)).toBe(11);
+    expect(moveSessionInputCursor("first safe last", 0, 1, true)).toBe(6);
   });
 });
 
@@ -143,16 +166,10 @@ describe("isSlashCommandPopupOpen", () => {
   });
 
   test("recovers a printable Meta continuation after popup dismissal", () => {
-    expect(isDismissedSlashPopupMetaText("/agent s", true, "e", true)).toBe(
-      true,
-    );
-    expect(isDismissedSlashPopupMetaText("/agent s", false, "e", true)).toBe(
-      false,
-    );
-    expect(isDismissedSlashPopupMetaText("plain", true, "e", true)).toBe(false);
-    expect(isDismissedSlashPopupMetaText("/agent s", true, "e", false)).toBe(
-      false,
-    );
+    expect(isSlashPopupMetaText("/agent s", "e", true)).toBe(true);
+    expect(isSlashPopupMetaText("/agent s", "\u001be", true)).toBe(true);
+    expect(isSlashPopupMetaText("plain", "e", true)).toBe(false);
+    expect(isSlashPopupMetaText("/agent s", "e", false)).toBe(false);
   });
 });
 
