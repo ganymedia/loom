@@ -405,7 +405,7 @@ describe("CLI entrypoint", () => {
     const result = await runCli(["--version"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.trim()).toBe("0.1.0");
+    expect(result.stdout.trim()).toBe("0.1.1");
     expect(result.stderr).not.toContain("loom: fatal error");
   });
 
