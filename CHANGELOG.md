@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - Unreleased
+
+Version 0.1.1 changes LOOM's core interactive-session model: TTY sessions now run as one persistent, live-redrawing full-screen Ink application instead of a readline loop that prints static Ink fragments. This is an interaction-model release, not a silent patch or a general expansion of backend permissions.
+
+### Added
+
+- Live token streaming, instant agent switching, thinking and typed tool-activity indicators, submitted-prompt history, multi-line editing, a blinking in-text cursor, and command-history navigation.
+- A live-filtered slash-command popup with visible arrow-key navigation and Enter selection, while retaining Tab as a secondary shortcut.
+- Measured PageUp/PageDown and mouse-wheel conversation history with oldest/latest jumps, pinned status and composer regions, resize reflow, and clean terminal restoration.
+- Styled Markdown and syntax-highlighted code rendering, semantic tool outcomes, neutral bordered tool-result bodies, red/green file-write diffs, explicit write completion, and a distinct Developer summary.
+- Visible automatic-handoff, prior-session recall, responsive project status, and project-opted-in SAST sub-agent lifecycle signals without exposing prompts, tool data, backend details, secrets, or CUI.
+
+### Changed
+
+- Explicit Developer read-then-write requests may use at most three existing permitted model/tool rounds, fresh model discovery per request, up to two bounded response repairs, a 60-second request timeout, and at most 64 KiB of untrusted tool-result feedback sent only to the configured backend.
+- Light and dark themes now paint the complete interactive canvas consistently. Non-TTY, piped-input, CI, and `--prompt` behavior remains non-full-screen and compatible with v0.1.0.
+
+### Fixed
+
+- Long output remains clipped within the conversation viewport instead of overlapping completed turns, status regions, or the composer.
+- Empty, malformed, fenced, or intent-only Developer responses are handled without rendering raw tool envelopes as successful work.
+- Streaming response reads actively honor cancellation after response headers arrive, preventing stalled follow-up requests from leaving the session permanently active.
+- Terminal control input and batched mouse events no longer leak into composer text, and mouse tracking is disabled on exit.
+
+### Security
+
+- Tool permissions remain project-scoped and least-privilege. Bounded tool feedback is labeled as untrusted project data, is not logged, and must not be used for CUI unless the configured backend and data boundary are approved.
+- SAST remains off by default and can be enabled only by project-local configuration; persisted findings remain bounded, owner-only, and exclude source snippets, prompts, raw model output, secrets, and CUI.
+
 ## [0.1.0] - 2026-08-07
 
 ### Added
