@@ -15,12 +15,16 @@ import {
   isSessionExitInput,
   isSlashCommandPopupOpen,
   isSlashPopupMetaText,
+  moveConversationScroll,
   moveSessionHistoryIndex,
   moveSessionInputCursor,
   moveSlashCommandSelection,
+  normalizeSessionInputChunk,
+  parseTerminalMouseInput,
   resolveTerminalRows,
   shouldInsertInputNewline,
   splitTerminalInputChunk,
+  splitToolResultText,
   thinkingIndicatorText,
   toolRunningIndicatorText,
   visibleSlashCommandWindow,
@@ -63,6 +67,11 @@ describe("multi-line session input", () => {
     expect(shouldInsertInputNewline("", { return: true, shift: false })).toBe(
       false,
     );
+    expect(
+      normalizeSessionInputChunk(
+        `safe${String.fromCharCode(0)}${String.fromCharCode(27)}\ttext`,
+      ),
+    ).toBe("safe\ttext");
   });
 
   test("renders continuation indentation and visible key hints", () => {
@@ -103,6 +112,30 @@ describe("multi-line session input", () => {
     expect(moveSessionInputCursor("first safe last", 10, 1)).toBe(11);
     expect(moveSessionInputCursor("first safe last", 15, -1, true)).toBe(11);
     expect(moveSessionInputCursor("first safe last", 0, 1, true)).toBe(6);
+  });
+});
+
+describe("conversation scrollback", () => {
+  test("moves by bounded pages and supports oldest/newest jumps", () => {
+    expect(moveConversationScroll(0, 40, 10, "older")).toBe(10);
+    expect(moveConversationScroll(35, 40, 10, "older")).toBe(40);
+    expect(moveConversationScroll(35, 40, 10, "newer")).toBe(25);
+    expect(moveConversationScroll(5, 40, 10, "newer")).toBe(0);
+    expect(moveConversationScroll(5, 40, 10, "oldest")).toBe(40);
+    expect(moveConversationScroll(35, 40, 10, "newest")).toBe(0);
+    expect(moveConversationScroll(0, 0, 0, "older")).toBe(0);
+  });
+
+  test("parses bounded SGR wheel input and consumes other mouse events", () => {
+    expect(parseTerminalMouseInput("[<64;10;20M")).toBe("older");
+    expect(parseTerminalMouseInput("[<65;10;20M")).toBe("newer");
+    expect(parseTerminalMouseInput("[<0;10;20M")).toBe("ignore");
+    expect(parseTerminalMouseInput("<0;10;20m[<0;11;20M")).toBe("ignore");
+    expect(parseTerminalMouseInput("[<0;10;20M[<64;10;20M")).toBe("older");
+    expect(parseTerminalMouseInput("ordinary input")).toBeUndefined();
+    expect(
+      parseTerminalMouseInput(`[<64;${"1".repeat(70)};20M`),
+    ).toBeUndefined();
   });
 });
 
@@ -594,5 +627,17 @@ describe("SessionApp", () => {
     );
     expect(frame).toContain("✓ Tool 1: ok");
     expect(frame).toContain("✕ Tool 2: failed");
+  });
+
+  test("separates a tool outcome from its neutral result body", () => {
+    expect(
+      splitToolResultText("Tool 1 (file-reader): ok — line 1\nline 2"),
+    ).toEqual({
+      summary: "Tool 1 (file-reader): ok",
+      body: "line 1\nline 2",
+    });
+    expect(splitToolResultText("Tool 2: failed")).toEqual({
+      summary: "Tool 2: failed",
+    });
   });
 });

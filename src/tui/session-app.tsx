@@ -24,8 +24,22 @@ import {
 } from "@loom/tui/slash-commands";
 import { type BuiltInAgentName, builtInAgentTabs } from "@loom/tui/tab-strip";
 import { type Theme, agentTabColor, resolveTheme } from "@loom/tui/theme";
-import { Box, type Key, Text, useInput, useStdout } from "ink";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  Box,
+  type DOMElement,
+  type Key,
+  Text,
+  measureElement,
+  useInput,
+  useStdout,
+} from "ink";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 export type SessionOutput =
   | { id: string; kind: "plain"; text: string }
@@ -75,8 +89,17 @@ const MAX_COMPLETED_SUB_AGENT_ROWS = 20;
 
 type SessionViewListener = () => void;
 
+export function normalizeSessionInputChunk(chunk: string): string {
+  return Array.from(chunk.replace(/\r\n|\r/g, "\n"))
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code === 9 || code === 10 || (code >= 32 && code !== 127);
+    })
+    .join("");
+}
+
 export function appendSessionInput(current: string, chunk: string): string {
-  return `${current}${chunk.replace(/\r\n|\r/g, "\n")}`;
+  return `${current}${normalizeSessionInputChunk(chunk)}`;
 }
 
 export function splitTerminalInputChunk(chunk: string): {
@@ -104,7 +127,7 @@ export function insertSessionInput(
   chunk: string,
 ): { cursorIndex: number; input: string } {
   const index = Math.min(Math.max(cursorIndex, 0), input.length);
-  const normalized = chunk.replace(/\r\n|\r/g, "\n");
+  const normalized = normalizeSessionInputChunk(chunk);
   return {
     cursorIndex: index + normalized.length,
     input: `${input.slice(0, index)}${normalized}${input.slice(index)}`,
@@ -155,6 +178,43 @@ export function resolveTerminalRows(rows: number | undefined): number {
 
 export function sessionCanvasColor(themeId: string | undefined): string {
   return resolveTheme(themeId).panelSurface;
+}
+
+export function moveConversationScroll(
+  currentRows: number,
+  maxRows: number,
+  pageRows: number,
+  direction: "newer" | "newest" | "older" | "oldest",
+): number {
+  const max = Math.max(0, Math.floor(maxRows));
+  const current = Math.min(Math.max(0, Math.floor(currentRows)), max);
+  const page = Math.max(1, Math.floor(pageRows));
+  if (direction === "newest") return 0;
+  if (direction === "oldest") return max;
+  return direction === "older"
+    ? Math.min(current + page, max)
+    : Math.max(current - page, 0);
+}
+
+export function parseTerminalMouseInput(
+  input: string,
+): "ignore" | "newer" | "older" | undefined {
+  if (input.length > 4_096) {
+    return input.includes("[<") || input.startsWith("<") ? "ignore" : undefined;
+  }
+  const normalized = input.replaceAll("\u001b", "");
+  const pattern = /\[?<(\d{1,3});\d{1,5};\d{1,5}[Mm]/g;
+  let sawMouseInput = false;
+  let wheelDirection: "newer" | "older" | undefined;
+  for (const match of normalized.matchAll(pattern)) {
+    sawMouseInput = true;
+    const button = Number(match[1]);
+    if ((button & 64) !== 0) {
+      wheelDirection = (button & 1) === 0 ? "older" : "newer";
+    }
+  }
+  if (!sawMouseInput) return undefined;
+  return wheelDirection ?? "ignore";
 }
 
 export function moveSessionHistoryIndex(
@@ -630,6 +690,19 @@ export function completedOutputTextStyle(theme: Pick<Theme, "textTertiary">): {
   return { color: theme.textTertiary, dimColor: true };
 }
 
+export function splitToolResultText(text: string): {
+  body?: string;
+  summary: string;
+} {
+  const separatorIndex = text.indexOf(" — ");
+  if (separatorIndex === -1) return { summary: text.trimEnd() };
+  const body = text.slice(separatorIndex + 3).trimEnd();
+  return {
+    summary: text.slice(0, separatorIndex).trimEnd(),
+    ...(body.length === 0 ? {} : { body }),
+  };
+}
+
 function CompletedOutput({ output }: { output: SessionOutput }) {
   const theme = useTheme();
   if (output.kind === "plain") {
@@ -641,10 +714,23 @@ function CompletedOutput({ output }: { output: SessionOutput }) {
     return <FileWriteDiff {...output} />;
   }
   if (output.kind === "tool-result") {
+    const result = splitToolResultText(output.text);
     return (
-      <Text color={output.success ? theme.success : theme.danger}>
-        {output.success ? "✓" : "✕"} {output.text.trimEnd()}
-      </Text>
+      <Box flexDirection="column" marginTop={1}>
+        <Text color={output.success ? theme.success : theme.danger} bold>
+          {output.success ? "✓" : "✕"} {result.summary}
+        </Text>
+        {result.body === undefined ? null : (
+          <Box
+            borderColor={theme.borderMuted}
+            borderStyle="single"
+            flexDirection="column"
+            paddingX={1}
+          >
+            <Text color={theme.textSecondary}>{result.body}</Text>
+          </Box>
+        )}
+      </Box>
     );
   }
   if (output.kind === "user") {
@@ -808,8 +894,15 @@ export function SessionApp({
   const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
   const [slashCommandPopupDismissed, setSlashCommandPopupDismissed] =
     useState(false);
+  const [conversationScrollRows, setConversationScrollRows] = useState(0);
+  const [maxConversationScrollRows, setMaxConversationScrollRows] = useState(0);
   const inputRef = useRef("");
   const cursorIndexRef = useRef(0);
+  const conversationScrollRowsRef = useRef(0);
+  const maxConversationScrollRowsRef = useRef(0);
+  const conversationPageRowsRef = useRef(1);
+  const conversationViewportRef = useRef<DOMElement>(null);
+  const conversationContentRef = useRef<DOMElement>(null);
   const historyRef = useRef<string[]>([]);
   const historyDraftRef = useRef("");
   const historyIndexRef = useRef(0);
@@ -820,6 +913,7 @@ export function SessionApp({
     store.getSnapshot,
     store.getSnapshot,
   );
+  const previousConversationStateRef = useRef(state);
   const { stdout } = useStdout();
   const [terminalRows, setTerminalRows] = useState(
     resolveTerminalRows(stdout.rows),
@@ -836,6 +930,38 @@ export function SessionApp({
       stdout.off("resize", updateTerminalRows);
     };
   }, [stdout]);
+  useEffect(() => {
+    if (!stdout.isTTY) return;
+    stdout.write("\u001b[?1000h\u001b[?1006h");
+    return () => {
+      stdout.write("\u001b[?1006l\u001b[?1000l");
+    };
+  }, [stdout]);
+  useEffect(() => {
+    if (previousConversationStateRef.current === state) return;
+    previousConversationStateRef.current = state;
+    conversationScrollRowsRef.current = 0;
+    setConversationScrollRows(0);
+  }, [state]);
+  useLayoutEffect(() => {
+    const viewport = conversationViewportRef.current;
+    const content = conversationContentRef.current;
+    if (viewport === null || content === null) return;
+    const viewportRows = measureElement(viewport).height;
+    const contentRows = measureElement(content).height;
+    const maxRows = Math.max(0, contentRows - viewportRows);
+    const pageRows = Math.max(1, viewportRows - 1);
+    maxConversationScrollRowsRef.current = maxRows;
+    conversationPageRowsRef.current = pageRows;
+    setMaxConversationScrollRows((current) =>
+      current === maxRows ? current : maxRows,
+    );
+    setConversationScrollRows((current) => {
+      const clamped = Math.min(current, maxRows);
+      conversationScrollRowsRef.current = clamped;
+      return current === clamped ? current : clamped;
+    });
+  });
   const submitInput = (): void => {
     const entries = filterSlashCommandEntries(
       sessionSlashCommandEntries,
@@ -864,6 +990,38 @@ export function SessionApp({
     setSlashCommandPopupDismissed(false);
   };
   useInput((character, key) => {
+    const mouseInput = parseTerminalMouseInput(character);
+    if (mouseInput !== undefined) {
+      if (mouseInput !== "ignore") {
+        const nextRows = moveConversationScroll(
+          conversationScrollRowsRef.current,
+          maxConversationScrollRowsRef.current,
+          3,
+          mouseInput,
+        );
+        conversationScrollRowsRef.current = nextRows;
+        setConversationScrollRows(nextRows);
+      }
+      return;
+    }
+    if (key.pageUp || key.pageDown || (key.ctrl && (key.home || key.end))) {
+      const direction = key.pageUp
+        ? "older"
+        : key.pageDown
+          ? "newer"
+          : key.home
+            ? "oldest"
+            : "newest";
+      const nextRows = moveConversationScroll(
+        conversationScrollRowsRef.current,
+        maxConversationScrollRowsRef.current,
+        conversationPageRowsRef.current,
+        direction,
+      );
+      conversationScrollRowsRef.current = nextRows;
+      setConversationScrollRows(nextRows);
+      return;
+    }
     const recoversSlashPopupMetaText = isSlashPopupMetaText(
       inputRef.current,
       character,
@@ -1036,6 +1194,10 @@ export function SessionApp({
       `Unable to render unknown active agent "${state.activeAgentName}"`,
     );
   }
+  const conversationMarginTop = -Math.max(
+    maxConversationScrollRows - conversationScrollRows,
+    0,
+  );
 
   const application = (
     <Box
@@ -1045,38 +1207,49 @@ export function SessionApp({
     >
       <AgentTabStrip tabs={builtInAgentTabs} activeIndex={activeIndex} />
       <Box
-        flexDirection="column-reverse"
         flexBasis={0}
+        flexDirection="column"
         flexGrow={1}
         flexShrink={1}
+        justifyContent={
+          maxConversationScrollRows > 0 ? "flex-start" : "flex-end"
+        }
         overflowY="hidden"
         paddingX={1}
+        ref={conversationViewportRef}
       >
-        {state.liveAssistant === undefined ? null : (
-          <Box flexDirection="column" flexShrink={0}>
-            <Text bold>{state.liveAssistant.displayName}</Text>
-            <MarkdownText source={state.liveAssistant.text} />
-          </Box>
-        )}
-        {state.toolRunning === undefined ? null : (
-          <Box flexShrink={0}>
-            <ToolRunningIndicator
-              action={state.toolRunning.action}
-              displayName={state.toolRunning.displayName}
-              toolCount={state.toolRunning.toolCount}
-            />
-          </Box>
-        )}
-        {state.thinkingAgentDisplayName === undefined ? null : (
-          <Box flexShrink={0}>
-            <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
-          </Box>
-        )}
-        {[...state.output].reverse().map((output) => (
-          <Box flexDirection="column" flexShrink={0} key={output.id}>
-            <CompletedOutput output={output} />
-          </Box>
-        ))}
+        <Box
+          flexDirection="column"
+          flexShrink={0}
+          marginTop={conversationMarginTop}
+          ref={conversationContentRef}
+        >
+          {state.output.map((output) => (
+            <Box flexDirection="column" flexShrink={0} key={output.id}>
+              <CompletedOutput output={output} />
+            </Box>
+          ))}
+          {state.thinkingAgentDisplayName === undefined ? null : (
+            <Box flexShrink={0}>
+              <ThinkingIndicator displayName={state.thinkingAgentDisplayName} />
+            </Box>
+          )}
+          {state.toolRunning === undefined ? null : (
+            <Box flexShrink={0}>
+              <ToolRunningIndicator
+                action={state.toolRunning.action}
+                displayName={state.toolRunning.displayName}
+                toolCount={state.toolRunning.toolCount}
+              />
+            </Box>
+          )}
+          {state.liveAssistant === undefined ? null : (
+            <Box flexDirection="column" flexShrink={0}>
+              <Text bold>{state.liveAssistant.displayName}</Text>
+              <MarkdownText source={state.liveAssistant.text} />
+            </Box>
+          )}
+        </Box>
       </Box>
       {(state.subAgentActivity?.length ?? 0) > 0 &&
       shouldShowSubAgentTray(terminalRows, terminalColumns) ? (
@@ -1084,6 +1257,12 @@ export function SessionApp({
           activity={state.subAgentActivity ?? []}
           terminalColumns={terminalColumns}
         />
+      ) : null}
+      {conversationScrollRows > 0 ? (
+        <Text>
+          History · {conversationScrollRows} row(s) from latest ·
+          PageUp/PageDown · Ctrl+End latest
+        </Text>
       ) : null}
       <StatusBar
         sessionId={state.sessionId}

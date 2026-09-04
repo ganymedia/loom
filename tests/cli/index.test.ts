@@ -29,11 +29,13 @@ async function runCli(
   return { exitCode, stdout, stderr };
 }
 
-async function buildCompiledCli(): Promise<string> {
+async function buildCompiledCli(
+  entrypoint = "./src/index.ts",
+): Promise<string> {
   const outDir = await mkdtemp(join(tmpdir(), "loom-compiled-cli-"));
   const binaryPath = join(outDir, "loom");
   const proc = Bun.spawn(
-    ["bun", "build", "--compile", "./src/index.ts", "--outfile", binaryPath],
+    ["bun", "build", "--compile", entrypoint, "--outfile", binaryPath],
     {
       stdout: "pipe",
       stderr: "pipe",
@@ -301,6 +303,103 @@ async function runCompiledNonTty(options: {
   return { exitCode, stdout, stderr };
 }
 
+async function runStalledCompiledSession(options: {
+  binaryPath: string;
+  home: string;
+  projectRoot: string;
+}): Promise<{
+  exitCode: number;
+  output: string;
+  sawApplying: boolean;
+  sawFailure: boolean;
+}> {
+  const python = String.raw`
+import json, os, pty, select, subprocess, sys, time
+
+binary_path, home, project_root = sys.argv[1:4]
+master, slave = pty.openpty()
+env = os.environ.copy()
+env["HOME"] = home
+proc = subprocess.Popen(
+    [binary_path], stdin=slave, stdout=slave, stderr=slave,
+    env=env, cwd=project_root, close_fds=True,
+)
+os.close(slave)
+output = b""
+sent_prompt = False
+sent_exit = False
+saw_applying = False
+saw_failure = False
+deadline = time.time() + 8
+
+while time.time() < deadline:
+    ready, _, _ = select.select([master], [], [], 0.05)
+    if ready:
+        try:
+            chunk = os.read(master, 4096)
+        except OSError:
+            break
+        if not chunk:
+            break
+        output += chunk
+        text = output.decode(errors="replace")
+        if not sent_prompt and "Enter follow-up prompts." in text:
+            os.write(master, b"Read input.txt and create output.txt with its content\r")
+            sent_prompt = True
+        if sent_prompt and "Applying tool results" in text:
+            saw_applying = True
+        if saw_applying and "Developer agent error: Streaming prompt response failed" in text:
+            saw_failure = True
+            os.write(master, b"\x1b")
+            sent_exit = True
+    if proc.poll() is not None:
+        break
+
+if proc.poll() is None:
+    proc.terminate()
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=2)
+
+print(json.dumps({
+    "exitCode": proc.returncode,
+    "output": output.decode(errors="replace"),
+    "sawApplying": saw_applying,
+    "sawFailure": saw_failure,
+    "sentExit": sent_exit,
+}))
+`;
+  const proc = Bun.spawn(
+    [
+      "python3",
+      "-c",
+      python,
+      options.binaryPath,
+      options.home,
+      options.projectRoot,
+    ],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  const [exitCode, stdout, stderr] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  if (exitCode !== 0) {
+    throw new Error(
+      `stalled PTY harness failed\nstdout:\n${stdout}\nstderr:\n${stderr}`,
+    );
+  }
+  return JSON.parse(stdout) as {
+    exitCode: number;
+    output: string;
+    sawApplying: boolean;
+    sawFailure: boolean;
+  };
+}
+
 describe("CLI entrypoint", () => {
   test("prints version and exits without starting a session", async () => {
     const result = await runCli(["--version"]);
@@ -425,6 +524,8 @@ stages:
     );
     expect(escapeResult.output).toContain("\u001B[?1049h");
     expect(escapeResult.output).toContain("\u001B[?1049l");
+    expect(escapeResult.output).toContain("\u001B[?1000h\u001B[?1006h");
+    expect(escapeResult.output).toContain("\u001B[?1006l\u001B[?1000l");
     expect(escapeResult.output).not.toContain(`${backendUrl}/models`);
     expect(escapeResult.output).not.toContain(
       'Active profile "default" does not define a default backend',
@@ -519,4 +620,83 @@ stages:
     expect(promptResult.stdout).not.toContain("\u001B[?1049h");
     expect(promptResult.stderr).not.toContain("loom: fatal error");
   }, 30_000);
+
+  test("compiled session times out a stalled follow-up stream and restores the terminal", async () => {
+    const binaryPath = await buildCompiledCli(
+      "./tests/cli/fixtures/stalled-session.ts",
+    );
+    const home = await mkdtemp(join(tmpdir(), "loom-stalled-home-"));
+    const projectRoot = await mkdtemp(join(tmpdir(), "loom-stalled-project-"));
+    await writeFile(join(projectRoot, "input.txt"), "safe fixture\n", "utf8");
+    let requestCount = 0;
+    const backend = Bun.serve({
+      port: 0,
+      fetch(request) {
+        const pathname = new URL(request.url).pathname;
+        if (pathname === "/v1/models") {
+          return Response.json({ data: [{ id: "runtime-model" }] });
+        }
+        if (pathname !== "/v1/chat/completions") {
+          return new Response("Not found", { status: 404 });
+        }
+        requestCount += 1;
+        if (requestCount === 1) {
+          const content = JSON.stringify({
+            content: "Reading fixture",
+            toolCalls: [{ tool: "file-reader", args: { path: "input.txt" } }],
+          });
+          const chunk = JSON.stringify({
+            choices: [{ delta: { content } }],
+            usage: { prompt_tokens: 2, completion_tokens: 3 },
+          });
+          return new Response(`data: ${chunk}\n\ndata: [DONE]\n\n`, {
+            headers: { "content-type": "text/event-stream" },
+          });
+        }
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode(": waiting\n\n"));
+            },
+          }),
+          { headers: { "content-type": "text/event-stream" } },
+        );
+      },
+    });
+    const backendUrl = new URL("v1", backend.url).toString().replace(/\/$/, "");
+    await mkdir(join(projectRoot, ".loom"));
+    await writeFile(
+      join(projectRoot, ".loom", "config.yaml"),
+      [
+        "activeProfile: default",
+        "defaults:",
+        "  theme: loom-dark",
+        "profiles:",
+        "  default:",
+        "    defaultBackend: local",
+        "backends:",
+        "  local:",
+        "    type: openai-compatible",
+        `    baseUrl: ${backendUrl}`,
+      ].join("\n"),
+      "utf8",
+    );
+
+    try {
+      const result = await runStalledCompiledSession({
+        binaryPath,
+        home,
+        projectRoot,
+      });
+      expect(requestCount).toBe(2);
+      expect(result.sawApplying).toBe(true);
+      expect(result.sawFailure).toBe(true);
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toContain("\u001B[?1049h");
+      expect(result.output).toContain("\u001B[?1049l");
+      expect(result.output).not.toContain(projectRoot);
+    } finally {
+      backend.stop(true);
+    }
+  }, 15_000);
 });

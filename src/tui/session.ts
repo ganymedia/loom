@@ -53,6 +53,7 @@ export interface StartSessionOptions {
   initialAgent?: BuiltInAgentName;
   backendOverride?: string;
   contextLimit?: number;
+  developerRequestTimeoutMs?: number;
   fetchImpl?: FetchLike;
   initialPrompt?: string;
   input?: AsyncIterable<string> | Iterable<string>;
@@ -299,7 +300,10 @@ async function writeAutomaticHandoff({
 function createBuiltInAgent(
   agentName: BuiltInAgentName,
   config: LoomConfig,
-  options: Pick<StartSessionOptions, "backendOverride" | "fetchImpl">,
+  options: Pick<
+    StartSessionOptions,
+    "backendOverride" | "developerRequestTimeoutMs" | "fetchImpl"
+  >,
 ): BaseAgent {
   const agentOptions = {
     config,
@@ -313,7 +317,12 @@ function createBuiltInAgent(
 
   switch (agentName) {
     case "developer":
-      return new DeveloperAgent(agentOptions);
+      return new DeveloperAgent({
+        ...agentOptions,
+        ...(options.developerRequestTimeoutMs === undefined
+          ? {}
+          : { requestTimeoutMs: options.developerRequestTimeoutMs }),
+      });
     case "architect":
       return new ArchitectAgent(agentOptions);
     case "tester":
@@ -412,6 +421,7 @@ async function runAgentPrompt(
           ? null
           : redactToolContent(toolCall.result.data.afterContent),
       );
+      viewStore.appendToolResult(`Tool ${index + 1} (file-writer): ok`, true);
       continue;
     }
     const toolResultLine = toolResultLines[index];

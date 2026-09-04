@@ -139,7 +139,11 @@ export async function runPrompt(
   }
 
   if (options.onTextDelta !== undefined) {
-    return await readStreamingResponse(response, options.onTextDelta);
+    return await readStreamingResponse(
+      response,
+      options.onTextDelta,
+      options.signal,
+    );
   }
 
   let payload: ChatCompletionResponse;
@@ -170,6 +174,7 @@ export async function runPrompt(
 async function readStreamingResponse(
   response: Response,
   onTextDelta: (delta: string) => void,
+  signal?: AbortSignal,
 ): Promise<PromptResponse> {
   if (response.body === null) {
     throw new PromptRequestError("Streaming prompt response had no body");
@@ -223,7 +228,32 @@ async function readStreamingResponse(
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const read = reader.read();
+      const { done, value } =
+        signal === undefined
+          ? await read
+          : await new Promise<Awaited<typeof read>>((resolve, reject) => {
+              const abort = (): void => {
+                signal.removeEventListener("abort", abort);
+                void reader.cancel(signal.reason).catch(() => undefined);
+                reject(signal.reason);
+              };
+              if (signal.aborted) {
+                abort();
+                return;
+              }
+              signal.addEventListener("abort", abort, { once: true });
+              void read.then(
+                (result) => {
+                  signal.removeEventListener("abort", abort);
+                  resolve(result);
+                },
+                (error: unknown) => {
+                  signal.removeEventListener("abort", abort);
+                  reject(error);
+                },
+              );
+            });
       pending += decoder.decode(value, { stream: !done });
       const events = pending.split(/\r?\n\r?\n/);
       pending = events.pop() ?? "";

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentContext } from "@loom/agents/base";
@@ -72,6 +72,7 @@ describe("DeveloperAgent", () => {
             { role: "user", content: "Implement this" },
           ],
         });
+        expect(init?.signal).toBeInstanceOf(AbortSignal);
         return jsonResponse({
           choices: [{ message: { content: "Done" } }],
           usage: { prompt_tokens: 7, completion_tokens: 4 },
@@ -99,7 +100,7 @@ describe("DeveloperAgent", () => {
     await writeFile(join(projectRoot, "note.txt"), "hello loom", "utf8");
     const agent = new DeveloperAgent({
       config,
-      fetchImpl: async (input) => {
+      fetchImpl: async (input, init) => {
         if (input.endsWith("/v1/models")) {
           return jsonResponse({ data: [{ id: "runtime-model" }] });
         }
@@ -174,6 +175,33 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls).toEqual([]);
   });
 
+  test("repairs an empty streaming response without duplicating deltas", async () => {
+    const deltas: string[] = [];
+    let completionRequests = 0;
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        completionRequests += 1;
+        return completionRequests === 1
+          ? new Response("data: [DONE]\n\n")
+          : jsonResponse({
+              choices: [{ message: { content: "Recovered stream" } }],
+            });
+      },
+    });
+
+    const result = await agent.runTurn("Recover streaming response", context, {
+      onTextDelta: (delta) => deltas.push(delta),
+    });
+
+    expect(completionRequests).toBe(2);
+    expect(deltas).toEqual([]);
+    expect(result.content).toBe("Recovered stream");
+  });
+
   test("rejects unknown tool calls without executing them", async () => {
     const agent = new DeveloperAgent({
       config,
@@ -223,6 +251,141 @@ describe("DeveloperAgent", () => {
     expect(result.toolCalls).toEqual([]);
   });
 
+  test("repairs an intent-only response and executes the requested write", async () => {
+    const projectRoot = await tempProject();
+    let completionRequests = 0;
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        completionRequests += 1;
+        return jsonResponse({
+          choices: [
+            {
+              message: {
+                content:
+                  completionRequests === 1
+                    ? "I'll start by exploring the current directory."
+                    : JSON.stringify({
+                        content: "Created the requested file",
+                        toolCalls: [
+                          {
+                            tool: "file-writer",
+                            args: {
+                              path: "created.json",
+                              content: '{"ok":true}\n',
+                            },
+                          },
+                        ],
+                      }),
+              },
+            },
+          ],
+          usage: { prompt_tokens: 2, completion_tokens: 3 },
+        });
+      },
+    });
+
+    const result = await agent.runTurn("Create the named file", {
+      ...context,
+      projectRoot,
+    });
+
+    expect(completionRequests).toBe(2);
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0]?.result.success).toBe(true);
+    expect(await readFile(join(projectRoot, "created.json"), "utf8")).toBe(
+      '{"ok":true}\n',
+    );
+    expect(result.promptTokens).toBe(4);
+    expect(result.completionTokens).toBe(6);
+  });
+
+  test("continues a read-only round into an explicit file modification", async () => {
+    const projectRoot = await tempProject();
+    await writeFile(join(projectRoot, "target.txt"), "before\n", "utf8");
+    const deltas: string[] = [];
+    let completionRequests = 0;
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input, init) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        completionRequests += 1;
+        if (completionRequests === 2) {
+          const request = String(init?.body);
+          expect(request).toContain("untrusted project data");
+          expect(request).toContain("before");
+        }
+        const tool = completionRequests === 1 ? "file-reader" : "file-writer";
+        const args =
+          tool === "file-reader"
+            ? { path: "target.txt" }
+            : { path: "target.txt", content: "after\n" };
+        const content = JSON.stringify({
+          content: "Completed the requested operation",
+          toolCalls: [{ tool, args }],
+        });
+        return new Response(
+          [
+            `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}`,
+            "",
+            "data: [DONE]",
+            "",
+          ].join("\n"),
+        );
+      },
+    });
+
+    const result = await agent.runTurn(
+      "Read target.txt, then add a feature to the file",
+      {
+        ...context,
+        projectRoot,
+      },
+      { onTextDelta: (delta) => deltas.push(delta) },
+    );
+
+    expect(completionRequests).toBe(2);
+    expect(result.toolCalls).toHaveLength(2);
+    expect(result.toolCalls.map((toolCall) => toolCall.tool)).toEqual([
+      "file-reader",
+      "file-writer",
+    ]);
+    expect(deltas.join("")).toContain("Applying tool results…");
+    expect(deltas.join("")).not.toContain("target.txt");
+    expect(await readFile(join(projectRoot, "target.txt"), "utf8")).toBe(
+      "after\n",
+    );
+  });
+
+  test("repairs a response without message content", async () => {
+    let completionRequests = 0;
+    const agent = new DeveloperAgent({
+      config,
+      fetchImpl: async (input) => {
+        if (input.endsWith("/v1/models")) {
+          return jsonResponse({ data: [{ id: "runtime-model" }] });
+        }
+        completionRequests += 1;
+        return completionRequests === 1
+          ? jsonResponse({ choices: [{ message: {} }] })
+          : jsonResponse({
+              choices: [{ message: { content: "Recovered answer" } }],
+            });
+      },
+    });
+
+    const result = await agent.runTurn("Answer after repair", context);
+
+    expect(completionRequests).toBe(2);
+    expect(result.content).toBe("Recovered answer");
+    expect(result.toolCalls).toEqual([]);
+  });
+
   test("accepts a strictly fenced response envelope", async () => {
     const envelope = [
       "```json",
@@ -260,7 +423,9 @@ describe("DeveloperAgent", () => {
     } catch (error) {
       message = error instanceof Error ? error.message : String(error);
     }
-    expect(message).toBe("Developer response envelope was invalid");
+    expect(message).toBe(
+      "Developer response was invalid after repair attempts",
+    );
     expect(message).not.toContain("synthetic-envelope-marker");
   });
 
@@ -281,7 +446,9 @@ describe("DeveloperAgent", () => {
     } catch (error) {
       message = error instanceof Error ? error.message : String(error);
     }
-    expect(message).toBe("Developer response envelope was invalid");
+    expect(message).toBe(
+      "Developer response was invalid after repair attempts",
+    );
     expect(message).not.toContain("synthetic-prefixed-marker");
   });
 

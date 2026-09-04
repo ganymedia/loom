@@ -159,6 +159,7 @@ At the prompt, try these commands:
 [press Enter once and verify the two-line prompt submits as one prompt]
 [where supported, repeat with Shift+Enter instead of Ctrl+J; if the terminal does not report the Shift modifier, record the path as unsupported rather than failed]
 [paste a two-line non-sensitive prompt and verify it remains one prompt until Enter]
+[verify pasted terminal control characters are discarded while ordinary text, tabs, and newlines remain]
 [verify the visible hint distinguishes Enter submit from newline actions]
 [verify the composer is a separately bordered Message region]
 [submit a safe prompt and verify it remains in scrollback as a labeled, bordered You block distinct from the assistant response]
@@ -188,11 +189,13 @@ Summarize the current task again in different words.
 [while the second response is live, verify the completed first response is visually recessed but remains readable]
 Reply with Markdown containing a heading, bold text, a two-item list, inline code, and a fenced TypeScript code block.
 [verify the structure is styled, recognized code syntax is color-highlighted, and raw Markdown markers or fences are not shown]
+[after enough output to exceed the conversation pane, press PageUp/PageDown and verify history moves by one viewport without moving the composer; verify Ctrl+Home jumps oldest and Ctrl+End returns latest]
 Use the file-reader tool to read package.json and report only the package name.
 [verify Security: Running 1 tool dots appear during execution, distinct from Thinking]
 [verify amber tool activity says Reading file, Writing file, Running command, or Checking repository; mixed tools may use a count fallback]
 [verify the tool-action indicator clears on finish/failure and shows no names, arguments, paths, or file content]
 [verify completed tool results use green `✓` success or red `✕` failure rows with explicit outcome text]
+[verify only the tool outcome header is green/red and any returned file content appears in a separate bordered neutral-color body]
 [verify completed Developer output becomes a bordered `Developer summary` block while live streaming and other agents remain unchanged]
 [verify the composer cursor blinks, paints the current character without shifting surrounding text, and uses its own cell only at the end of empty, single-line, and multi-line input]
 [type a non-sensitive multi-word line, verify Left/Right move by character, edit in the middle, then verify Ctrl+Left/Ctrl+Right or the terminal-equivalent Meta shortcuts move by word]
@@ -206,6 +209,10 @@ Use the file-reader tool to read package.json and report only the package name.
 Start two fresh interactive sessions after the command sequence. Press Escape to exit the first and Ctrl+C to exit the second.
 
 Expected result: the composer is a separately bordered `Message` region showing `Enter submit · Ctrl+J newline · Shift+Enter where supported`; Ctrl+J inserts a visible continuation line without submitting, Shift+Enter does the same when the terminal reports the modifier, pasted multi-line text remains one prompt, and plain Enter submits the complete input once. Submitted prompts remain as labeled, bordered `You` blocks distinct from assistant responses by structure and text, not color alone, and narrow/wide resize preserves those boundaries. Typing `/` shows an inline popup with `/agent developer`, `/agent architect`, `/agent tester`, `/agent security`, `/tab`, `/agents`, `/exit`, and `/quit`; continuing with `agent t` filters the list live to `/agent tester` using case-insensitive executable-prefix matching; Escape closes the open popup without submitting or clearing `/agent t`, and typing `e` reopens discovery for the preserved input; Up and Down move the visible selection with wraparound within the popup, and Enter runs the selected command; outside the popup, Up moves backward through current-session submitted entries, Down moves forward, multi-line entries remain intact, and Down past the newest entry restores the unsent draft; popup selection retains precedence while open. LOOM shows the built-in agents; pressing Tab immediately changes the active agent without Enter; `/tab` and `/agent <name>` also change the active agent; an animated active-agent Thinking indicator appears immediately after a normal prompt and disappears on the first streamed text or turn failure; assistant Markdown renders as styled headings, emphasis, lists, inline code, and recognized syntax-highlighted fenced code without showing raw formatting markers; completed scrollback is visually recessed but readable while the live exchange remains prominent; existing tool execution replaces Thinking with a visually distinct animated Running N tool(s) indicator that clears on finish/failure and never displays arguments or results; the live frame reflows after each resize; and `/exit`, Escape outside a popup, and Ctrl+C each exit cleanly and restore the normal terminal screen.
+
+PageUp/PageDown must move through measured conversation history without moving the pinned status or composer. Ctrl+Home jumps to the oldest available row, Ctrl+End returns to latest activity, and a fixed history notice is visible only while scrolled.
+
+Verify the mouse wheel scrolls conversation rows without changing composer text and that clicks do not insert escape-sequence text. Up/Down remain prompt-history keys; PageUp/PageDown and Ctrl+Home/Ctrl+End provide keyboard scrolling. After exit, normal terminal mouse behavior must be restored.
 
 Automatic handoff is triggered only after reported token usage reaches 80% of the active context limit. A short ordinary session may never reach it. If the operator provides a controlled small-context test backend, cross the threshold and verify the pinned status bar shows an amber `handoff saved` notice. Otherwise record this item as not exercised, not failed. Non-TTY output should retain its existing handoff message when the threshold is crossed.
 
@@ -278,6 +285,8 @@ rm test_file.txt
 Expected result:
 - `test_file.txt` is overwritten with the exact new content.
 - In the terminal output (Ink), the diff shows `line 2` as red (removed) and `line 2.5` as green (added).
+- The diff is followed by an explicit green `✓ Tool 1 (file-writer): ok` row.
+- An explicit create/edit/modify/write request must execute `file-writer`; a read-only or intent-only response receives up to two bounded repairs and must not be presented as a completed edit. For a read-then-write request, LOOM may run up to three permitted tool rounds, show `Applying tool results…` between rounds, and send at most 64 KiB of the read result back to the same configured backend as untrusted project data. Each backend request times out after 60 seconds. Use only non-sensitive test content unless that backend/data boundary is approved for CUI.
 - Surrounding context (`line 1` and `line 3`) remains visible and unchanged.
 - The terminal resize remains stable during the output.
 - No secrets or CUI are leaked in the file or terminal.
