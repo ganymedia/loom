@@ -17,7 +17,7 @@ Connect LOOM to an existing OpenAI-compatible backend, work interactively with b
 
 ## Install
 
-LOOM 0.1.0 provides standalone binaries for Linux and macOS on x64 and arm64. Bun is not required to run the installed binary.
+LOOM 0.1.1 provides standalone binaries for Linux and macOS on x64 and arm64. Bun is not required to run the installed binary.
 
 ### Requirements
 
@@ -54,7 +54,7 @@ Download the installer first when you want to inspect it, install a specific rel
 ```bash
 installer="$(mktemp)"
 curl -fsSL https://github.com/ganymedia/loom/releases/latest/download/install.sh -o "$installer"
-LOOM_INSTALL_VERSION=v0.1.0 LOOM_INSTALL_DIR="$HOME/bin" sh "$installer"
+LOOM_INSTALL_VERSION=v0.1.1 LOOM_INSTALL_DIR="$HOME/bin" sh "$installer"
 rm -f "$installer"
 ```
 
@@ -128,7 +128,7 @@ LOOM loads global configuration from `$HOME/.loom/config.yaml` and supported XDG
 - SAST is off by default and global config cannot enable it for a project. To opt in, add `subAgents.sast.enabled: true` to that project's `.loom/config.yaml`.
 - Opted-in Developer `file-writer` changes to supported source files are scanned sequentially after successful writes. Findings are atomically retained as at most 500 newest owner-only JSONL records, bounded to 1 MiB, in `.loom/findings.jsonl`; source text, summaries, prompts, and backend details are not stored there. A failed scan is isolated from the parent turn and does not create a findings file.
 - Opt-in sends changed source to the configured inference backend. Do not enable SAST for projects containing secrets or CUI; use it only where the backend and local findings storage are approved for the project's data.
-- LOOM ships no telemetry or crash reporting in 0.1.0.
+- LOOM ships no telemetry or crash reporting.
 
 See [loom-config.yaml](loom-config.yaml) for the complete configuration reference.
 
