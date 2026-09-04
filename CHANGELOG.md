@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] - Unreleased
+## [0.1.1] - 2026-09-04
 
 Version 0.1.1 changes LOOM's core interactive-session model: TTY sessions now run as one persistent, live-redrawing full-screen Ink application instead of a readline loop that prints static Ink fragments. This is an interaction-model release, not a silent patch or a general expansion of backend permissions.
 
